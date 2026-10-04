@@ -1,122 +1,78 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ProveedorAuth } from "./hooks/useAuth";
+import Layout from "./componentes/Layout";
+import RutaProtegida from "./componentes/RutaProtegida";
 
-function App() {
-  const [count, setCount] = useState(0)
+import Catalogo from "./paginas/Catalogo";
+import DetalleObra from "./paginas/DetalleObra";
+import PerfilArtista from "./paginas/PerfilArtista";
+import Login from "./paginas/Login";
+import Registro from "./paginas/Registro";
+import MiCuenta from "./paginas/MiCuenta";
+import Carrito from "./paginas/Carrito";
+import ConfirmarCompra from "./paginas/ConfirmarCompra";
+import Pago from "./paginas/Pago";
+import CompraConfirmada from "./paginas/CompraConfirmada";
+import MisCompras from "./paginas/MisCompras";
+import PanelObras from "./paginas/PanelObras";
+import ObraForm from "./paginas/ObraForm";
+import Ventas from "./paginas/Ventas";
+import Encargos from "./paginas/Encargos";
+import EncargoNuevo from "./paginas/EncargoNuevo";
+import EncargoDetalle from "./paginas/EncargoDetalle";
+import AdminUsuarios from "./paginas/AdminUsuarios";
+import AdminCatalogos from "./paginas/AdminCatalogos";
+import SinPermiso from "./paginas/SinPermiso";
+import NoEncontrada from "./paginas/NoEncontrada";
 
+const COMPRA  = ["CLIENTE", "ARTISTA_CLIENTE", "ADMIN"];
+const ARTISTA = ["ARTISTA", "ARTISTA_CLIENTE", "ADMIN"];
+const ADMIN   = ["ADMIN"];
+
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <ProveedorAuth>
+      <BrowserRouter>
+        <Routes>
+          <Route element={<Layout />}>
 
-      <div className="ticks"></div>
+            {/* Público: se puede mirar sin estar logueado */}
+            <Route path="/"             element={<Catalogo />} />
+            <Route path="/obra/:id"     element={<DetalleObra />} />
+            <Route path="/artista/:id"  element={<PerfilArtista />} />
+            <Route path="/login"        element={<Login />} />
+            <Route path="/registro"     element={<Registro />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+            {/* Hay que estar logueado, sin importar el rol */}
+            <Route path="/mi-cuenta"   element={<RutaProtegida><MiCuenta /></RutaProtegida>} />
+            <Route path="/mis-compras" element={<RutaProtegida><MisCompras /></RutaProtegida>} />
+            <Route path="/encargos"    element={<RutaProtegida><Encargos /></RutaProtegida>} />
+            <Route path="/encargos/:id" element={<RutaProtegida><EncargoDetalle /></RutaProtegida>} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+            {/* Comprar */}
+            <Route path="/carrito"       element={<RutaProtegida roles={COMPRA}><Carrito /></RutaProtegida>} />
+            <Route path="/checkout"      element={<RutaProtegida roles={COMPRA}><ConfirmarCompra /></RutaProtegida>} />
+            <Route path="/checkout/pago" element={<RutaProtegida roles={COMPRA}><Pago /></RutaProtegida>} />
+            <Route path="/compra/:id"    element={<RutaProtegida roles={COMPRA}><CompraConfirmada /></RutaProtegida>} />
+            <Route path="/encargos/nuevo" element={<RutaProtegida roles={COMPRA}><EncargoNuevo /></RutaProtegida>} />
+
+            {/* Vender */}
+            <Route path="/panel/obras"              element={<RutaProtegida roles={ARTISTA}><PanelObras /></RutaProtegida>} />
+            <Route path="/panel/obras/nueva"        element={<RutaProtegida roles={ARTISTA}><ObraForm /></RutaProtegida>} />
+            <Route path="/panel/obras/:id/editar"   element={<RutaProtegida roles={ARTISTA}><ObraForm /></RutaProtegida>} />
+            <Route path="/panel/ventas"             element={<RutaProtegida roles={ARTISTA}><Ventas /></RutaProtegida>} />
+
+            {/* Administrar */}
+            <Route path="/admin/usuarios"  element={<RutaProtegida roles={ADMIN}><AdminUsuarios /></RutaProtegida>} />
+            <Route path="/admin/catalogos" element={<RutaProtegida roles={ADMIN}><AdminCatalogos /></RutaProtegida>} />
+
+            {/* Transversales */}
+            <Route path="/403" element={<SinPermiso />} />
+            <Route path="*"    element={<NoEncontrada />} />
+
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </ProveedorAuth>
+  );
 }
-
-export default App
