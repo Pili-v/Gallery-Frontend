@@ -87,9 +87,11 @@ const Carrito = () => {
             <div className="contenido">
 
                 <h1 className="headline-lg">Tu carrito</h1>
-                <p className="body-lg muted" style={{ margin: "var(--xs) 0 var(--xl)" }}>
-                    {items.length === 1 ? "1 obra lista para comprar" : items.length + " obras listas para comprar"}
-                </p>
+               {items.length > 0 && (
+    <p className="body-lg muted" style={{ margin: "var(--xs) 0 var(--xl)" }}>
+        {items.length === 1 ? "1 obra lista para comprar" : items.length + " obras listas para comprar"}
+    </p>
+)}
 
                 {error && <div style={{ marginBottom: "var(--md)" }}><Estado tipo="error" mensaje={error} /></div>}
 
