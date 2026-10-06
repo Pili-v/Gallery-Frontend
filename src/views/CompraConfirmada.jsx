@@ -55,9 +55,25 @@ const CompraConfirmada = () => {
                     Compra Nº {String(compra.id).padStart(6, "0")}
                 </p>
                 <h1 className="headline-lg" style={{ margin: "var(--xs) 0" }}>Compra confirmada</h1>
-                <p className="body-lg muted">
-                    {fecha(compra.fecha_compra)} · Total {pesos(compra.total_compra)}
-                </p>
+                              <p className="body-lg muted">{fecha(compra.fecha_compra)}</p>
+
+                {/* De donde sale el total: las obras y, si eligio envio, el costo de envio. */}
+                <div className="resumen" style={{ marginTop: "var(--md)" }}>
+                    <div className="resumen-fila">
+                        <span>Obras</span>
+                        <span>{pesos(compra.total_compra - compra.costo_envio)}</span>
+                    </div>
+                    {compra.costo_envio > 0 && (
+                        <div className="resumen-fila">
+                            <span>Envío a domicilio</span>
+                            <span>{pesos(compra.costo_envio)}</span>
+                        </div>
+                    )}
+                    <div className="resumen-fila resumen-total">
+                        <span>Total</span>
+                        <span>{pesos(compra.total_compra)}</span>
+                    </div>
+                </div>
 
                 <hr className="divisor" />
 
