@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { api } from "../api/cliente"
+import { api, lista } from "../api/cliente"
 import { pesos, fecha } from "../api/formato"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
@@ -24,8 +24,7 @@ const CompraConfirmada = () => {
         const cargar = async () => {
             try {
                 const laCompra = await api.get("/api/compras/" + id)
-                const susFacturas = await api.get("/api/facturas/compra/" + id)
-
+                const susFacturas = lista(await api.get("/api/facturas/compra/" + id))
                 // Cada factura trae el id del artista, no su nombre. Lo buscamos
                 // para que la pantalla diga "Ana Gorriti" y no "artista 1".
                 for (const factura of susFacturas) {

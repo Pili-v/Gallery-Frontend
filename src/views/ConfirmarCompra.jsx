@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { api } from "../api/cliente"
+import { api, lista } from "../api/cliente"
 import { getUsuario } from "../api/sesion"
 import LineaItem from "../components/LineaItem"
 import ResumenTotales from "../components/ResumenTotales"
@@ -30,7 +30,7 @@ const ConfirmarCompra = () => {
                 const miCarrito = await api.get("/api/usuarios/" + usuario.id + "/carrito")
                 const susItems = await api.get("/api/carritos/" + miCarrito.id + "/items")
                 setCarrito(miCarrito)
-                setItems(susItems)
+                setItems(lista(susItems))
                 setDireccion(miCarrito.direccion_cliente || "")
             } catch (e) {
                 setError(e.message)

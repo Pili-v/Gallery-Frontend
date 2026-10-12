@@ -44,6 +44,13 @@ export const api = {
     delete: (ruta) => pedir(ruta, { method: "DELETE" })
 }
 
+
+// El backend ahora pagina las listas: en vez de [ {...} ] devuelve { content: [ {...} ] }.
+// Esta funcion deja siempre un array, le llegue la forma nueva o la vieja.
+export const lista = (respuesta) => {
+    if (Array.isArray(respuesta)) return respuesta
+    return respuesta?.content ?? []
+}
 // Para subir fotos no se manda JSON: el navegador arma el multipart solo.
 export const subirArchivo = async (ruta, formData) => {
     const token = getToken()
