@@ -1,6 +1,6 @@
 import { pesos } from "../api/formato"
 
-const ResumenTotales = ({ subtotal, marcos, total, boton, onBoton, nota }) => {
+const ResumenTotales = ({ subtotal, marcos, envio, total, boton, onBoton, nota }) => {
     return (
         <div className="resumen">
             <h3 className="headline-sm" style={{ marginBottom: "var(--sm)" }}>Resumen</h3>
@@ -12,6 +12,12 @@ const ResumenTotales = ({ subtotal, marcos, total, boton, onBoton, nota }) => {
             {marcos > 0 && (
                 <div className="resumen-fila">
                     <span className="muted">Marcos</span><span>{pesos(marcos)}</span>
+                </div>
+            )}
+            
+                        {envio > 0 && (
+                <div className="resumen-fila">
+                    <span className="muted">Envío a domicilio</span><span>{pesos(envio)}</span>
                 </div>
             )}
 

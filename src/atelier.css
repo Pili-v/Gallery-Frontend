@@ -287,3 +287,69 @@ body {
 
 /* Fotos de obra */
 .obra-imagen img, .linea-mini img, .hero-obra img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* ---------- Pantalla de pago: se escribe sobre la tarjeta ---------- */
+.tarjeta-escena { perspective: 1200px; margin-bottom: var(--md); }
+.tarjeta-3d {
+  position: relative; width: 100%; max-width: 420px; aspect-ratio: 1.586;
+  transition: transform .6s; transform-style: preserve-3d; cursor: pointer;
+}
+.tarjeta-3d.girada { transform: rotateY(180deg); }
+.tarjeta-cara {
+  position: absolute; inset: 0; backface-visibility: hidden; overflow: hidden;
+  border-radius: 16px; padding: var(--lg); color: #F7F2E8;
+  box-shadow: 0 12px 34px rgba(0,0,0,.28);
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.tarjeta-visa { background: linear-gradient(135deg, #6B1030 0%, #3A0A1C 60%, #14110F 100%); }
+.tarjeta-mastercard { background: linear-gradient(135deg, #2A2018 0%, #4A3410 55%, #14110F 100%); }
+.tarjeta-amex { background: linear-gradient(135deg, #103B3B 0%, #0B2224 60%, #14110F 100%); }
+.tarjeta-dorso { transform: rotateY(180deg); padding-left: 0; padding-right: 0; }
+.tarjeta-dorso > *:not(.tarjeta-banda) { margin-left: var(--lg); margin-right: var(--lg); }
+
+.tarjeta-arriba { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--md); }
+.tarjeta-chip { width: 46px; height: 34px; border-radius: 6px; background: linear-gradient(135deg, #E6C277, #A9823C); flex: none; }
+.tarjeta-marcas { display: flex; gap: 6px; }
+.tarjeta-marcas button {
+  font: inherit; font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 4px 8px; border-radius: 999px; cursor: pointer;
+  background: transparent; color: rgba(247,242,232,.6); border: 1px solid rgba(247,242,232,.3);
+}
+.tarjeta-marcas button.elegida { background: #F7F2E8; color: #14110F; border-color: #F7F2E8; }
+
+.tarjeta-campo { display: block; }
+.tarjeta-campo span { display: block; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; margin-bottom: 3px; }
+.tarjeta-input {
+  background: transparent; border: 0; outline: none; padding: 0; width: 100%;
+  font: inherit; color: inherit; letter-spacing: inherit;
+}
+.tarjeta-input::placeholder { color: rgba(247,242,232,.4); }
+.tarjeta-numero { font-size: 22px; letter-spacing: .12em; font-variant-numeric: tabular-nums; }
+.tarjeta-abajo { display: flex; gap: var(--md); align-items: flex-end; }
+.tarjeta-abajo .tarjeta-campo:first-child { flex: 1; min-width: 0; }
+.tarjeta-abajo .tarjeta-vence { width: 74px; flex: none; }
+.tarjeta-logo { font-size: 17px; letter-spacing: .14em; text-transform: uppercase; align-self: flex-end; }
+.tarjeta-circulos { display: flex; align-items: center; align-self: flex-end; }
+.tarjeta-circulos i { width: 22px; height: 22px; border-radius: 50%; display: block; }
+.tarjeta-circulos i:first-child { background: #D4442A; }
+.tarjeta-circulos i:last-child { background: #E8A317; margin-left: -9px; mix-blend-mode: screen; }
+
+.tarjeta-banda { height: 46px; background: #14110F; }
+.tarjeta-cvv { display: flex; align-items: center; gap: var(--sm); }
+.tarjeta-cvv > span { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
+.tarjeta-cvv .tarjeta-input {
+  background: #F7F2E8; color: #14110F; padding: 7px 10px; text-align: right;
+  font-variant-numeric: tabular-nums; letter-spacing: .2em; width: 90px; margin-left: auto;
+}
+.tarjeta-cvv .tarjeta-input::placeholder { color: rgba(20,17,15,.35); }
+.tarjeta-pista { font-size: 11px; letter-spacing: .06em; opacity: .6; }
+.tarjeta-errores { margin-bottom: var(--lg); }
+/* Chrome pinta de celeste lo que autocompleta: acá se le saca ese fondo. */
+.tarjeta-input:-webkit-autofill,
+.tarjeta-input:-webkit-autofill:hover,
+.tarjeta-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #F7F2E8;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+.tarjeta-cvv .tarjeta-input:-webkit-autofill { -webkit-text-fill-color: #14110F; }
