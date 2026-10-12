@@ -25,6 +25,20 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* La barra de desplazamiento siempre está: así el ancho no cambia al desplegar contenido.
+   Va con los colores del diseño: pista del color del fondo, borde fino y pulgar en tinta. */
+html { overflow-y: scroll; }
+
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--canvas); border-left: 1px solid var(--border); }
+::-webkit-scrollbar-thumb { background: var(--border); border: 3px solid var(--canvas); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+/* Firefox no entiende lo de arriba: usa la propiedad estándar. */
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-color: var(--border) var(--canvas); }
+}
+
 body {
   background: var(--canvas);
   color: var(--ink);
