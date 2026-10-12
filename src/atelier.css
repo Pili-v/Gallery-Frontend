@@ -136,8 +136,41 @@ body {
 /* ---------- Componente: TarjetaObra ---------- */
 .tarjeta-obra { text-decoration: none; color: inherit; display: block; }
 .obra-imagen {
-  position: relative; aspect-ratio: 4/5; border: 1px solid var(--border); border-bottom: 0;
+  position: relative;
+  aspect-ratio: 4/5;
+  background: var(--surface); /* Funciona como el paspartú / passe-partout */
+  padding: 12px;
+  
+  /* 1. Marco exterior negro y grueso */
+  border: 4px solid var(--carbon); 
+  
+  /* 2. Sombra en capas para darle profundidad realista sobre la pared */
+  box-shadow: 
+    0 15px 35px rgba(0, 0, 0, 0.35), /* Sombra principal difuminada hacia abajo */
+    0 5px 12px rgba(0, 0, 0, 0.20);  /* Sombra corta de contacto */
+  
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+.obra-imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  
+  /* 3. Borde muy fino y sombra hacia adentro para simular que la foto está encastrada */
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Opcional: Pequeña elevación cuando el usuario pasa el cursor */
+.obra-imagen:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 22px 40px rgba(0, 0, 0, 0.40),
+    0 8px 16px rgba(0, 0, 0, 0.25);
+}
+
 .obra-imagen.sin-stock { filter: grayscale(.85); }
 .grilla-obras { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--xl); }
 .grilla-obras.cuatro { grid-template-columns: repeat(4, 1fr); gap: var(--lg); }
