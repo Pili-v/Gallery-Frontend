@@ -55,7 +55,9 @@ body {
 }
 
 /* ---------- Layout ---------- */
-.pagina { background: var(--canvas); }
+.pagina { background: var(--canvas); min-height: 100vh; display: flex; flex-direction: column; }
+/* Si el contenido es corto, el footer queda pegado abajo; si es largo, lo empuja. */
+.pagina > .footer { margin-top: auto; }
 .contenido { max-width: 1440px; margin: 0 auto; padding: 0 var(--xxl); }
 .seccion { padding: var(--xxl) 0; }
 .seccion-sm { padding: var(--xl) 0; }
