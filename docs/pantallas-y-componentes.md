@@ -38,7 +38,7 @@ Abrís `http://localhost:5173`. Las maquetas de todas las pantallas están en **
 | `/panel/obras` | `PanelObras.jsx` | `GET /api/artistas/{id}/obras` · `DELETE /api/obras/{id}` |
 | `/panel/obras/nueva` | `ObraForm.jsx` | `POST /api/obras` · `/api/variantes` · `/api/imagenes` |
 | `/panel/obras/:id/editar` | `ObraForm.jsx` | `PUT /api/obras/{id}` · `PATCH /api/variantes/{id}/stock` |
-| `/panel/ventas` | `Ventas.jsx` | `GET /api/artistas/{id}/facturas` |
+| `/panel/ventas` | `Ventas.jsx` | `GET /api/artistas/me/facturas` · `/api/items-factura/factura/{id}` · `/api/compras/{id}` · `/api/variantes/{id}` · `/api/obras/{id}` · `/api/marcos/{id}` |
 | `/encargos` | `Encargos.jsx` | `GET /api/encargos/usuario/{id}` · `/api/encargos/artista/{id}` |
 | `/encargos/nuevo` | `EncargoNuevo.jsx` | `GET /api/artistas` · `/api/tamanios-lienzo` · `POST /api/encargos` |
 | `/encargos/:id` | `EncargoDetalle.jsx` | `GET /api/encargos/{id}` · `/api/encargos/{id}/mensajes` · `POST /api/mensajes` · `PATCH /api/encargos/{id}/estado` |
