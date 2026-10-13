@@ -49,8 +49,8 @@ const Ventas = () => {
                 })
             })
             .catch((e) => {
-                // Sin ventas el backend responde 404 (y cliente.js no lee su "mensaje"): no es un error.
-                if (e.message !== "Error 404") setError(e.message)
+                // Sin ventas el backend responde 404: no es un error.
+                if (e.status !== 404) setError(e.message)
             })
             .finally(() => setCargando(false))
     }, [])
