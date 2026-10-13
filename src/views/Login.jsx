@@ -84,7 +84,7 @@ const Login = () => {
             const perfil = await api.get("/api/usuarios/me")
 
             // 4. Guardamos la sesión completa.
-            guardarSesion(token, perfil.usuario)
+            guardarSesion(token, perfil)
 
             // 5. Login terminado.
             navigate("/")

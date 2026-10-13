@@ -48,6 +48,19 @@ const pedir = async (ruta, opciones = {}) => {
 
     // 401 = el token no sirve. Se borra la sesión y se vuelve al login.
     if (respuesta.status === 401) {
+
+        // Si el error ocurre intentando iniciar sesión,
+        // mostramos el mensaje y no recargamos la página.
+        if (ruta === "/api/v1/auth/authenticate") {
+            const mensaje = await respuesta.text()
+
+            throw new Error(
+                mensaje || "Mail o contraseña incorrectos"
+            )
+        }
+
+        // Si ya había una sesión y el token dejó de ser válido,
+        // cerramos la sesión y volvemos al login.
         cerrarSesion()
         window.location.href = "/login"
         return
