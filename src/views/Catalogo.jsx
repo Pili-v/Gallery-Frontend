@@ -1,77 +1,129 @@
 // Catálogo — Área 3 · Catálogo
-// Esta pantalla está en docs/maquetas.html: miralá antes de escribirla.
-// Los componentes compartidos ya están hechos en src/components.
+// La grilla sale de la API. Se piden las listas completas una sola vez y se
+// arman acá: pedir las variantes y las imagenes obra por obra serian diez
+// llamadas para cinco obras.
+// El filtro de estilo y el de precio los resuelve el backend, que ya acepta
+// estiloId, precioMin y precioMax como parametros de GET /api/obras.
 
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { api, lista } from "../api/cliente";
 import TarjetaObra from "../components/TarjetaObra";
+import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 
-// Datos de prueba
-const OBRAS_DE_PRUEBA = [
-  {
-    obra: { id: 1, nombre_obra: "Mirada de Verano", estilo: "Naturaleza", artistaId: 101, nombre_artistico: "Lucía Varela" },
-    variante: { precio_variante: 280000, porcentaje_descuento: 10, nombre_tamanio: "140 x 105 cm", stock_variante: 5 },
-    imagen: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=500&q=80"
-  },
-  {
-    obra: { id: 2, nombre_obra: "Rosa Partida", estilo: "Geométrico", artistaId: 102, nombre_artistico: "Mateo Rossi" },
-    variante: { precio_variante: 132000, porcentaje_descuento: 0, nombre_tamanio: "90 x 70 cm", stock_variante: 2 },
-    imagen: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=500&q=80"
-  },
-  {
-    obra: { id: 3, nombre_obra: "Luz del Alba", estilo: "Figurativo", artistaId: 103, nombre_artistico: "Elena Gómez" },
-    variante: { precio_variante: 340000, porcentaje_descuento: 0, nombre_tamanio: "120 x 120 cm", stock_variante: 1 },
-    imagen: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&q=80"
-  },
-  {
-    obra: { id: 4, nombre_obra: "Retrato en Fragmentos", estilo: "Retrato", artistaId: 103, nombre_artistico: "Elena Gómez" },
-    variante: { precio_variante: 145000, porcentaje_descuento: 15, nombre_tamanio: "70 x 50 cm", stock_variante: 0 },
-    imagen: "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=500&q=80"
-  },
-  {
-    obra: { id: 5, nombre_obra: "Zaino", estilo: "Retrato", artistaId: 104, nombre_artistico: "Carlos D'Amico" },
-    variante: { precio_variante: 210000, porcentaje_descuento: 0, nombre_tamanio: "40 x 50 cm", stock_variante: 4 },
-    imagen: "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?w=500&q=80"
-  }
-];
-
-const ESTILOS = ["Todos", "Naturaleza", "Geométrico", "Figurativo", "Retrato"];
-
 export default function Catalogo() {
-  const [estiloSeleccionado, setEstiloSeleccionado] = useState("Todos");
+  // Lo que llega de la API
+  const [obras, setObras] = useState([]);
+  const [variantes, setVariantes] = useState([]);
+  const [imagenes, setImagenes] = useState([]);
+  const [estilos, setEstilos] = useState([]);
+  const [artistas, setArtistas] = useState([]);
+
+  // Los tres estados que contempla toda pantalla que pide datos
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState("");
+
+  // Los filtros de la pantalla
+  const [estiloSeleccionado, setEstiloSeleccionado] = useState(null);
   const [precioMin, setPrecioMin] = useState("");
   const [precioMax, setPrecioMax] = useState("");
-  const [rangoAplicado, setRangoAplicado] = useState({ min: "", max: "" });
   const [orden, setOrden] = useState("recientes");
 
-  const cantidadArtistas = new Set(OBRAS_DE_PRUEBA.map((i) => i.obra.artistaId)).size;
+  // Arma la URL con los filtros que esten puestos. Los filtros van como
+  // parametros sobre el mismo endpoint: la URL nombra el recurso y los
+  // parametros lo acotan.
+  const urlDeObras = (estiloId, min, max) => {
+    const partes = [];
+    if (estiloId) partes.push("estiloId=" + estiloId);
+    if (min !== "") partes.push("precioMin=" + min);
+    if (max !== "") partes.push("precioMax=" + max);
+    return "/api/obras" + (partes.length > 0 ? "?" + partes.join("&") : "");
+  };
 
-  let obrasFiltradas = OBRAS_DE_PRUEBA.filter((item) => {
-    if (estiloSeleccionado !== "Todos" && item.obra.estilo !== estiloSeleccionado) return false;
-    if (rangoAplicado.min !== "" && item.variante.precio_variante < Number(rangoAplicado.min)) return false;
-    if (rangoAplicado.max !== "" && item.variante.precio_variante > Number(rangoAplicado.max)) return false;
-    return true;
-  });
+  const cargarTodo = async (estiloId, min, max) => {
+    try {
+      const susObras = lista(await api.get(urlDeObras(estiloId, min, max)));
+      const susVariantes = lista(await api.get("/api/variantes"));
+      const susImagenes = lista(await api.get("/api/imagenes"));
+      const susEstilos = lista(await api.get("/api/estilos"));
+      const susArtistas = lista(await api.get("/api/artistas"));
 
+      setObras(susObras);
+      setVariantes(susVariantes);
+      setImagenes(susImagenes);
+      setEstilos(susEstilos);
+      setArtistas(susArtistas);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // useEffect con [] vacio: corre una sola vez, cuando aparece la pantalla.
+  useEffect(() => {
+    cargarTodo(null, "", "");
+  }, []);
+
+  // Al tocar un estilo o aplicar el precio se vuelve a preguntar al backend,
+  // porque el filtrado es suyo: el front no se guarda todas las obras.
+  const filtrarPorEstilo = (estiloId) => {
+    setEstiloSeleccionado(estiloId);
+    setCargando(true);
+    cargarTodo(estiloId, precioMin, precioMax);
+  };
+
+  const aplicarFiltroPrecio = () => {
+    setCargando(true);
+    cargarTodo(estiloSeleccionado, precioMin, precioMax);
+  };
+
+  // La API devuelve ids, no nombres: la vista los traduce. La obra trae
+  // artista_id y estilo_ids, y de las otras listas sale como se llaman.
+  const armarItem = (obra) => {
+    const variante = variantes.find((v) => v.obra_id === obra.id);
+    const imagen = imagenes.find((i) => i.obra_id === obra.id);
+    const artista = artistas.find((a) => a.id === obra.artista_id);
+    const estilo = estilos.find((e) => obra.estilo_ids.includes(e.id));
+
+    return {
+      obra: {
+        ...obra,
+        estilo: estilo ? estilo.nombreEstilo : "",
+        artistaId: obra.artista_id,
+        nombre_artistico: artista ? artista.nombre_artistico : "Artista"
+      },
+      variante: variante,
+      // La foto no es una direccion web: viene en base64 desde la base.
+      imagen: imagen ? "data:image/jpeg;base64," + imagen.contenido_imagen : null
+    };
+  };
+
+  let items = obras.map(armarItem);
+
+  // El orden se resuelve acá porque la API todavia no expone sort.
   if (orden === "menor-precio") {
-    obrasFiltradas = [...obrasFiltradas].sort((a, b) => a.variante.precio_variante - b.variante.precio_variante);
+    items = [...items].sort((a, b) => (a.variante?.precio_variante ?? 0) - (b.variante?.precio_variante ?? 0));
   } else if (orden === "mayor-precio") {
-    obrasFiltradas = [...obrasFiltradas].sort((a, b) => b.variante.precio_variante - a.variante.precio_variante);
+    items = [...items].sort((a, b) => (b.variante?.precio_variante ?? 0) - (a.variante?.precio_variante ?? 0));
   }
 
-  const aplicarFiltroPrecio = () => setRangoAplicado({ min: precioMin, max: precioMax });
+  const cantidadArtistas = new Set(obras.map((o) => o.artista_id)).size;
+  const destacada = items[0];
 
   const irALaGrilla = () => {
     document.getElementById("grilla-catalogo")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>;
+  if (error) return <div className="seccion"><div className="contenido"><Estado tipo="error" mensaje={error} /></div></div>;
+
   return (
     <div>
       {/* Hero editorial */}
       <section className="hero">
-        <div className="hero-texto contenido" style={{ paddingRight: "var(--xl)" }}>
+        <div className="hero-texto ">
           <div className="hero-regla" />
           <p className="catalog-number muted">
             OBRA ORIGINAL · {cantidadArtistas} ARTISTAS · ENVÍOS A TODO EL PAÍS
@@ -91,30 +143,38 @@ export default function Catalogo() {
           </div>
         </div>
 
-        <div className="hero-obra">
-          <img
-            src="https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&q=80"
-            alt="Ciudad Reflejada"
-          />
-          <div className="hero-pie">
-            <span className="cartela-artist">Nº 006 · Ciudad Reflejada · Lucía Varela</span>
-            <span className="price-md">$ 98.000</span>
+        {/* La obra del hero es la primera del catalogo, no una foto fija. */}
+        {destacada && (
+          <div className="hero-obra">
+            {destacada.imagen && <img src={destacada.imagen} alt={destacada.obra.nombre_obra} />}
+            <div className="hero-pie">
+              <span className="cartela-artist">
+                Nº {String(destacada.obra.id).padStart(3, "0")} · {destacada.obra.nombre_obra} · {destacada.obra.nombre_artistico}
+              </span>
+            </div>
           </div>
-        </div>
+        )}
       </section>
 
       <div className="contenido">
         <section className="seccion-sm" id="grilla-catalogo">
 
-          {/* Filtro de estilo */}
+          {/* Filtro de estilo: los estilos salen de la API, no de una lista fija */}
           <div className="fila" style={{ flexWrap: "wrap", gap: "var(--sm)", marginBottom: "var(--lg)" }}>
-            {ESTILOS.map((estilo) => (
+            <button
+              className={"chip " + (estiloSeleccionado === null ? "activo" : "")}
+              onClick={() => filtrarPorEstilo(null)}
+            >
+              Todos
+            </button>
+
+            {estilos.map((estilo) => (
               <button
-                key={estilo}
-                className={`chip ${estiloSeleccionado === estilo ? "activo" : ""}`}
-                onClick={() => setEstiloSeleccionado(estilo)}
+                key={estilo.id}
+                className={"chip " + (estiloSeleccionado === estilo.id ? "activo" : "")}
+                onClick={() => filtrarPorEstilo(estilo.id)}
               >
-                {estilo}
+                {estilo.nombreEstilo}
               </button>
             ))}
           </div>
@@ -147,7 +207,7 @@ export default function Catalogo() {
           {/* Contador + orden */}
           <div className="entre" style={{ marginBottom: "var(--lg)" }}>
             <span className="catalog-number muted">
-              Todas las obras — {obrasFiltradas.length} resultados
+              Todas las obras — {items.length} resultados
             </span>
             <select className="select" style={{ width: 200 }} value={orden} onChange={(e) => setOrden(e.target.value)}>
               <option value="recientes">Más recientes</option>
@@ -156,16 +216,21 @@ export default function Catalogo() {
             </select>
           </div>
 
-          <div className="grilla-obras">
-            {obrasFiltradas.map((item) => (
-              <TarjetaObra
-                key={item.obra.id}
-                obra={item.obra}
-                variante={item.variante}
-                imagen={item.imagen}
-              />
-            ))}
-          </div>
+          {/* Renderizado condicional: si el filtro no deja nada, se avisa */}
+          {items.length === 0 ? (
+            <Estado tipo="vacio" mensaje="No hay obras con esos filtros." />
+          ) : (
+            <div className="grilla-obras">
+              {items.map((item) => (
+                <TarjetaObra
+                  key={item.obra.id}
+                  obra={item.obra}
+                  variante={item.variante}
+                  imagen={item.imagen}
+                />
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
