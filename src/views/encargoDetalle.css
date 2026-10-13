@@ -1,0 +1,35 @@
+.detalle-volver { display: inline-block; color: var(--bordo); margin-bottom: var(--lg); text-underline-offset: 3px; }
+.detalle-cabecera { align-items: flex-start; }
+.detalle-cabecera > div { min-width: 0; }
+.detalle-cabecera .sello { flex-shrink: 0; margin-top: var(--md); white-space: nowrap; }
+.detalle-aviso { margin-top: var(--md); }
+.detalle-texto { margin-top: var(--xs); }
+.detalle-ficha { padding: var(--lg); }
+.detalle-contenido { white-space: pre-wrap; overflow-wrap: anywhere; }
+.detalle-chips { margin-top: var(--md); flex-wrap: wrap; }
+.detalle-chips .chip { cursor: default; }
+.detalle-estado { flex-wrap: wrap; }
+.detalle-controles { flex-wrap: wrap; }
+.detalle-controles .select { width: auto; max-width: 100%; }
+.detalle-mensajes { margin-top: var(--xl); }
+.detalle-intro { margin: var(--sm) 0 var(--md); }
+.detalle-hilo { list-style: none; margin: 0; padding: 0; }
+.detalle-hilo .mensaje { margin-bottom: 0; min-width: 0; }
+.detalle-editor { align-items: flex-end; }
+.detalle-editor .campo { flex: 1; min-width: 0; margin-bottom: 0; }
+.detalle-enviar { margin-top: var(--md); }
+.detalle-enviar .boton { flex-shrink: 0; }
+.detalle-confirmacion { min-height: 18px; margin-top: var(--sm); color: var(--bordo); }
+.detalle-demo { margin-top: var(--lg); }
+.encargo-detalle :focus-visible { outline: 2px solid var(--bordo); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .detalle-cabecera { flex-wrap: wrap; }
+  .detalle-cabecera .sello { margin-top: 0; }
+  .detalle-ficha { padding: var(--md); }
+  .detalle-controles { width: 100%; }
+  .detalle-controles .select { flex: 1; min-width: 0; }
+  .detalle-hilo .mensaje { max-width: 90%; }
+  .detalle-editor { flex-wrap: wrap; }
+  .detalle-editor .campo { flex-basis: 100%; }
+  .detalle-editor .boton { width: 100%; }
+}

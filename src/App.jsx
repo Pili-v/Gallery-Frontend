@@ -38,6 +38,9 @@ const App = () => {
 
           {/* Se puede mirar sin estar logueado */}
           <Route path="/" element={<Catalogo />} />
+          {import.meta.env.DEV && <Route path="/demo/encargos" element={<Encargos />} />}
+          {import.meta.env.DEV && <Route path="/demo/encargos/nuevo" element={<EncargoNuevo />} />}
+          {import.meta.env.DEV && <Route path="/demo/encargos/:id" element={<EncargoDetalle />} />}
           <Route path="/obra/:id" element={<DetalleObra />} />
           <Route path="/artista/:id" element={<PerfilArtista />} />
           <Route path="/login" element={<Login />} />

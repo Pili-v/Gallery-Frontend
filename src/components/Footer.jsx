@@ -7,7 +7,7 @@ const Footer = () => {
             <div className="footer-links nav-link">
                 <Link to="/" style={{ color: "var(--ink-muted)", textDecoration: "none" }}>Catálogo</Link>
                 <Link to="/artistas" style={{ color: "var(--ink-muted)", textDecoration: "none" }}>Artistas</Link>
-                <Link to="/encargos" style={{ color: "var(--ink-muted)", textDecoration: "none" }}>Encargos</Link>
+                <Link to={import.meta.env.DEV ? "/demo/encargos" : "/encargos"} style={{ color: "var(--ink-muted)", textDecoration: "none" }}>{import.meta.env.DEV ? "Encargos (prueba)" : "Encargos"}</Link>
             </div>
             <span className="catalog-number muted">2026</span>
         </footer>

@@ -1,0 +1,33 @@
+.encargos-cabecera { margin-bottom: var(--lg); flex-wrap: wrap; }
+.encargos-pestanias { margin-bottom: var(--lg); }
+.encargos-pestanias .pestania {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+}
+.encargos-pestanias .pestania.activa { border-bottom-color: var(--bordo); }
+.encargos-tabla { overflow-x: auto; }
+.encargos-tabla .tabla { min-width: 680px; }
+.encargos-tabla .sello { white-space: nowrap; }
+.encargos-tabla .boton-primario { color: #fff; white-space: nowrap; }
+.encargos-tabla a { color: var(--bordo); text-underline-offset: 3px; }
+.encargos-nota { margin-top: var(--md); }
+.encargos-pagina :focus-visible { outline: 2px solid var(--bordo); outline-offset: 3px; }
+.encargos-tabla:focus-visible { outline-offset: -2px; }
+.encargos-solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 600px) {
+  .encargos-cabecera { align-items: flex-start; }
+  .encargos-cabecera > .boton { width: 100%; }
+  .encargos-pestanias .pestania { flex: 1; padding-inline: var(--sm); }
+}

@@ -47,6 +47,12 @@ const Header = () => {
                                 {link[0]}
                             </NavLink>
                         ))}
+                        {import.meta.env.DEV && (
+                            <NavLink to="/demo/encargos"
+                                className={({ isActive }) => "nav-link" + (isActive ? " activo" : "")}>
+                                Encargos (prueba)
+                            </NavLink>
+                        )}
                         {usuario && (
                             <>
                                 <Link to="/mi-cuenta" className="avatar" style={{ textDecoration: "none" }}>
