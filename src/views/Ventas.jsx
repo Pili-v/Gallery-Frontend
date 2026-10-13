@@ -14,7 +14,8 @@ const Ventas = () => {
     const [facturas, setFacturas] = useState([])
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState(null)
-    const [abierta, setAbierta] = useState(null)
+    // Qué facturas están abiertas, por id de factura. Puede haber varias a la vez.
+    const [abiertas, setAbiertas] = useState({})
 
     // Cuántas obras tiene cada factura, por id de factura. Llegan de a una.
     const [cantidades, setCantidades] = useState({})
@@ -89,7 +90,7 @@ const Ventas = () => {
 
     // Abre o cierra una venta. Solo pide al back la primera vez.
     const alternar = (factura) => {
-        setAbierta(abierta === factura.id ? null : factura.id)
+        setAbiertas((previas) => ({ ...previas, [factura.id]: !previas[factura.id] }))
 
         const previa = detalles[factura.id]
         if (previa && !previa.error) {
@@ -118,9 +119,6 @@ const Ventas = () => {
             .catch((e) => setDetalles((previos) => ({ ...previos, [factura.id]: { error: e.message } })))
     }
 
-    if (cargando) return <Estado tipo="cargando" />
-    if (error) return <Estado tipo="error" mensaje={error} />
-
     let vendido = 0
     facturas.forEach((factura) => {
         vendido = vendido + Number(factura.precio_total_factura)
@@ -134,7 +132,16 @@ const Ventas = () => {
                     Las facturas emitidas a tu nombre.
                 </p>
 
-                {facturas.length === 0 ? (
+                {/* El título está siempre; solo lo que viene del back espera. */}
+                {cargando ? (
+                    <div style={{ marginTop: "var(--lg)" }}>
+                        <Estado tipo="cargando" />
+                    </div>
+                ) : error ? (
+                    <div style={{ marginTop: "var(--lg)" }}>
+                        <Estado tipo="error" mensaje={error} />
+                    </div>
+                ) : facturas.length === 0 ? (
                     <div style={{ marginTop: "var(--lg)" }}>
                         <Estado tipo="vacio" mensaje="Todavía no vendiste ninguna obra." />
                     </div>
@@ -166,14 +173,14 @@ const Ventas = () => {
                                 <tbody key={f.id}>
                                     <tr onClick={() => alternar(f)} style={{ cursor: "pointer" }}>
                                         <td style={{ color: "var(--bordo)" }}>
-                                            {abierta === f.id ? "▾" : "▸"} {numero(f.id)}
+                                            {abiertas[f.id] ? "▾" : "▸"} {numero(f.id)}
                                         </td>
                                         <td>{numero(f.compra_id)}</td>
                                         <td>{fecha(f.fecha_creacion_factura)}</td>
                                         <td>{cantidades[f.id] || "—"}</td>
                                         <td className="price-md">{pesos(f.precio_total_factura)}</td>
                                     </tr>
-                                    {abierta === f.id && (
+                                    {abiertas[f.id] && (
                                         <tr>
                                             <td colSpan={5} style={{ background: "var(--canvas)" }}>
                                                 <DetalleVenta entrada={detalles[f.id] || {}} lineas={lineas} />
