@@ -1,14 +1,15 @@
-// Crear cuenta — Área 1 · Cuenta
-// Esta pantalla está en docs/maquetas.html: miralá antes de escribirla.
-// Los componentes compartidos ya están hechos en src/components.
-
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import CampoFormulario from "../components/CampoFormulario"
 import Boton from "../components/Boton"
 
+import { api } from "../api/cliente"
+import { guardarSesion } from "../api/sesion"
+
 const Registro = () => {
+
+    const navigate = useNavigate()
 
     const [datos, setDatos] = useState({
         nombre_usuario: "",
@@ -20,8 +21,11 @@ const Registro = () => {
     })
 
     const [errores, setErrores] = useState({})
+    const [cargando, setCargando] = useState(false)
+    const [errorGeneral, setErrorGeneral] = useState("")
 
     const handleChange = (e) => {
+
         const { name, value } = e.target
 
         setDatos({
@@ -33,33 +37,42 @@ const Registro = () => {
             ...errores,
             [name]: null
         })
+
+        setErrorGeneral("")
     }
 
     const validar = () => {
+
         const nuevosErrores = {}
 
         if (!datos.nombre_usuario.trim()) {
-            nuevosErrores.nombre_usuario = "Ingresá un nombre de usuario."
+            nuevosErrores.nombre_usuario =
+                "Ingresá un nombre de usuario."
         }
 
         if (!datos.nombre_persona.trim()) {
-            nuevosErrores.nombre_persona = "Ingresá tu nombre."
+            nuevosErrores.nombre_persona =
+                "Ingresá tu nombre."
         }
 
         if (!datos.apellido_persona.trim()) {
-            nuevosErrores.apellido_persona = "Ingresá tu apellido."
+            nuevosErrores.apellido_persona =
+                "Ingresá tu apellido."
         }
 
         if (!datos.email_usuario.trim()) {
-            nuevosErrores.email_usuario = "Ingresá tu email."
+            nuevosErrores.email_usuario =
+                "Ingresá tu email."
         }
 
         if (!datos.telefono_usuario.trim()) {
-            nuevosErrores.telefono_usuario = "Ingresá tu teléfono."
+            nuevosErrores.telefono_usuario =
+                "Ingresá tu teléfono."
         }
 
         if (!datos.contrasenia_usuario.trim()) {
-            nuevosErrores.contrasenia_usuario = "Ingresá una contraseña."
+            nuevosErrores.contrasenia_usuario =
+                "Ingresá una contraseña."
         }
 
         setErrores(nuevosErrores)
@@ -67,16 +80,49 @@ const Registro = () => {
         return Object.keys(nuevosErrores).length === 0
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
+
         e.preventDefault()
 
         if (!validar()) {
             return
         }
 
-        // Por ahora no se conecta al backend.
-        // Solo verificamos que el formulario guarde correctamente los datos.
-        console.log("Datos del registro:", datos)
+        setCargando(true)
+        setErrorGeneral("")
+
+        try {
+
+            // 1. Registramos el usuario en el backend.
+            const respuesta = await api.post(
+                "/api/v1/auth/register",
+                datos
+            )
+
+            // 2. El registro devuelve un token.
+            const token = respuesta.access_token
+
+            localStorage.setItem("token", token)
+
+            // 3. Pedimos el usuario recién creado.
+            const perfil = await api.get("/api/usuarios/me")
+
+            // 4. Guardamos la sesión.
+            guardarSesion(token, perfil.usuario)
+
+            // 5. Registro terminado.
+            navigate("/")
+
+        } catch (e) {
+
+            setErrorGeneral(
+                e.message || "No se pudo crear la cuenta."
+            )
+
+        } finally {
+
+            setCargando(false)
+        }
     }
 
     return (
@@ -154,12 +200,21 @@ const Registro = () => {
                         error={errores.contrasenia_usuario}
                     />
 
+                    {errorGeneral && (
+                        <p
+                            className="campo-error body-sm"
+                            style={{ marginBottom: "var(--md)" }}
+                        >
+                            {errorGeneral}
+                        </p>
+                    )}
+
                     <Boton
-                        tipo="primario"
+                        tipo={cargando ? "deshabilitado" : "primario"}
                         bloque
                         type="submit"
                     >
-                        Crear cuenta
+                        {cargando ? "Creando cuenta..." : "Crear cuenta"}
                     </Boton>
 
                 </form>

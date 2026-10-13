@@ -19,7 +19,16 @@ export const getToken = () => localStorage.getItem("token")
 
 export const getUsuario = () => {
     const guardado = localStorage.getItem("usuario")
-    return guardado ? JSON.parse(guardado) : null
+
+    // Puede venir vacio, o con el texto "undefined" si alguien guardo algo que
+    // no existia. En los dos casos es como no tener sesion, no un error.
+    if (!guardado || guardado === "undefined") return null
+
+    try {
+        return JSON.parse(guardado)
+    } catch {
+        return null
+    }
 }
 
 // El perfil de artista es otra cosa que el usuario: tiene su propio id, y es el

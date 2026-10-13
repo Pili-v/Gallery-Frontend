@@ -1066,18 +1066,17 @@ ${Header("artista","/panel/obras")}
     <div class="entre" style="margin-bottom:var(--xl)">
       <div>
         <h1 class="headline-lg">Mis obras</h1>
-        <p class="body-lg muted">3 publicadas · 1 sin stock</p>
+        <p class="body-lg muted">3 publicadas · 1 con variantes sin stock</p>
       </div>
       <button class="boton boton-primario">Publicar obra</button>
     </div>
     <table class="tabla">
-      <tr><th>Obra</th><th>Estilo</th><th>Variantes</th><th>Stock</th><th>En venta</th><th></th></tr>
+      <tr><th>Obra</th><th>Estilo</th><th>Variantes</th><th>En venta</th><th></th></tr>
       ${[OBRAS[0],OBRAS[1],OBRAS[4]].map((o,i)=>`
       <tr>
         <td><div class="fila"><div class="linea-mini" style="width:40px">${FotoObra(o)}</div><span class="title-work" style="font-size:16px">${o.nombre}</span></div></td>
         <td class="muted">${o.estilo}</td>
-        <td>3</td>
-        <td>${i===1?`<span style="color:var(--error)">0</span>`:"5"}</td>
+        <td>3${i===1?` <span style="color:var(--error)">· 1 sin stock</span>`:""}</td>
         <td>${i===1?"No":"Sí"}</td>
         <td><a href="#" style="color:var(--bordo)">Editar</a></td>
       </tr>`).join("")}

@@ -1,24 +1,25 @@
-// Ingresar — Área 1 · Cuenta
-// Esta pantalla está en docs/maquetas.html: miralá antes de escribirla.
-// Los componentes compartidos ya están hechos en src/components.
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import CampoFormulario from "../components/CampoFormulario"
 import Boton from "../components/Boton"
 
+import { api } from "../api/cliente"
+import { guardarSesion } from "../api/sesion"
+
 const Login = () => {
 
-    // Estado local del formulario
+    const navigate = useNavigate()
+
     const [datos, setDatos] = useState({
         email_usuario: "",
         contrasenia_usuario: ""
     })
 
-    // Estado local para guardar errores
     const [errores, setErrores] = useState({})
+    const [cargando, setCargando] = useState(false)
+    const [errorGeneral, setErrorGeneral] = useState("")
 
-    // Se ejecuta cada vez que el usuario escribe en un input
     const handleChange = (e) => {
 
         const { name, value } = e.target
@@ -28,15 +29,14 @@ const Login = () => {
             [name]: value
         })
 
-        // Si el usuario vuelve a escribir,
-        // limpiamos el error de ese campo
         setErrores({
             ...errores,
             [name]: null
         })
+
+        setErrorGeneral("")
     }
 
-    // Validamos los campos antes de enviar el formulario
     const validar = () => {
 
         const nuevosErrores = {}
@@ -54,19 +54,51 @@ const Login = () => {
         return Object.keys(nuevosErrores).length === 0
     }
 
-    // Se ejecuta cuando el usuario presiona Ingresar
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
 
-        // Evita que el formulario recargue la página
         e.preventDefault()
 
         if (!validar()) {
             return
         }
 
-        // Por ahora solamente mostramos los datos.
-        // La conexión con el backend se agregará más adelante.
-        console.log("Datos del login:", datos)
+        setCargando(true)
+        setErrorGeneral("")
+
+        try {
+
+            // 1. Mandamos email y contraseña al backend.
+            const respuesta = await api.post(
+                "/api/v1/auth/authenticate",
+                datos
+            )
+
+            // 2. El backend devuelve el token.
+            const token = respuesta.access_token
+
+            // Lo guardamos temporalmente para que cliente.js
+            // pueda mandarlo en el siguiente GET.
+            localStorage.setItem("token", token)
+
+            // 3. Pedimos los datos reales del usuario logueado.
+            const perfil = await api.get("/api/usuarios/me")
+
+            // 4. Guardamos la sesión completa.
+            guardarSesion(token, perfil)
+
+            // 5. Login terminado.
+            navigate("/")
+
+        } catch (e) {
+
+            setErrorGeneral(
+                e.message || "No se pudo iniciar sesión."
+            )
+
+        } finally {
+
+            setCargando(false)
+        }
     }
 
     return (
@@ -108,12 +140,21 @@ const Login = () => {
                         error={errores.contrasenia_usuario}
                     />
 
+                    {errorGeneral && (
+                        <p
+                            className="campo-error body-sm"
+                            style={{ marginBottom: "var(--md)" }}
+                        >
+                            {errorGeneral}
+                        </p>
+                    )}
+
                     <Boton
-                        tipo="primario"
+                        tipo={cargando ? "deshabilitado" : "primario"}
                         bloque
                         type="submit"
                     >
-                        Ingresar
+                        {cargando ? "Ingresando..." : "Ingresar"}
                     </Boton>
 
                 </form>

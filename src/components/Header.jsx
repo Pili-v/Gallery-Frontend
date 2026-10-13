@@ -12,7 +12,7 @@ const Header = () => {
         visitante: [["Catálogo", "/"], ["Artistas", "/artistas"], ["Ingresar", "/login"]],
         CLIENTE: [["Catálogo", "/"], ["Artistas", "/artistas"], ["Encargos", "/encargos"], ["Mis compras", "/mis-compras"], ["Carrito", "/carrito"]],
         ARTISTA: [["Catálogo", "/"], ["Mis obras", "/panel/obras"], ["Mis ventas", "/panel/ventas"], ["Encargos", "/encargos"]],
-        ARTISTA_CLIENTE: [["Catálogo", "/"], ["Mis obras", "/panel/obras"], ["Encargos", "/encargos"], ["Mis compras", "/mis-compras"], ["Carrito", "/carrito"]],
+        ARTISTA_CLIENTE: [["Catálogo", "/"], ["Mis obras", "/panel/obras"], ["Mis ventas", "/panel/ventas"], ["Encargos", "/encargos"], ["Mis compras", "/mis-compras"], ["Carrito", "/carrito"]],
         ADMIN: [["Catálogo", "/"], ["Usuarios", "/admin/usuarios"], ["Catálogos", "/admin/catalogos"]]
     }
 

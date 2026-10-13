@@ -25,6 +25,20 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* La barra de desplazamiento siempre está: así el ancho no cambia al desplegar contenido.
+   Va con los colores del diseño: pista del color del fondo, borde fino y pulgar en tinta. */
+html { overflow-y: scroll; }
+
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: var(--canvas); border-left: 1px solid var(--border); }
+::-webkit-scrollbar-thumb { background: var(--border); border: 3px solid var(--canvas); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+/* Firefox no entiende lo de arriba: usa la propiedad estándar. */
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-color: var(--border) var(--canvas); }
+}
+
 body {
   background: var(--canvas);
   color: var(--ink);
@@ -55,7 +69,9 @@ body {
 }
 
 /* ---------- Layout ---------- */
-.pagina { background: var(--canvas); }
+.pagina { background: var(--canvas); min-height: 100vh; display: flex; flex-direction: column; }
+/* Si el contenido es corto, el footer queda pegado abajo; si es largo, lo empuja. */
+.pagina > .footer { margin-top: auto; }
 .contenido { max-width: 1440px; margin: 0 auto; padding: 0 var(--xxl); }
 .seccion { padding: var(--xxl) 0; }
 .seccion-sm { padding: var(--xl) 0; }
@@ -93,6 +109,14 @@ body {
   color: var(--ink-muted);
 }
 .footer-links { display: flex; gap: var(--lg); }
+
+/* ---------- Componente: Confirmacion ---------- */
+.modal {
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+  padding: var(--lg); width: calc(100% - 40px); max-width: 440px; margin: auto;
+}
+.modal::backdrop { background: rgba(28, 28, 25, .45); }
+.modal-acciones { display: flex; justify-content: flex-end; gap: var(--md); margin-top: var(--lg); }
 
 /* ---------- Componente: Boton ---------- */
 .boton {
@@ -386,3 +410,17 @@ body {
   transition: background-color 9999s ease-in-out 0s;
 }
 .tarjeta-cvv .tarjeta-input:-webkit-autofill { -webkit-text-fill-color: #14110F; }
+
+/* ---------- Todas las obras al mismo rectángulo ---------- */
+/* Las fotos vienen con proporciones distintas. aspect-ratio fija el rectángulo
+   y object-fit: cover lo llena sin deformar: recorta lo que sobra, como una
+   ventana. Sin esto cada tarjeta mide lo que mide su foto y la grilla baila. */
+.obra-imagen { aspect-ratio: 4 / 5; overflow: hidden; }
+.obra-imagen img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* La obra del hero: casi cuadrada, apenas más alta que ancha. Con
+   align-items: center la imagen manda su propio alto en vez de estirarse. */
+.hero { min-height: 0; align-items: center; }
+.hero-obra { aspect-ratio: 1 / 1; align-self: center; }
+.hero-texto { padding-left: var(--xl); padding-right: var(--xl); }
+@media (min-width: 1200px) { .hero-texto { padding-left: 64px; } }
