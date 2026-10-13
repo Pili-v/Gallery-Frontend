@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { api } from "../api/cliente"
 import { pesos, fecha } from "../api/formato"
 
 import Estado from "../components/Estado"
@@ -16,7 +16,7 @@ const MisCompras = () => {
     // El backend saca el usuario del token, por eso no hace falta mandarle el id.
     const cargarCompras = async () => {
         try {
-            const misCompras = lista(await api.get("/api/compras/me"))
+            const misCompras = await api.getLista("/api/compras/me")
             setCompras(misCompras)
         } catch (e) {
             setError(e.message)

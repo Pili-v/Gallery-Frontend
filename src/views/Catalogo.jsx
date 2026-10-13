@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { api, lista } from "../api/cliente";
+import { api } from "../api/cliente";
 import TarjetaObra from "../components/TarjetaObra";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
@@ -43,11 +43,11 @@ export default function Catalogo() {
 
   const cargarTodo = async (estiloId, min, max) => {
     try {
-      const susObras = lista(await api.get(urlDeObras(estiloId, min, max)));
-      const susVariantes = lista(await api.get("/api/variantes"));
-      const susImagenes = lista(await api.get("/api/imagenes"));
-      const susEstilos = lista(await api.get("/api/estilos"));
-      const susArtistas = lista(await api.get("/api/artistas"));
+      const susObras = await api.getLista(urlDeObras(estiloId, min, max));
+      const susVariantes = await api.getLista("/api/variantes");
+      const susImagenes = await api.getLista("/api/imagenes");
+      const susEstilos = await api.getLista("/api/estilos");
+      const susArtistas = await api.getLista("/api/artistas");
 
       setObras(susObras);
       setVariantes(susVariantes);

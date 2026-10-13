@@ -77,6 +77,18 @@ const pedir = async (ruta, opciones = {}) => {
 
 export const api = {
     get: (ruta) => pedir(ruta),
+
+    // Pide una lista y devuelve siempre un array. El backend avisa que no hay elementos con un
+    // 404 (o 204, sin cuerpo) y eso no es una falla: acá se vuelve []. Cualquier otro error
+    // sigue cortando. `vacios` son los códigos que significan "no hay nada": un carrito sin
+    // items, por ejemplo, responde 409.
+    getLista: (ruta, vacios = [404]) =>
+        pedir(ruta)
+            .then((respuesta) => lista(respuesta))
+            .catch((e) => {
+                if (vacios.includes(e.status)) return []
+                throw e
+            }),
     post: (ruta, datos) => pedir(ruta, { method: "POST", body: JSON.stringify(datos) }),
     put: (ruta, datos) => pedir(ruta, { method: "PUT", body: JSON.stringify(datos) }),
     patch: (ruta, datos) => pedir(ruta, { method: "PATCH", body: JSON.stringify(datos) }),

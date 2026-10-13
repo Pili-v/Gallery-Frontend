@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { api, lista } from "../api/cliente";
+import { api } from "../api/cliente";
 import { getUsuario } from "../api/sesion";
 import { pesos } from "../api/formato";
 import Badge from "../components/Badge";
@@ -33,10 +33,10 @@ export default function DetalleObra() {
   const cargar = async () => {
     try {
       const laObra = await api.get("/api/obras/" + id);
-      const susVariantes = lista(await api.get("/api/variantes?obraId=" + id));
-      const susImagenes = lista(await api.get("/api/imagenes?obraId=" + id));
+      const susVariantes = await api.getLista("/api/variantes?obraId=" + id);
+      const susImagenes = await api.getLista("/api/imagenes?obraId=" + id);
       const suArtista = await api.get("/api/artistas/" + laObra.artista_id);
-      const losMarcos = lista(await api.get("/api/marcos"));
+      const losMarcos = await api.getLista("/api/marcos");
 
       setObra(laObra);
       setVariantes(susVariantes);

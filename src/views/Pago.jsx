@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { api } from "../api/cliente"
 import { getUsuario } from "../api/sesion"
 import ResumenTotales from "../components/ResumenTotales"
 import Estado from "../components/Estado"
@@ -101,7 +101,7 @@ const Pago = () => {
         const cargar = async () => {
             try {
                 const miCarrito = await api.get("/api/usuarios/" + usuario.id + "/carrito")
-                setItems(lista(await api.get("/api/carritos/" + miCarrito.id + "/items")))
+                setItems(await api.getLista("/api/carritos/" + miCarrito.id + "/items", [404, 409]))
             } catch (e) {
                 setError(e.message)
             } finally {
