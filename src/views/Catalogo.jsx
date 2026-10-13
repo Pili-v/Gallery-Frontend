@@ -2,70 +2,135 @@
 // Esta pantalla está en docs/maquetas.html: miralá antes de escribirla.
 // Los componentes compartidos ya están hechos en src/components.
 
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import TarjetaObra from "../components/TarjetaObra";
-import Boton from "../components/Boton";
+import TarjetaObra from "../componentes/TarjetaObra";
+import Paginador from "../componentes/Paginador";
+import Boton from "../componentes/Boton";
+import { armarTarjetas, listarArtistas, listarEstilos, listarObras } from "../api/obras";
+import { pesos } from "../api/formato";
 
-// Datos de prueba
-const OBRAS_DE_PRUEBA = [
-  {
-    obra: { id: 1, nombre_obra: "Mirada de Verano", estilo: "Naturaleza", artistaId: 101, nombre_artistico: "Lucía Varela" },
-    variante: { precio_variante: 280000, porcentaje_descuento: 10, nombre_tamanio: "140 x 105 cm", stock_variante: 5 },
-    imagen: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=500&q=80"
-  },
-  {
-    obra: { id: 2, nombre_obra: "Rosa Partida", estilo: "Geométrico", artistaId: 102, nombre_artistico: "Mateo Rossi" },
-    variante: { precio_variante: 132000, porcentaje_descuento: 0, nombre_tamanio: "90 x 70 cm", stock_variante: 2 },
-    imagen: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=500&q=80"
-  },
-  {
-    obra: { id: 3, nombre_obra: "Luz del Alba", estilo: "Figurativo", artistaId: 103, nombre_artistico: "Elena Gómez" },
-    variante: { precio_variante: 340000, porcentaje_descuento: 0, nombre_tamanio: "120 x 120 cm", stock_variante: 1 },
-    imagen: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&q=80"
-  },
-  {
-    obra: { id: 4, nombre_obra: "Retrato en Fragmentos", estilo: "Retrato", artistaId: 103, nombre_artistico: "Elena Gómez" },
-    variante: { precio_variante: 145000, porcentaje_descuento: 15, nombre_tamanio: "70 x 50 cm", stock_variante: 0 },
-    imagen: "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=500&q=80"
-  },
-  {
-    obra: { id: 5, nombre_obra: "Zaino", estilo: "Retrato", artistaId: 104, nombre_artistico: "Carlos D'Amico" },
-    variante: { precio_variante: 210000, porcentaje_descuento: 0, nombre_tamanio: "40 x 50 cm", stock_variante: 4 },
-    imagen: "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?w=500&q=80"
-  }
-];
-
-const ESTILOS = ["Todos", "Naturaleza", "Geométrico", "Figurativo", "Retrato"];
+const SIN_RANGO = { min: "", max: "" };
 
 export default function Catalogo() {
-  const [estiloSeleccionado, setEstiloSeleccionado] = useState("Todos");
+  // Filtros y paginación: viajan al backend en cada pedido.
+  const [estilos, setEstilos] = useState([]);
+  const [estiloId, setEstiloId] = useState(null);
   const [precioMin, setPrecioMin] = useState("");
   const [precioMax, setPrecioMax] = useState("");
-  const [rangoAplicado, setRangoAplicado] = useState({ min: "", max: "" });
-  const [orden, setOrden] = useState("recientes");
+  const [rango, setRango] = useState(SIN_RANGO);
+  const [errorPrecio, setErrorPrecio] = useState("");
+  const [pagina, setPagina] = useState(0);
+  const [tamanio, setTamanio] = useState(9);
 
-  const cantidadArtistas = new Set(OBRAS_DE_PRUEBA.map((i) => i.obra.artistaId)).size;
+  // Resultado del último pedido.
+  const [tarjetas, setTarjetas] = useState([]);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [totalObras, setTotalObras] = useState(0);
+  const [cargando, setCargando] = useState(true);
+  const [mensaje, setMensaje] = useState("");
 
-  let obrasFiltradas = OBRAS_DE_PRUEBA.filter((item) => {
-    if (estiloSeleccionado !== "Todos" && item.obra.estilo !== estiloSeleccionado) return false;
-    if (rangoAplicado.min !== "" && item.variante.precio_variante < Number(rangoAplicado.min)) return false;
-    if (rangoAplicado.max !== "" && item.variante.precio_variante > Number(rangoAplicado.max)) return false;
-    return true;
-  });
+  // Datos sueltos del hero.
+  const [destacada, setDestacada] = useState(null);
+  const [totalArtistas, setTotalArtistas] = useState(null);
 
-  if (orden === "menor-precio") {
-    obrasFiltradas = [...obrasFiltradas].sort((a, b) => a.variante.precio_variante - b.variante.precio_variante);
-  } else if (orden === "mayor-precio") {
-    obrasFiltradas = [...obrasFiltradas].sort((a, b) => b.variante.precio_variante - a.variante.precio_variante);
-  }
+  // Una sola vez: chips de estilo, cantidad de artistas y obra destacada.
+  useEffect(() => {
+    let activo = true;
 
-  const aplicarFiltroPrecio = () => setRangoAplicado({ min: precioMin, max: precioMax });
+    listarEstilos().then((e) => activo && setEstilos(e)).catch(() => {});
+    listarArtistas({ page: 0, size: 1 })
+      .then((p) => activo && setTotalArtistas(p.totalElements))
+      .catch(() => {});
+    listarObras({ page: 0, size: 1 })
+      .then((p) => armarTarjetas(p.content))
+      .then((t) => activo && setDestacada(t[0] ?? null))
+      .catch(() => {});
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  // Cada vez que cambia un filtro, la página o el tamaño se vuelve a pedir al backend.
+  useEffect(() => {
+    let activo = true;
+    setCargando(true);
+    setMensaje("");
+
+    (async () => {
+      try {
+        const pag = await listarObras({
+          page: pagina,
+          size: tamanio,
+          estiloId: estiloId ?? undefined,
+          precioMin: rango.min,
+          precioMax: rango.max,
+        });
+        const t = await armarTarjetas(pag.content);
+        if (!activo) return;
+        setTarjetas(t);
+        setTotalPaginas(pag.totalPages);
+        setTotalObras(pag.totalElements);
+      } catch (e) {
+        if (!activo) return;
+        setTarjetas([]);
+        setTotalPaginas(0);
+        setTotalObras(0);
+        // 404 = sin resultados, 400 = filtro inválido, 0 = sin conexión: el backend ya trae el texto.
+        setMensaje(
+          [0, 400, 404].includes(e.status)
+            ? e.message
+            : "No pudimos cargar las obras. Probá de nuevo en un rato."
+        );
+      } finally {
+        if (activo) setCargando(false);
+      }
+    })();
+
+    return () => {
+      activo = false;
+    };
+  }, [pagina, tamanio, estiloId, rango]);
 
   const irALaGrilla = () => {
     document.getElementById("grilla-catalogo")?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const elegirEstilo = (id) => {
+    setEstiloId(id);
+    setPagina(0);
+  };
+
+  const aplicarPrecio = () => {
+    if (precioMin !== "" && precioMax !== "" && Number(precioMin) > Number(precioMax)) {
+      setErrorPrecio("El mínimo no puede superar al máximo.");
+      return;
+    }
+    setErrorPrecio("");
+    setRango({ min: precioMin, max: precioMax });
+    setPagina(0);
+  };
+
+  const limpiarPrecio = () => {
+    setPrecioMin("");
+    setPrecioMax("");
+    setErrorPrecio("");
+    setRango(SIN_RANGO);
+    setPagina(0);
+  };
+
+  const cambiarPagina = (nueva) => {
+    setPagina(nueva);
+    irALaGrilla();
+  };
+
+  const cambiarTamanio = (nuevo) => {
+    setTamanio(nuevo);
+    setPagina(0);
+  };
+
+  const hayRango = rango.min !== "" || rango.max !== "";
 
   return (
     <div>
@@ -74,17 +139,20 @@ export default function Catalogo() {
         <div className="hero-texto contenido" style={{ paddingRight: "var(--xl)" }}>
           <div className="hero-regla" />
           <p className="catalog-number muted">
-            OBRA ORIGINAL · {cantidadArtistas} ARTISTAS · ENVÍOS A TODO EL PAÍS
+            OBRA ORIGINAL · {totalArtistas != null ? `${totalArtistas} ARTISTAS · ` : ""}ENVÍOS A
+            TODO EL PAÍS
           </p>
           <h1 className="display-hero" style={{ marginTop: "var(--sm)" }}>
             Obra original, de quien la pintó
           </h1>
           <p className="body-lg muted" style={{ marginTop: "var(--md)", maxWidth: 460 }}>
-            Cada pieza se vende en el tamaño y el marco que elijas. El precio se
-            arma con esas dos decisiones, y el dinero va directo al artista.
+            Cada pieza se vende en el tamaño y el marco que elijas. El precio se arma con esas dos
+            decisiones, y el dinero va directo al artista.
           </p>
           <div className="fila" style={{ marginTop: "var(--lg)" }}>
-            <Boton tipo="primario" onClick={irALaGrilla}>Ver todas las obras</Boton>
+            <Boton tipo="primario" onClick={irALaGrilla}>
+              Ver todas las obras
+            </Boton>
             <Link to="/encargos/nuevo">
               <Boton tipo="secundario">Pedir un encargo</Boton>
             </Link>
@@ -92,80 +160,117 @@ export default function Catalogo() {
         </div>
 
         <div className="hero-obra">
-          <img
-            src="https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=800&q=80"
-            alt="Ciudad Reflejada"
-          />
-          <div className="hero-pie">
-            <span className="cartela-artist">Nº 006 · Ciudad Reflejada · Lucía Varela</span>
-            <span className="price-md">$ 98.000</span>
-          </div>
+          {destacada?.imagen && <img src={destacada.imagen} alt={destacada.obra.nombre_obra} />}
+          {destacada && (
+            <div className="hero-pie">
+              <Link
+                to={`/obra/${destacada.obra.id}`}
+                className="cartela-artist"
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                Nº {String(destacada.obra.id).padStart(3, "0")} · {destacada.obra.nombre_obra} ·{" "}
+                {destacada.obra.nombre_artistico}
+              </Link>
+              {destacada.variante && (
+                <span className="price-md">{pesos(destacada.variante.precio_vigente)}</span>
+              )}
+            </div>
+          )}
         </div>
       </section>
 
       <div className="contenido">
         <section className="seccion-sm" id="grilla-catalogo">
-
-          {/* Filtro de estilo */}
+          {/* Filtro de estilo: los chips salen de la base, no están escritos a mano */}
           <div className="fila" style={{ flexWrap: "wrap", gap: "var(--sm)", marginBottom: "var(--lg)" }}>
-            {ESTILOS.map((estilo) => (
+            <button
+              className={`chip ${estiloId === null ? "activo" : ""}`}
+              onClick={() => elegirEstilo(null)}
+            >
+              Todos
+            </button>
+            {estilos.map((estilo) => (
               <button
-                key={estilo}
-                className={`chip ${estiloSeleccionado === estilo ? "activo" : ""}`}
-                onClick={() => setEstiloSeleccionado(estilo)}
+                key={estilo.id}
+                className={`chip ${estiloId === estilo.id ? "activo" : ""}`}
+                onClick={() => elegirEstilo(estilo.id)}
               >
-                {estilo}
+                {estilo.nombreEstilo}
               </button>
             ))}
           </div>
 
           {/* Filtro de precio */}
-          <div className="fila" style={{ marginBottom: "var(--lg)" }}>
+          <div className="fila" style={{ marginBottom: "var(--sm)", flexWrap: "wrap" }}>
             <span className="cartela-meta">PRECIO</span>
             <input
-              className="input"
+              className={`input ${errorPrecio ? "con-error" : ""}`}
               style={{ width: 120 }}
               type="number"
+              min="0"
               placeholder="Mínimo"
               value={precioMin}
               onChange={(e) => setPrecioMin(e.target.value)}
             />
             <span className="muted">—</span>
             <input
-              className="input"
+              className={`input ${errorPrecio ? "con-error" : ""}`}
               style={{ width: 120 }}
               type="number"
+              min="0"
               placeholder="Máximo"
               value={precioMax}
               onChange={(e) => setPrecioMax(e.target.value)}
             />
-            <Boton tipo="secundario" onClick={aplicarFiltroPrecio}>Aplicar</Boton>
+            <Boton tipo="secundario" onClick={aplicarPrecio}>
+              Aplicar
+            </Boton>
+            {hayRango && (
+              <Boton tipo="secundario" onClick={limpiarPrecio}>
+                Limpiar
+              </Boton>
+            )}
           </div>
+          {errorPrecio && <p className="campo-error body-sm">{errorPrecio}</p>}
 
           <hr className="divisor" />
 
-          {/* Contador + orden */}
-          <div className="entre" style={{ marginBottom: "var(--lg)" }}>
-            <span className="catalog-number muted">
-              Todas las obras — {obrasFiltradas.length} resultados
-            </span>
-            <select className="select" style={{ width: 200 }} value={orden} onChange={(e) => setOrden(e.target.value)}>
-              <option value="recientes">Más recientes</option>
-              <option value="menor-precio">Menor precio</option>
-              <option value="mayor-precio">Mayor precio</option>
-            </select>
-          </div>
+          <p className="catalog-number muted" style={{ marginBottom: "var(--lg)" }}>
+            Todas las obras — {totalObras} resultados
+          </p>
 
-          <div className="grilla-obras">
-            {obrasFiltradas.map((item) => (
-              <TarjetaObra
-                key={item.obra.id}
-                obra={item.obra}
-                variante={item.variante}
-                imagen={item.imagen}
-              />
-            ))}
-          </div>
+          {cargando && (
+            <div className="estado">
+              <p className="muted">Cargando obras…</p>
+            </div>
+          )}
+
+          {!cargando && mensaje && (
+            <div className="estado">
+              <p className="body-lg">{mensaje}</p>
+            </div>
+          )}
+
+          {!cargando && !mensaje && (
+            <div className="grilla-obras">
+              {tarjetas.map((item) => (
+                <TarjetaObra
+                  key={item.obra.id}
+                  obra={item.obra}
+                  variante={item.variante}
+                  imagen={item.imagen}
+                />
+              ))}
+            </div>
+          )}
+
+          <Paginador
+            pagina={pagina}
+            totalPaginas={totalPaginas}
+            tamanio={tamanio}
+            onPagina={cambiarPagina}
+            onTamanio={cambiarTamanio}
+          />
         </section>
       </div>
 
