@@ -13,7 +13,7 @@ const LineaItem = ({ item, imagen, editable = false, onCambiarCantidad, onQuitar
                     {item.nombre_obra}
                 </div>
                 <div className="cartela-meta">
-                    {item.nombre_tamanio}{item.nombre_marco && " · Marco " + item.nombre_marco}
+                    {item.nombre_tamanio}{item.nombre_marco && " · Marco: " + item.nombre_marco}
                 </div>
                 {editable && (
                     <a href="#" className="body-sm" style={{ color: "var(--bordo)" }}
