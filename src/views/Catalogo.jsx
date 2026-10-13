@@ -4,9 +4,9 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import TarjetaObra from "../componentes/TarjetaObra";
-import Paginador from "../componentes/Paginador";
-import Boton from "../componentes/Boton";
+import TarjetaObra from "../components/TarjetaObra";
+import Paginador from "../components/Paginador";
+import Boton from "../components/Boton";
 import { armarTarjetas, listarArtistas, listarEstilos, listarObras } from "../api/obras";
 import { pesos } from "../api/formato";
 
