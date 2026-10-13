@@ -110,6 +110,14 @@ body {
 }
 .footer-links { display: flex; gap: var(--lg); }
 
+/* ---------- Componente: Confirmacion ---------- */
+.modal {
+  border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+  padding: var(--lg); width: calc(100% - 40px); max-width: 440px; margin: auto;
+}
+.modal::backdrop { background: rgba(28, 28, 25, .45); }
+.modal-acciones { display: flex; justify-content: flex-end; gap: var(--md); margin-top: var(--lg); }
+
 /* ---------- Componente: Boton ---------- */
 .boton {
   display: inline-block; padding: 12px 24px; border: 1px solid transparent;
