@@ -108,7 +108,7 @@ const Registro = () => {
             const perfil = await api.get("/api/usuarios/me")
 
             // 4. Guardamos la sesión.
-            guardarSesion(token, perfil)
+            guardarSesion(token, perfil.usuario)
 
             // 5. Registro terminado.
             navigate("/")
