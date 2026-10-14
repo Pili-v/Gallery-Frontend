@@ -9,8 +9,15 @@ test('el mensaje prepara solo los campos y tipos que recibe MensajeRequest', () 
 });
 
 test('el cambio de estado mantiene el nombre nuevoEstado y los enums exactos', () => {
-  assert.deepEqual(prepararCambioEstado('PENDIENTE', 'EN_PROCESO'), { nuevoEstado: 'EN_PROCESO' });
+  assert.deepEqual(prepararCambioEstado('APROBADO', 'EN_PROCESO'), { nuevoEstado: 'EN_PROCESO' });
   assert.deepEqual(prepararCambioEstado('EN_PROCESO', 'TERMINADO'), { nuevoEstado: 'TERMINADO' });
   assert.throws(() => prepararCambioEstado('PENDIENTE', 'En proceso'));
-  assert.throws(() => prepararCambioEstado('EN_PROCESO', 'PENDIENTE'));
+  assert.throws(() => prepararCambioEstado('TERMINADO', 'PENDIENTE'));
+});
+
+test('los estados respetan la aprobación previa requerida por el backend', () => {
+  assert.throws(() => prepararCambioEstado('PENDIENTE', 'EN_PROCESO'));
+  assert.deepEqual(prepararCambioEstado('APROBADO', 'EN_PROCESO'), { nuevoEstado: 'EN_PROCESO' });
+  assert.deepEqual(prepararCambioEstado('EN_PROCESO', 'PENDIENTE'), { nuevoEstado: 'PENDIENTE' });
+  assert.throws(() => prepararCambioEstado('PAGADO', 'EN_PROCESO'));
 });

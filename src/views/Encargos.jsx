@@ -2,64 +2,54 @@ import { api, lista } from '../api/cliente';
 import { getUsuario, getPerfilArtista } from '../api/sesion';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { artistasDemo, clientesDemo, clienteDemo, artistaDemo, leerEncargosDemo } from '../api/encargosDemo';
 import { pinturas, lienzos } from '../api/encargoContrato.mjs';
 import Estado from '../components/Estado';
 import EstadoEncargo from '../components/EstadoEncargo';
 import Boton from '../components/Boton';
 import './encargos.css';
 
-function cargarLista() {
-  try { return { items: leerEncargosDemo(), error: '' }; }
-  catch { return { items: [], error: 'No se pudieron leer los encargos guardados en esta pestaña.' }; }
-}
-
 export default function Encargos() {
   const [parametros, setParametros] = useSearchParams();
   const navigate = useNavigate();
   const usuario = getUsuario();
   const perfilArtista = getPerfilArtista();
-  const { pathname, state } = useLocation();
-  const base = pathname.startsWith('/demo/') ? '/demo/encargos' : '/encargos';
-  const esDemo = base === '/demo/encargos';
-  const puedePedir = esDemo || ['CLIENTE', 'ARTISTA_CLIENTE', 'ADMIN'].includes(usuario?.rol_usuario);
-  const puedeRecibir = esDemo || Boolean(perfilArtista);
+  const { state } = useLocation();
+  const base = '/encargos';
+  const puedePedir = ['CLIENTE', 'ARTISTA_CLIENTE', 'ADMIN'].includes(usuario?.rol_usuario);
+  const puedeRecibir = Boolean(perfilArtista);
   const verRecibidos = puedeRecibir && (parametros.has('recibidos') || !puedePedir);
   return <ListaEncargos key={`${base}-${verRecibidos}-${usuario?.id}-${perfilArtista?.id}`}
-    {...{ esDemo, base, state, navigate, parametros, setParametros, puedePedir, puedeRecibir, verRecibidos }}
-    usuarioId={usuario?.id} artistaId={perfilArtista?.id} />;
+    {...{ base, state, navigate, parametros, setParametros, puedePedir, puedeRecibir, verRecibidos }}
+  />;
 }
 
-function ListaEncargos({ esDemo, base, state, navigate, parametros, setParametros,
-  puedePedir, puedeRecibir, verRecibidos, usuarioId, artistaId }) {
-  const [locales, setLocales] = useState(() => esDemo ? cargarLista() : { items: [], error: '' });
-  const [cargando, setCargando] = useState(!esDemo);
+function ListaEncargos({ base, state, navigate, parametros, setParametros,
+  puedePedir, puedeRecibir, verRecibidos }) {
+  const [datos, setDatos] = useState({ items: [], error: '' });
+  const [cargando, setCargando] = useState(true);
   const [intento, setIntento] = useState(0);
   const [artistas, setArtistas] = useState([]);
 
   useEffect(() => {
-    if (esDemo) return;
     let activo = true;
-    const ruta = verRecibidos ? `/api/encargos/artista/${artistaId}` : `/api/encargos/usuario/${usuarioId}`;
+    // El backend obtiene el usuario o el artista desde el token de la sesión.
+    const ruta = verRecibidos ? '/api/artistas/me/encargos' : '/api/usuarios/me/encargos';
     api.get(ruta)
-      .then(respuesta => { if (activo && respuesta) setLocales({ items: lista(respuesta), error: '' }); })
-      .catch(error => { if (activo) setLocales({ items: [], error: error.message }); })
+      .then(respuesta => { if (activo && respuesta) setDatos({ items: lista(respuesta), error: '' }); })
+      .catch(error => { if (activo) setDatos({ items: [], error: error.message }); })
       .finally(() => { if (activo) setCargando(false); });
     // Los clientes son privados: no pedimos el listado de usuarios para mostrar nombres.
     if (!verRecibidos) api.get('/api/artistas')
       .then(respuesta => { if (activo) setArtistas(lista(respuesta)); })
       .catch(() => { /* Si falla el nombre, el ID sigue identificando al artista. */ });
     return () => { activo = false; };
-  }, [esDemo, verRecibidos, usuarioId, artistaId, intento]);
+  }, [verRecibidos, intento]);
 
   function reintentar() {
-    if (esDemo) { setLocales(cargarLista()); return; }
     setCargando(true);
     setIntento(intento + 1);
   }
-  const encargos = esDemo ? locales.items.filter(item => verRecibidos
-    ? item.artista_id === artistaDemo.artista_id
-    : item.usuario_id === clienteDemo.usuario_id) : locales.items;
+  const encargos = datos.items;
 
   function cambiarVista(recibir) {
     const siguientes = new URLSearchParams(parametros);
@@ -78,16 +68,16 @@ function ListaEncargos({ esDemo, base, state, navigate, parametros, setParametro
           </div>
           {puedePedir && !verRecibidos && <Boton onClick={() => navigate(`${base}/nuevo`)}>Pedir un encargo</Boton>}
         </div>
-        {state?.encargoCreado && <p className="aviso encargos-nota" role="status">El encargo Nº {state.encargoCreado} {esDemo ? 'se guardó como prueba en esta pestaña.' : 'se envió al artista.'}</p>}
+        {state?.encargoCreado && <p className="aviso encargos-nota" role="status">El encargo Nº {state.encargoCreado} se envió al artista.</p>}
         <nav className="pestanias encargos-pestanias" aria-label="Vista de encargos">
           <button disabled={!puedePedir} type="button" className={`pestania${verRecibidos ? '' : ' activa'}`}
             aria-pressed={!verRecibidos} onClick={() => cambiarVista(false)}>Los que pedí</button>
           <button disabled={!puedeRecibir} type="button" className={`pestania${verRecibidos ? ' activa' : ''}`}
             aria-pressed={verRecibidos} onClick={() => cambiarVista(true)}>Los que me pidieron</button>
         </nav>
-        {cargando ? <Estado tipo="cargando" /> : locales.error ? (
+        {cargando ? <Estado tipo="cargando" /> : datos.error ? (
           <div className="apilado">
-            <Estado tipo="error" mensaje={locales.error} />
+            <Estado tipo="error" mensaje={datos.error} />
             <Boton tipo="secundario" onClick={reintentar}>Reintentar</Boton>
           </div>
         ) : encargos.length === 0 ? (
@@ -103,11 +93,7 @@ function ListaEncargos({ esDemo, base, state, navigate, parametros, setParametro
               </tr></thead>
               <tbody>
                 {encargos.map(encargo => {
-                  const persona = !esDemo
-                    ? (verRecibidos ? `Cliente Nº ${encargo.usuario_id}` : artistas.find(item => item.id === encargo.artista_id)?.nombre_artistico ?? `Artista Nº ${encargo.artista_id}`)
-                    : verRecibidos
-                    ? clientesDemo.find(item => item.id === encargo.usuario_id)?.nombre
-                    : artistasDemo.find(item => item.id === encargo.artista_id)?.nombre;
+                  const persona = verRecibidos ? `Cliente Nº ${encargo.usuario_id}` : artistas.find(item => item.id === encargo.artista_id)?.nombre_artistico ?? `Artista Nº ${encargo.artista_id}`;
                   const accion = verRecibidos && ['PENDIENTE', 'EN_PROCESO'].includes(encargo.estado_encargo) ? 'Responder' : 'Ver';
                   return (
                     <tr key={encargo.id}>
@@ -128,9 +114,7 @@ function ListaEncargos({ esDemo, base, state, navigate, parametros, setParametro
             </table>
           </div>
         )}
-        {esDemo && <p className="body-sm muted encargos-nota">
-          Datos de ejemplo. Vista de {verRecibidos ? 'Ana Gorriti, artista' : 'Lucía Varela, cliente'}.
-        </p>}
+
       </div>
     </main>
   );

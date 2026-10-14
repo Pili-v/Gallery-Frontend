@@ -67,16 +67,17 @@ test('solo el artista dueño puede cambiar el estado y se conserva al releer la 
   assert.equal(demo.obtenerEncargoDemo(9, storage).estado_encargo, 'PENDIENTE');
 });
 
-test('no permite saltos de estado, retrocesos ni reabrir estados finales', () => {
+test('respeta la aprobación previa y no reabre estados finales', () => {
   const storage = memoria();
   assert.throws(() => demo.cambiarEstadoDemo(9, 'TERMINADO', artista, storage), /estado/i);
-  assert.throws(() => demo.cambiarEstadoDemo(12, 'PENDIENTE', artista, storage), /estado/i);
+  demo.cambiarEstadoDemo(12, 'PENDIENTE', artista, storage);
+  assert.equal(demo.obtenerEncargoDemo(12, storage).estado_encargo, 'PENDIENTE');
   for (const id of [4, 2]) {
     for (const estado of ['PENDIENTE', 'EN_PROCESO', 'TERMINADO', 'CANCELADO']) {
       assert.throws(() => demo.cambiarEstadoDemo(id, estado, artista, storage), /estado/i);
     }
   }
-  demo.cambiarEstadoDemo(9, 'EN_PROCESO', artista, storage);
+  assert.throws(() => demo.cambiarEstadoDemo(9, 'EN_PROCESO', artista, storage), /estado/i);
   demo.cambiarEstadoDemo(9, 'CANCELADO', artista, storage);
   assert.equal(demo.obtenerEncargoDemo(9, storage).estado_encargo, 'CANCELADO');
 });

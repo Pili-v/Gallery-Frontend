@@ -2,38 +2,27 @@ import { api, lista } from '../api/cliente';
 import { getUsuario, getPerfilArtista } from '../api/sesion';
 import { permisosEncargo } from '../api/encargoSesion.mjs';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Boton from '../components/Boton';
 import CampoFormulario from '../components/CampoFormulario';
 import Estado from '../components/Estado';
 import EstadoEncargo from '../components/EstadoEncargo';
 import { pinturas, lienzos } from '../api/encargoContrato.mjs';
 import { estadosEncargo, estadosPermitidos, prepararMensaje, prepararCambioEstado } from '../api/encargoDetalleContrato.mjs';
-import {
-  artistasDemo, clientesDemo, tamaniosDemo, marcosDemo, clienteDemo, artistaDemo,
-  obtenerEncargoDemo, puedeVerEncargo, esArtistaDelEncargo, enviarMensajeDemo, cambiarEstadoDemo,
-} from '../api/encargosDemo';
 import './encargoDetalle.css';
-
-function cargarDetalle(id) {
-  try { return { encargo: obtenerEncargoDemo(id), error: '' }; }
-  catch { return { encargo: null, error: 'No se pudo leer el encargo guardado en esta pestaña. Tus datos no se modificaron.' }; }
-}
 
 export default function EncargoDetalle() {
   const { id } = useParams();
   const [parametros] = useSearchParams();
-  const { pathname } = useLocation();
   const recibidos = parametros.has('recibidos');
-  const base = pathname.startsWith('/demo/') ? '/demo/encargos' : '/encargos';
+  const base = '/encargos';
   // La URL solo cambia el regreso al listado; los permisos reales salen de la sesión.
   return <Detalle key={`${base}-${id}-${recibidos}`} id={id} recibidos={recibidos} base={base} />;
 }
 
 function Detalle({ id, recibidos, base }) {
-  const esDemo = base === '/demo/encargos';
-  const [datos, setDatos] = useState(() => esDemo ? cargarDetalle(id) : { encargo: null, error: '' });
-  const [cargando, setCargando] = useState(!esDemo);
+  const [datos, setDatos] = useState({ encargo: null, error: '' });
+  const [cargando, setCargando] = useState(true);
   const [intento, setIntento] = useState(0);
   const [enviando, setEnviando] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -42,7 +31,6 @@ function Detalle({ id, recibidos, base }) {
   const perfilArtista = getPerfilArtista();
 
   useEffect(() => {
-    if (esDemo) return;
     let activo = true;
     let pedido;
     api.get(`/api/encargos/${id}`)
@@ -64,10 +52,9 @@ function Detalle({ id, recibidos, base }) {
       .catch(error => { if (activo) setDatos({ encargo: null, error: error.message }); })
       .finally(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
-  }, [esDemo, id, intento]);
+  }, [id, intento]);
 
   function reintentar() {
-    if (esDemo) { setDatos(cargarDetalle(id)); return; }
     setCargando(true);
     setIntento(intento + 1);
   }
@@ -77,75 +64,49 @@ function Detalle({ id, recibidos, base }) {
   const [errorEstado, setErrorEstado] = useState('');
   const [aviso, setAviso] = useState('');
   const campoMensaje = useRef(null);
-  const participante = esDemo ? (recibidos ? artistaDemo : clienteDemo) : { usuario_id: usuario?.id, artista_id: perfilArtista?.id };
   const volver = `${base}${recibidos ? '?recibidos' : ''}`;
   const { encargo, error } = datos;
   const permisos = permisosEncargo(encargo, usuario, perfilArtista);
-  const permitido = esDemo ? encargo && puedeVerEncargo(encargo, participante) : permisos.puedeVer;
+  const permitido = permisos.puedeVer;
 
   function enviar(evento) {
     evento.preventDefault();
     if (enviando) return;
     setAviso('');
-    if (!esDemo) {
-      let cuerpo;
-      try { cuerpo = prepararMensaje(encargo.id, mensaje); }
-      catch (error) { setErrorMensaje(error.message); return; }
-      setEnviando(true);
-      setErrorMensaje('');
-      api.post('/api/mensajes', cuerpo)
-        .then(respuesta => {
-          if (!respuesta) return;
-          setDatos(actual => ({ ...actual, encargo: { ...actual.encargo, mensajes: [...actual.encargo.mensajes, respuesta] } }));
-          setMensaje('');
-          setAviso('Mensaje enviado.');
-        })
-        .catch(error => setErrorMensaje(error.message))
-        .finally(() => { setEnviando(false); campoMensaje.current?.focus(); });
-      return;
-    }
-    try {
-      const actualizado = enviarMensajeDemo(encargo.id, mensaje, participante);
-      setDatos({ encargo: actualizado, error: '' });
-      setMensaje('');
-      setErrorMensaje('');
-      setAviso('Mensaje guardado en esta pestaña.');
-    } catch (problema) {
-      setErrorMensaje(problema.message || 'No se pudo guardar el mensaje. Podés reintentar.');
-    }
-    campoMensaje.current?.focus();
+    let cuerpo;
+    try { cuerpo = prepararMensaje(encargo.id, mensaje); }
+    catch (error) { setErrorMensaje(error.message); return; }
+    setEnviando(true);
+    setErrorMensaje('');
+    api.post('/api/mensajes', cuerpo)
+      .then(respuesta => {
+        if (!respuesta) return;
+        setDatos(actual => ({ ...actual, encargo: { ...actual.encargo, mensajes: [...actual.encargo.mensajes, respuesta] } }));
+        setMensaje('');
+        setAviso('Mensaje enviado.');
+      })
+      .catch(error => setErrorMensaje(error.message))
+      .finally(() => { setEnviando(false); campoMensaje.current?.focus(); });
   }
 
   function guardarEstado(evento) {
     evento.preventDefault();
     if (guardando) return;
     setAviso('');
-    if (!esDemo) {
-      let cuerpo;
-      try { cuerpo = prepararCambioEstado(encargo.estado_encargo, nuevoEstado); }
-      catch (error) { setErrorEstado(error.message); return; }
-      setGuardando(true);
-      setErrorEstado('');
-      api.patch(`/api/encargos/${encargo.id}/estado`, cuerpo)
-        .then(respuesta => {
-          if (!respuesta) return;
-          setDatos(actual => ({ ...actual, encargo: { ...respuesta, mensajes: actual.encargo.mensajes } }));
-          setNuevoEstado('');
-          setAviso('Estado actualizado.');
-        })
-        .catch(error => setErrorEstado(error.message))
-        .finally(() => setGuardando(false));
-      return;
-    }
-    try {
-      const actualizado = cambiarEstadoDemo(encargo.id, nuevoEstado, participante);
-      setDatos({ encargo: actualizado, error: '' });
-      setNuevoEstado('');
-      setErrorEstado('');
-      setAviso(`Estado actualizado a ${estadosEncargo[actualizado.estado_encargo].texto.toLowerCase()}.`);
-    } catch (problema) {
-      setErrorEstado(problema.message || 'No se pudo guardar el estado. Podés reintentar.');
-    }
+    let cuerpo;
+    try { cuerpo = prepararCambioEstado(encargo.estado_encargo, nuevoEstado); }
+    catch (error) { setErrorEstado(error.message); return; }
+    setGuardando(true);
+    setErrorEstado('');
+    api.patch(`/api/encargos/${encargo.id}/estado`, cuerpo)
+      .then(respuesta => {
+        if (!respuesta) return;
+        setDatos(actual => ({ ...actual, encargo: { ...respuesta, mensajes: actual.encargo.mensajes } }));
+        setNuevoEstado('');
+        setAviso('Estado actualizado.');
+      })
+      .catch(error => setErrorEstado(error.message))
+      .finally(() => setGuardando(false));
   }
 
   if (cargando) return <main className="seccion"><Estado tipo="cargando" /></main>;
@@ -165,13 +126,13 @@ function Detalle({ id, recibidos, base }) {
     );
   }
 
-  const esArtista = esDemo ? esArtistaDelEncargo(encargo, participante) : permisos.puedeCambiarEstado;
-  const artista = esDemo ? artistasDemo.find(item => item.id === encargo.artista_id) : { usuario_id: referencias.artista?.usuario_id, nombre: referencias.artista?.nombre_artistico ?? `Artista Nº ${encargo.artista_id}` };
-  const cliente = esDemo ? clientesDemo.find(item => item.id === encargo.usuario_id) : { nombre: `Cliente Nº ${encargo.usuario_id}` };
+  const esArtista = permisos.puedeCambiarEstado;
+  const artista = { usuario_id: referencias.artista?.usuario_id, nombre: referencias.artista?.nombre_artistico ?? `Artista Nº ${encargo.artista_id}` };
+  const cliente = { nombre: `Cliente Nº ${encargo.usuario_id}` };
   const pintura = pinturas.find(item => item.valor === encargo.tipo_pintura)?.nombre ?? encargo.tipo_pintura;
   const lienzo = lienzos.find(item => item.valor === encargo.tipo_lienzo)?.nombre ?? encargo.tipo_lienzo;
-  const tamanio = esDemo ? tamaniosDemo.find(item => item.id === encargo.tamanio_id)?.nombre ?? 'Tamaño sin informar' : referencias.tamanio?.nombre_tamanio ?? `Tamaño Nº ${encargo.tamanio_id}`;
-  const marco = esDemo ? marcosDemo.find(item => item.id === encargo.marco_id)?.nombre ?? 'Sin informar' : referencias.marco?.nombre_marco ?? `Nº ${encargo.marco_id}`;
+  const tamanio = referencias.tamanio?.nombre_tamanio ?? `Tamaño Nº ${encargo.tamanio_id}`;
+  const marco = referencias.marco?.nombre_marco ?? `Nº ${encargo.marco_id}`;
   const permitidos = estadosPermitidos(encargo.estado_encargo);
 
   return (
@@ -225,7 +186,7 @@ function Detalle({ id, recibidos, base }) {
             <>
               <div className="entre detalle-estado"><span className="muted">Estado del encargo</span><EstadoEncargo estado={encargo.estado_encargo} /></div>
               <p className="body-sm muted detalle-texto">{permitidos.length === 0
-                ? 'Este encargo está cerrado. Su estado ya no se puede cambiar.'
+                ? 'No hay cambios de estado disponibles desde esta pantalla.'
                 : 'Solo el artista puede cambiar el estado.'}</p>
             </>
           )}
@@ -239,11 +200,11 @@ function Detalle({ id, recibidos, base }) {
           ) : (
             <ol className="hilo detalle-hilo" aria-label="Conversación del encargo">
               {encargo.mensajes.map(item => (
-                <li key={item.id} className={`mensaje ${item.usuario_emisor_id === participante.usuario_id ? 'propio' : 'ajeno'}`}>
+                <li key={item.id} className={`mensaje ${item.usuario_emisor_id === usuario?.id ? 'propio' : 'ajeno'}`}>
                   <p className="cartela-artist">
-                    {!esDemo ? (item.usuario_emisor_id === usuario?.id ? 'Vos' : item.usuario_emisor_id === encargo.usuario_id ? cliente.nombre : item.usuario_emisor_id === artista?.usuario_id ? artista.nombre : `Usuario Nº ${item.usuario_emisor_id}`) : item.usuario_emisor_id === artista?.usuario_id ? artista.nombre : cliente?.nombre ?? 'Cliente'}
-                    {item.fecha_demo && <time className="cartela-meta" dateTime={item.fecha_demo}>
-                      {' · '}{new Date(item.fecha_demo).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {item.usuario_emisor_id === usuario?.id ? 'Vos' : item.usuario_emisor_id === encargo.usuario_id ? cliente.nombre : item.usuario_emisor_id === artista?.usuario_id ? artista.nombre : `Usuario Nº ${item.usuario_emisor_id}`}
+                    {item.fecha_creacion_mensaje && <time className="cartela-meta" dateTime={item.fecha_creacion_mensaje}>
+                      {' · '}{new Date(item.fecha_creacion_mensaje).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </time>}
                   </p>
                   <p className="body-lg detalle-texto detalle-contenido">{item.contenido_mensaje}</p>
@@ -251,7 +212,7 @@ function Detalle({ id, recibidos, base }) {
               ))}
             </ol>
           )}
-          {(esDemo || permisos.puedeEscribir) && <form className="detalle-enviar" onSubmit={enviar} noValidate>
+          {permisos.puedeEscribir && <form className="detalle-enviar" onSubmit={enviar} noValidate>
             <div className="fila detalle-editor">
               <CampoFormulario etiqueta="Tu mensaje" aria-label="Tu mensaje" placeholder="Escribir un mensaje"
                 ref={campoMensaje} disabled={enviando} value={mensaje} maxLength={255} required
@@ -264,7 +225,6 @@ function Detalle({ id, recibidos, base }) {
           </form>}
           <p className="body-sm detalle-confirmacion" role="status">{aviso}</p>
         </section>
-        {esDemo && <p className="body-sm muted detalle-demo">Vista de prueba: los mensajes y cambios se guardan en esta pestaña; no se envían al artista ni al cliente.</p>}
       </div>
     </main>
   );

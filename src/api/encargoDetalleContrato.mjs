@@ -1,13 +1,16 @@
 export const estadosEncargo = {
   PENDIENTE: { clase: 'pendiente', texto: 'Pendiente' },
+  APROBADO: { clase: 'proceso', texto: 'Aprobado' },
+  PAGADO: { clase: 'terminado', texto: 'Pagado' },
   EN_PROCESO: { clase: 'proceso', texto: 'En proceso' },
   TERMINADO: { clase: 'terminado', texto: 'Terminado' },
   CANCELADO: { clase: 'cancelado', texto: 'Cancelado' },
 };
 
 export function estadosPermitidos(estado) {
-  if (estado === 'PENDIENTE') return ['EN_PROCESO', 'CANCELADO'];
-  if (estado === 'EN_PROCESO') return ['TERMINADO', 'CANCELADO'];
+  if (estado === 'PENDIENTE') return ['CANCELADO'];
+  if (estado === 'APROBADO') return ['EN_PROCESO', 'PENDIENTE', 'CANCELADO'];
+  if (estado === 'EN_PROCESO') return ['TERMINADO', 'PENDIENTE', 'CANCELADO'];
   return [];
 }
 

@@ -1,11 +1,10 @@
 import { api, lista as convertirLista } from '../api/cliente';
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Boton from '../components/Boton';
 import CampoFormulario from '../components/CampoFormulario';
 import Estado from '../components/Estado';
 import { pinturas, lienzos, prepararEncargo } from '../api/encargoContrato.mjs';
-import { artistasDemo, tamaniosDemo, marcosDemo, guardarEncargoDemo } from '../api/encargosDemo';
 import './encargoNuevo.css';
 
 const inicial = {
@@ -18,22 +17,15 @@ function normalizarNombre(texto) {
 }
 
 export default function EncargoNuevo() {
-  const { pathname } = useLocation();
-  const esDemo = pathname.startsWith('/demo/');
-  return <FormularioEncargo key={String(esDemo)} esDemo={esDemo} />;
-}
-
-function FormularioEncargo({ esDemo }) {
-  const [artistas, setArtistas] = useState(esDemo ? artistasDemo : []);
-  const [tamanios, setTamanios] = useState(esDemo ? tamaniosDemo : []);
-  const [marcos, setMarcos] = useState(esDemo ? marcosDemo : []);
-  const [cargando, setCargando] = useState(!esDemo);
+  const [artistas, setArtistas] = useState([]);
+  const [tamanios, setTamanios] = useState([]);
+  const [marcos, setMarcos] = useState([]);
+  const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [intento, setIntento] = useState(0);
 
   useEffect(() => {
-    if (esDemo) return;
     let activo = true;
     api.get('/api/artistas')
       .then(respuesta => {
@@ -51,7 +43,7 @@ function FormularioEncargo({ esDemo }) {
       .catch(error => { if (activo) setErrorCarga(`No se pudieron cargar las opciones del pedido: ${error.message}`); })
       .finally(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
-  }, [esDemo, intento]);
+  }, [intento]);
   const [busquedaArtista, setBusquedaArtista] = useState('');
   const artistasFiltrados = artistas.filter(artista =>
     normalizarNombre(artista.nombre).includes(normalizarNombre(busquedaArtista))
@@ -60,7 +52,7 @@ function FormularioEncargo({ esDemo }) {
   const [errores, setErrores] = useState({});
   const [errorGuardado, setErrorGuardado] = useState('');
   const navigate = useNavigate();
-  const lista = esDemo ? '/demo/encargos' : '/encargos';
+  const lista = '/encargos';
 
   function cambiar(evento) {
     const { name, value } = evento.target;
@@ -78,21 +70,12 @@ function FormularioEncargo({ esDemo }) {
       evento.currentTarget.elements.namedItem(Object.keys(resultado.errores)[0])?.focus();
       return;
     }
-    if (!esDemo) {
-      setEnviando(true);
-      setErrorGuardado('');
-      api.post('/api/encargos', resultado.datos)
-        .then(encargo => { if (encargo) navigate(lista, { state: { encargoCreado: encargo.id } }); })
-        .catch(error => setErrorGuardado(error.message || 'No se pudo enviar el pedido. Podés reintentar.'))
-        .finally(() => setEnviando(false));
-      return;
-    }
-    try {
-      const encargo = guardarEncargoDemo(resultado.datos);
-      navigate(lista, { state: { encargoCreado: encargo.id } });
-    } catch {
-      setErrorGuardado('No se pudo guardar el pedido en este navegador. Tus datos siguen en el formulario; podés reintentar.');
-    }
+    setEnviando(true);
+    setErrorGuardado('');
+    api.post('/api/encargos', resultado.datos)
+      .then(encargo => { if (encargo) navigate(lista, { state: { encargoCreado: encargo.id } }); })
+      .catch(error => setErrorGuardado(error.message || 'No se pudo enviar el pedido. Podés reintentar.'))
+      .finally(() => setEnviando(false));
   }
 
   function propiedades(nombre, etiqueta) {
@@ -109,9 +92,6 @@ function FormularioEncargo({ esDemo }) {
         <Link className="encargo-volver body-sm" to={lista}>← Volver a encargos</Link>
         <h1 className="headline-lg">Pedir un encargo</h1>
         <p className="body-lg muted">Contale al artista qué cuadro te gustaría recibir.</p>
-        {esDemo && <p className="aviso body-sm encargo-aviso">
-          Vista de prueba: artistas, tamaños y marcos son ejemplos. El pedido se guarda en esta pestaña y no se envía al artista.
-        </p>}
         {cargando && <Estado tipo="cargando" />}
         {errorCarga && <div className="apilado"><Estado tipo="error" mensaje={errorCarga} />
           <Boton onClick={() => { setErrorCarga(''); setCargando(true); setIntento(intento + 1); }}>Reintentar</Boton></div>}
@@ -170,7 +150,7 @@ function FormularioEncargo({ esDemo }) {
             {errorGuardado && <Estado tipo="error" mensaje={errorGuardado} />}
           </div>
           <Boton type="submit" bloque disabled={enviando || cargando || Boolean(errorCarga) || !artistas.length || !tamanios.length || !marcos.length}>
-            {enviando ? 'Enviando...' : esDemo ? 'Enviar el pedido de prueba' : 'Enviar el pedido'}
+            {enviando ? 'Enviando...' : 'Enviar el pedido'}
           </Boton>
         </form>
       </div>
