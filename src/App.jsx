@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import Layout from "./components/Layout"
 import RutaProtegida from "./components/RutaProtegida"
 
@@ -38,6 +38,7 @@ const App = () => {
 
           {/* Se puede mirar sin estar logueado */}
           <Route path="/" element={<Catalogo />} />
+          <Route path="/demo/encargos/*" element={<Navigate to="/encargos" replace />} />
           <Route path="/obra/:id" element={<DetalleObra />} />
           <Route path="/artista/:id" element={<PerfilArtista />} />
           <Route path="/login" element={<Login />} />
