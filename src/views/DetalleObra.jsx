@@ -11,6 +11,16 @@ import { pesos } from "../api/formato";
 import Badge from "../components/Badge";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
+import VisorImagenes from "../components/VisorImagenes";
+
+// Una lista vacía llega como 404 (regla de la cátedra): para las listas de la obra
+// (variantes, imagenes, marcos) significa "no hay", no que algo falló. Si no se
+// tratara así, una obra sin imagenes o sin variantes no se podría abrir.
+const sin404 = (promesa) =>
+  promesa.catch((e) => {
+    if (e.status === 404) return [];
+    throw e;
+  });
 
 export default function DetalleObra() {
   // El id viene de la URL: /obra/5 -> id = "5"
@@ -33,10 +43,10 @@ export default function DetalleObra() {
   const cargar = async () => {
     try {
       const laObra = await api.get("/api/obras/" + id);
-      const susVariantes = lista(await api.get("/api/variantes?obraId=" + id));
-      const susImagenes = lista(await api.get("/api/imagenes?obraId=" + id));
+      const susVariantes = lista(await sin404(api.get("/api/variantes?obraId=" + id)));
+      const susImagenes = lista(await sin404(api.get("/api/imagenes?obraId=" + id)));
       const suArtista = await api.get("/api/artistas/" + laObra.artista_id);
-      const losMarcos = lista(await api.get("/api/marcos"));
+      const losMarcos = lista(await sin404(api.get("/api/marcos")));
 
       setObra(laObra);
       setVariantes(susVariantes);
@@ -57,6 +67,7 @@ export default function DetalleObra() {
   // Depende del id: si se navega a otra obra, se vuelve a pedir.
   useEffect(() => {
     setCargando(true);
+    setError("");
     cargar();
   }, [id]);
 
@@ -97,18 +108,30 @@ export default function DetalleObra() {
   const precioFinal = precioObra + precioMarco;
   const sinStock = varianteSeleccionada?.stock_variante === 0;
 
-  const foto = imagenes[0] ? "data:image/jpeg;base64," + imagenes[0].contenido_imagen : null;
+  // Sin tamaños o sin marcos no se puede armar la compra: el botón lo dice en vez de quedar mudo.
+  const sinVariantes = !varianteSeleccionada;
+  const sinMarcos = !marcoSeleccionado;
+  const noDisponible = sinStock || sinVariantes || sinMarcos;
+
+  let textoBoton = "AGREGAR AL CARRITO";
+  if (sinStock) textoBoton = "SIN STOCK";
+  else if (sinVariantes) textoBoton = "SIN TAMAÑOS";
+  else if (sinMarcos) textoBoton = "SIN MARCOS";
+  else if (agregando) textoBoton = "AGREGANDO...";
+
+  // Todas las imágenes de la obra, en el orden en que las cargó el artista. Si el backend
+  // pasa a mandar links (Cloudinary), "url" tiene prioridad y esta es la única línea que cambia.
+  const fotos = imagenes.map((img) => img.url ?? "data:image/jpeg;base64," + img.contenido_imagen);
 
   return (
     <div className="seccion pagina-detalle-obra">
       <div className="contenido dos-columnas">
 
         <div className="detalle-visual">
-          <div className={"obra-imagen" + (sinStock ? " sin-stock" : "")}>
-            {foto && <img src={foto} alt={obra.nombre_obra} />}
+          <VisorImagenes key={obra.id} imagenes={fotos} alt={obra.nombre_obra} atenuada={sinStock}>
             {sinStock && <Badge tipo="sinstock">Sin stock</Badge>}
             {!sinStock && descuento > 0 && <Badge tipo="descuento">−{descuento}%</Badge>}
-          </div>
+          </VisorImagenes>
         </div>
 
         <div className="detalle-info apilado">
@@ -176,7 +199,7 @@ export default function DetalleObra() {
             <div className="resumen-fila resumen-total">
               <span className="price-lg">{pesos(precioFinal)}</span>
               <span className="cartela-meta">
-                {sinStock ? "Sin stock" : varianteSeleccionada?.stock_variante + " disponibles"}
+                {sinVariantes ? "" : sinStock ? "Sin stock" : varianteSeleccionada.stock_variante + " disponibles"}
               </span>
             </div>
 
@@ -184,11 +207,11 @@ export default function DetalleObra() {
 
             <div style={{ marginTop: "var(--md)" }}>
               <Boton
-                tipo={sinStock ? "deshabilitado" : "primario"}
+                tipo={noDisponible ? "deshabilitado" : "primario"}
                 bloque
-                onClick={sinStock || agregando ? undefined : agregarAlCarrito}
+                onClick={noDisponible || agregando ? undefined : agregarAlCarrito}
               >
-                {sinStock ? "SIN STOCK" : agregando ? "AGREGANDO..." : "AGREGAR AL CARRITO"}
+                {textoBoton}
               </Boton>
             </div>
           </div>

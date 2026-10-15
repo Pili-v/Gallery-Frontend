@@ -1,82 +1,140 @@
 // Perfil del artista — Área 3 · Catálogo
-// Esta pantalla está en docs/maquetas.html: miralá antes de escribirla.
-// Los componentes compartidos ya están hechos en src/components.
+// El artista sale de GET /api/artistas/{id} y sus obras de GET /api/obras?artistaId=,
+// que devuelve la misma forma que el catálogo y está paginado.
+// Las variantes y las imágenes se piden solo de las obras de la página que se ve:
+// pedir las listas completas traería las fotos de todas las obras de la base.
+
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { api, lista } from "../api/cliente";
 import TarjetaObra from "../components/TarjetaObra";
+import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 
-const ARTISTAS_BD = [
-  {
-    id: 101,
-    nombre_artistico: "Lucía Varela",
-    estilo_principal: "Naturaleza & Arte Orgánico",
-    bio: "Pintora independiente centrada en capturar la luz y la vegetación nativa en lienzos de gran formato.",
-    avatar: "L",
-    acepta_encargos: true,
-    obras: [
-      {
-        obra: { id: 1, nombre_obra: "Mirada de Verano", estilo: "Naturaleza", nombre_artistico: "Lucía Varela", artistaId: 101 },
-        variante: { precio_variante: 280000, porcentaje_descuento: 10, nombre_tamanio: "140 x 105 cm", stock_variante: 5 },
-        imagen: "https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=500&q=80"
-      }
-    ]
-  },
-  {
-    id: 102,
-    nombre_artistico: "Mateo Rossi",
-    estilo_principal: "Arte Geométrico",
-    bio: "Artista enfocado en estructuras geométricas, contrastes de color y equilibrio de formas contemporáneas.",
-    avatar: "M",
-    acepta_encargos: false,
-    obras: [
-      {
-        obra: { id: 2, nombre_obra: "Rosa Partida", estilo: "Geométrico", nombre_artistico: "Mateo Rossi", artistaId: 102 },
-        variante: { precio_variante: 132000, porcentaje_descuento: 0, nombre_tamanio: "90 x 70 cm", stock_variante: 2 },
-        imagen: "https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=500&q=80"
-      }
-    ]
-  },
-  {
-    id: 103,
-    nombre_artistico: "Elena Gómez",
-    estilo_principal: "Figurativo & Retrato",
-    bio: "Explora la figura humana y la expresión a través de técnicas mixtas y pinceladas expresionistas.",
-    avatar: "E",
-    acepta_encargos: true,
-    obras: [
-      {
-        obra: { id: 3, nombre_obra: "Luz del Alba", estilo: "Figurativo", nombre_artistico: "Elena Gómez", artistaId: 103 },
-        variante: { precio_variante: 340000, porcentaje_descuento: 0, nombre_tamanio: "120 x 120 cm", stock_variante: 1 },
-        imagen: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&q=80"
-      },
-      {
-        obra: { id: 4, nombre_obra: "Retrato en Fragmentos", estilo: "Retrato", nombre_artistico: "Elena Gómez", artistaId: 103 },
-        variante: { precio_variante: 145000, porcentaje_descuento: 15, nombre_tamanio: "70 x 50 cm", stock_variante: 0 },
-        imagen: "https://images.unsplash.com/photo-1578926375605-eaf7559b1458?w=500&q=80"
-      }
-    ]
-  },
-  {
-    id: 104,
-    nombre_artistico: "Carlos D'Amico",
-    estilo_principal: "Retrato Contemporáneo",
-    bio: "Especialista en retratos al óleo y acrílico con un enfoque dramático de la iluminación.",
-    avatar: "C",
-    acepta_encargos: true,
-    obras: [
-      {
-        obra: { id: 5, nombre_obra: "Zaino", estilo: "Retrato", nombre_artistico: "Carlos D'Amico", artistaId: 104 },
-        variante: { precio_variante: 210000, porcentaje_descuento: 0, nombre_tamanio: "40 x 50 cm", stock_variante: 4 },
-        imagen: "https://images.unsplash.com/photo-1577083552431-6e5fd01aa342?w=500&q=80"
-      }
-    ]
-  }
-];
+const POR_PAGINA = 6;
+
+// Una lista vacía llega como 404 (regla de la cátedra): para una lista hija
+// significa "no hay", no que algo falló.
+const sin404 = (promesa) =>
+  promesa.catch((e) => {
+    if (e.status === 404) return [];
+    throw e;
+  });
 
 export default function PerfilArtista() {
   const { id } = useParams();
-  const artistaEncontrado = ARTISTAS_BD.find((item) => item.id === Number(id));
-  const artista = artistaEncontrado || ARTISTAS_BD[0];
+
+  const [artista, setArtista] = useState(null);
+  const [errorArtista, setErrorArtista] = useState("");
+
+  const [items, setItems] = useState([]);
+  const [pagina, setPagina] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [totalObras, setTotalObras] = useState(0);
+  const [cargando, setCargando] = useState(true);
+  const [aviso, setAviso] = useState("");
+  const [errorObras, setErrorObras] = useState("");
+
+  // Al cambiar de artista se vuelve a empezar: datos nuevos y primera página.
+  useEffect(() => {
+    setArtista(null);
+    setErrorArtista("");
+    setPagina(0);
+
+    api
+      .get("/api/artistas/" + id)
+      .then(setArtista)
+      .catch((e) => setErrorArtista(e.message));
+  }, [id]);
+
+  // Las obras del artista, una página por vez.
+  useEffect(() => {
+    if (!artista) return;
+
+    let activo = true;
+    setCargando(true);
+    setAviso("");
+    setErrorObras("");
+
+    const cargar = async () => {
+      try {
+        const respuesta = await api.get(
+          "/api/obras?artistaId=" + id + "&page=" + pagina + "&size=" + POR_PAGINA
+        );
+        const obras = lista(respuesta);
+        const estilos = lista(await sin404(api.get("/api/estilos")));
+
+        const armados = await Promise.all(
+          obras.map(async (obra) => {
+            const [variantes, imagenes] = await Promise.all([
+              sin404(api.get("/api/variantes?obraId=" + obra.id)).then(lista),
+              sin404(api.get("/api/imagenes?obraId=" + obra.id)).then(lista),
+            ]);
+
+            const estilo = estilos.find((e) => obra.estilo_ids.includes(e.id));
+            const variante = variantes.find((v) => v.stock_variante > 0) ?? variantes[0];
+
+            return {
+              obra: {
+                ...obra,
+                estilo: estilo ? estilo.nombreEstilo : "",
+                artistaId: obra.artista_id,
+                nombre_artistico: artista.nombre_artistico,
+              },
+              variante: variante,
+              imagen: imagenes[0]
+                ? "data:image/jpeg;base64," + imagenes[0].contenido_imagen
+                : null,
+            };
+          })
+        );
+
+        if (!activo) return;
+        setItems(armados);
+        setTotalPaginas(respuesta.totalPages ?? 1);
+        setTotalObras(respuesta.totalElements ?? armados.length);
+      } catch (e) {
+        if (!activo) return;
+        setItems([]);
+        setTotalPaginas(0);
+        setTotalObras(0);
+        // Sin obras el backend responde 404 con el motivo: se muestra, no es una falla.
+        if (e.status === 404) setAviso(e.message);
+        else setErrorObras(e.message);
+      } finally {
+        if (activo) setCargando(false);
+      }
+    };
+
+    cargar();
+
+    return () => {
+      activo = false;
+    };
+  }, [artista, pagina]);
+
+  if (errorArtista) {
+    return (
+      <div className="seccion">
+        <div className="contenido apilado">
+          <Estado tipo="error" mensaje={errorArtista} />
+          <Link to="/">
+            <Boton tipo="secundario">Volver al catálogo</Boton>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!artista) {
+    return (
+      <div className="seccion">
+        <div className="contenido">
+          <Estado tipo="cargando" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="seccion">
@@ -84,13 +142,13 @@ export default function PerfilArtista() {
         <header className="entre" style={{ alignItems: "flex-start" }}>
           <div className="vendedor" style={{ gap: "var(--md)" }}>
             <div className="avatar" style={{ width: 64, height: 64, fontSize: 24 }}>
-              {artista.avatar}
+              {artista.nombre_artistico[0]}
             </div>
             <div>
-              <span className="cartela-meta">{artista.estilo_principal}</span>
+              <span className="cartela-meta">Artista</span>
               <h1 className="headline-lg">{artista.nombre_artistico}</h1>
               <p className="body-lg muted" style={{ marginTop: "var(--xs)" }}>
-                {artista.bio}
+                {artista.acepta_encargos ? "Acepta encargos" : "Por ahora no acepta encargos"}
               </p>
             </div>
           </div>
@@ -106,19 +164,45 @@ export default function PerfilArtista() {
 
         <section>
           <p className="catalog-number muted" style={{ marginBottom: "var(--lg)" }}>
-            Obras publicadas — {artista.obras.length} resultados
+            Obras publicadas — {totalObras} resultados
           </p>
 
-          <div className="grilla-obras">
-            {artista.obras.map((item) => (
-              <TarjetaObra
-                key={item.obra.id}
-                obra={item.obra}
-                variante={item.variante}
-                imagen={item.imagen}
-              />
-            ))}
-          </div>
+          {cargando && <Estado tipo="cargando" />}
+          {!cargando && errorObras && <Estado tipo="error" mensaje={errorObras} />}
+          {!cargando && aviso && <Estado tipo="vacio" mensaje={aviso} />}
+
+          {!cargando && !errorObras && !aviso && (
+            <div className="grilla-obras">
+              {items.map((item) => (
+                <TarjetaObra
+                  key={item.obra.id}
+                  obra={item.obra}
+                  variante={item.variante}
+                  imagen={item.imagen}
+                />
+              ))}
+            </div>
+          )}
+
+          {totalPaginas > 1 && (
+            <div className="entre" style={{ marginTop: "var(--xl)" }}>
+              <Boton
+                tipo={pagina === 0 ? "deshabilitado" : "secundario"}
+                onClick={() => setPagina(pagina - 1)}
+              >
+                Anterior
+              </Boton>
+              <span className="catalog-number muted">
+                Página {pagina + 1} de {totalPaginas}
+              </span>
+              <Boton
+                tipo={pagina >= totalPaginas - 1 ? "deshabilitado" : "secundario"}
+                onClick={() => setPagina(pagina + 1)}
+              >
+                Siguiente
+              </Boton>
+            </div>
+          )}
         </section>
       </div>
     </div>

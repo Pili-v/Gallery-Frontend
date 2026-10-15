@@ -144,6 +144,7 @@ body {
   position: absolute; top: var(--sm); left: var(--sm);
   padding: 4px 8px; color: var(--surface);
   font-size: 11px; letter-spacing: .08em; font-weight: 500; text-transform: uppercase;
+  z-index: 2;
 }
 .badge-descuento { background: var(--bordo); }
 .badge-sinstock  { background: var(--gray-badge); }
@@ -163,7 +164,7 @@ body {
   position: relative;
   aspect-ratio: 4/5;
   background: var(--surface); /* Funciona como el paspartú / passe-partout */
-  padding: 12px;
+  padding: 8px;
   
   /* 1. Marco exterior negro y grueso */
   border: 4px solid var(--carbon); 
@@ -174,17 +175,6 @@ body {
     0 5px 12px rgba(0, 0, 0, 0.20);  /* Sombra corta de contacto */
   
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.obra-imagen img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  
-  /* 3. Borde muy fino y sombra hacia adentro para simular que la foto está encastrada */
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 /* Opcional: Pequeña elevación cuando el usuario pasa el cursor */
@@ -199,7 +189,6 @@ body {
 .grilla-obras { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--xl); }
 .grilla-obras.cuatro { grid-template-columns: repeat(4, 1fr); gap: var(--lg); }
 @media (max-width: 900px) { .grilla-obras, .grilla-obras.cuatro { grid-template-columns: repeat(2, 1fr); gap: var(--lg); } }
-
 
 /* ---------- Componente: Input y CampoFormulario ---------- */
 .campo { margin-bottom: var(--md); }
@@ -342,9 +331,6 @@ body {
 /* Hairline de marca arriba de todo */
 .barra-marca { height: 3px; background: var(--bordo); }
 
-/* Fotos de obra */
-.obra-imagen img, .linea-mini img, .hero-obra img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
 /* ---------- Pantalla de pago: se escribe sobre la tarjeta ---------- */
 .tarjeta-escena { perspective: 1200px; margin-bottom: var(--md); }
 .tarjeta-3d {
@@ -411,16 +397,110 @@ body {
 }
 .tarjeta-cvv .tarjeta-input:-webkit-autofill { -webkit-text-fill-color: #14110F; }
 
-/* ---------- Todas las obras al mismo rectángulo ---------- */
-/* Las fotos vienen con proporciones distintas. aspect-ratio fija el rectángulo
-   y object-fit: cover lo llena sin deformar: recorta lo que sobra, como una
-   ventana. Sin esto cada tarjeta mide lo que mide su foto y la grilla baila. */
-.obra-imagen { aspect-ratio: 4 / 5; overflow: hidden; }
-.obra-imagen img { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-/* La obra del hero: casi cuadrada, apenas más alta que ancha. Con
-   align-items: center la imagen manda su propio alto en vez de estirarse. */
+/* ---------- Ajustes de hero y proporciones finales ---------- */
 .hero { min-height: 0; align-items: center; }
 .hero-obra { aspect-ratio: 1 / 1; align-self: center; }
 .hero-texto { padding-left: var(--xl); padding-right: var(--xl); }
 @media (min-width: 1200px) { .hero-texto { padding-left: 64px; } }
+
+/* ===========================================================
+   Imágenes de obra — Que siempre se vean enteras y nítidas
+   (Reemplaza las reglas viejas de .obra-imagen img y .linea-mini img)
+   =========================================================== */
+.obra-imagen,
+.linea-mini { 
+  background: var(--surface); 
+  position: relative;
+  overflow: visible;
+}
+
+.linea-mini { 
+  width: 72px; 
+  aspect-ratio: 4/5; 
+  border: 1px solid var(--border); 
+}
+
+/* Ajuste nítido dentro del marco con paspartú controlado */
+.obra-imagen img,
+.linea-mini img,
+.hero-obra img {
+  position: absolute; 
+  inset: 8px; /* Margen interno elegante */
+  width: calc(100% - 16px); 
+  height: calc(100% - 16px);
+  object-fit: contain; /* Mantiene la obra entera sin recortarla ni deformarla */
+  display: block;
+}
+
+
+
+/* Una columna de grilla crece con el tamaño real de su contenido */
+.dos-columnas > *,
+.hero > * { min-width: 0; }
+
+/* ---------- Componente: Visor de imágenes (detalle de obra) ---------- */
+.visor { display: flex; gap: var(--sm); align-items: flex-start; }
+.visor-principal { position: relative; flex: 1; min-width: 0; outline: none; }
+.visor-principal .obra-imagen { border-bottom: 1px solid var(--border); cursor: zoom-in; }
+
+.visor-miniaturas {
+  display: flex; flex-direction: column; gap: var(--sm);
+  width: 64px; flex-shrink: 0; max-height: 560px; overflow-y: auto;
+}
+.visor-miniatura {
+  position: relative; flex-shrink: 0;
+  width: 64px; aspect-ratio: 4/5; padding: 0;
+  background: var(--surface); border: 1px solid var(--border); cursor: pointer;
+  overflow: visible;
+}
+.visor-miniatura img {
+  position: absolute; inset: 4px;
+  width: calc(100% - 8px); height: calc(100% - 8px);
+  max-width: none; max-height: none;
+  object-fit: contain; display: block;
+}
+.visor-miniatura.activa { border-color: var(--bordo); }
+
+.visor-flecha {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 40px; height: 40px; padding: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer;
+  z-index: 2;
+}
+.visor-flecha:hover { border-color: var(--bordo); color: var(--bordo); }
+.visor-flecha.izquierda { left: var(--sm); }
+.visor-flecha.derecha { right: var(--sm); }
+
+.visor-contador {
+  position: absolute; right: var(--sm); bottom: var(--sm);
+  background: var(--surface); border: 1px solid var(--border); padding: 2px 8px;
+  z-index: 2;
+}
+.visor-vacio { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: var(--md); }
+
+@media (max-width: 720px) {
+  .visor { flex-direction: column-reverse; }
+  .visor-principal { width: 100%; }
+  .visor-miniaturas { flex-direction: row; width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; }
+}
+
+/* ---------- Imagen ampliada (Lightbox) ---------- */
+.lightbox {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(28,28,25,.92);
+  display: grid; place-items: center; cursor: zoom-out;
+}
+.lightbox > img { max-width: 92vw; max-height: 92vh; object-fit: contain; background: var(--surface); cursor: default; }
+.lightbox-cerrar,
+.lightbox-flecha {
+  position: absolute; width: 44px; height: 44px; padding: 0;
+  background: rgba(252,250,247,.14); border: 0; color: var(--surface);
+  font-size: 22px; line-height: 1; cursor: pointer;
+}
+.lightbox-cerrar:hover,
+.lightbox-flecha:hover { background: rgba(252,250,247,.3); }
+.lightbox-cerrar { top: var(--md); right: var(--md); }
+.lightbox-flecha { top: 50%; transform: translateY(-50%); font-size: 28px; }
+.lightbox-flecha.izquierda { left: var(--md); }
+.lightbox-flecha.derecha { right: var(--md); }
