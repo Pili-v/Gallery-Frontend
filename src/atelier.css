@@ -441,7 +441,7 @@ body {
 /* ---------- Componente: Visor de imágenes (detalle de obra) ---------- */
 .visor { display: flex; gap: var(--sm); align-items: flex-start; }
 .visor-principal { position: relative; flex: 1; min-width: 0; outline: none; }
-.visor-principal .obra-imagen { border-bottom: 1px solid var(--border); cursor: zoom-in; }
+.visor-principal .obra-imagen { cursor: zoom-in; }
 
 .visor-miniaturas {
   display: flex; flex-direction: column; gap: var(--sm);
