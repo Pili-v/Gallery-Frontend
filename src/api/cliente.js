@@ -1,9 +1,13 @@
 // Todo lo que sale hacia la API pasa por acá: un solo lugar que sabe la
 // dirección del backend y que le pone el token a cada pedido.
 
-import { getToken, cerrarSesion } from "./sesion"
+import { getToken } from "./sesion"
 
 const API = "http://localhost:8080"
+
+// Nombre del aviso que se emite cuando el back dice que la sesión ya no sirve.
+// Lo escucha el componente SesionVencida, que muestra el cartel.
+export const SESION_VENCIDA = "sesion-vencida"
 
 // Arma el error con el mensaje que mandó el backend y el código HTTP en error.status.
 // El backend responde de tres formas: JSON con "mensaje", texto plano (casi todos los
@@ -62,9 +66,18 @@ const pedir = (ruta, opciones = {}) => {
                     })
                 }
 
-                cerrarSesion()
-                window.location.href = "/login"
-                return
+                // Había una sesión y el token venció o dejó de ser válido: se avisa con la ruta
+                // actual (para volver acá después de ingresar) y la pantalla se queda como está.
+                // Sin token no hay sesión que vencer: es una ruta que pedía iniciar sesión.
+                if (token) {
+                    window.dispatchEvent(new CustomEvent(SESION_VENCIDA, {
+                        detail: window.location.pathname + window.location.search
+                    }))
+                }
+
+                return crearError(respuesta).then(error => {
+                    throw error
+                })
             }
 
             if (!respuesta.ok) {

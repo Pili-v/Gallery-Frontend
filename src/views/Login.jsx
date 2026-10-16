@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 
 import CampoFormulario from "../components/CampoFormulario"
 import Boton from "../components/Boton"
@@ -10,6 +10,14 @@ import { guardarSesion } from "../api/sesion"
 const Login = () => {
 
     const navigate = useNavigate()
+    const ubicacion = useLocation()
+
+    // Si llegó porque la sesión venció o por una pantalla protegida, vuelve a esa pantalla.
+    // Solo se acepta una ruta de esta misma página (empieza con una sola barra).
+    const volverA = ubicacion.state && ubicacion.state.volverA
+    const destino = typeof volverA === "string" && volverA.startsWith("/") && !volverA.startsWith("//")
+        ? volverA
+        : "/"
 
     const [datos, setDatos] = useState({
         email_usuario: "",
@@ -87,7 +95,7 @@ const Login = () => {
             guardarSesion(token, perfil)
 
             // 5. Login terminado.
-            navigate("/")
+            navigate(destino)
 
         } catch (e) {
 
