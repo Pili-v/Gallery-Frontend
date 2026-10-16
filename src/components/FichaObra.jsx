@@ -12,7 +12,6 @@ export default function FichaObra({ obra, variante }) {
   return (
     <div className="cartela">
       <div className="cartela-fila">
-        <span className="catalog-number cartela-num">Nº {String(obra.id).padStart(3, "0")}</span>
         <span className="cartela-meta">{obra.estilo ?? ""}</span>
       </div>
 
