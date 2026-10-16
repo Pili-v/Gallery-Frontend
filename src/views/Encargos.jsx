@@ -2,7 +2,7 @@ import { api, lista } from '../api/cliente';
 import { getUsuario, getPerfilArtista } from '../api/sesion';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { pinturas, lienzos } from '../api/encargoContrato.mjs';
+import { pinturas, lienzos } from '../api/encargoContrato.js';
 import Estado from '../components/Estado';
 import EstadoEncargo from '../components/EstadoEncargo';
 import Boton from '../components/Boton';
@@ -36,7 +36,11 @@ function ListaEncargos({ base, state, navigate, parametros, setParametros,
     const ruta = verRecibidos ? '/api/artistas/me/encargos' : '/api/usuarios/me/encargos';
     api.get(ruta)
       .then(respuesta => { if (activo && respuesta) setDatos({ items: lista(respuesta), error: '' }); })
-      .catch(error => { if (activo) setDatos({ items: [], error: error.message }); })
+      .catch(error => {
+        const mensajeVacio = verRecibidos ? 'Todavía no recibiste encargos' : 'Todavía no hiciste encargos';
+        const sinEncargos = error.status === 404 && error.message === mensajeVacio;
+        if (activo) setDatos({ items: [], error: sinEncargos ? '' : error.message });
+      })
       .finally(() => { if (activo) setCargando(false); });
     // Los clientes son privados: no pedimos el listado de usuarios para mostrar nombres.
     if (!verRecibidos) api.get('/api/artistas')
@@ -81,7 +85,7 @@ function ListaEncargos({ base, state, navigate, parametros, setParametros,
             <Boton tipo="secundario" onClick={reintentar}>Reintentar</Boton>
           </div>
         ) : encargos.length === 0 ? (
-          <Estado tipo="vacio" mensaje="Todavía no hay encargos en esta vista." />
+          <Estado tipo="vacio" mensaje={verRecibidos ? 'Todavía no recibiste encargos.' : 'Todavía no hiciste encargos.'} />
         ) : (
           <div className="encargos-tabla" role="region" aria-label="Listado de encargos" tabIndex={0}>
             <table className="tabla">

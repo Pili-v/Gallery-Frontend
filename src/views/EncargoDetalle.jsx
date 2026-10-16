@@ -1,14 +1,14 @@
 import { api, lista } from '../api/cliente';
 import { getUsuario, getPerfilArtista } from '../api/sesion';
-import { permisosEncargo } from '../api/encargoSesion.mjs';
+import { permisosEncargo } from '../api/encargoSesion.js';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import Boton from '../components/Boton';
 import CampoFormulario from '../components/CampoFormulario';
 import Estado from '../components/Estado';
 import EstadoEncargo from '../components/EstadoEncargo';
-import { pinturas, lienzos } from '../api/encargoContrato.mjs';
-import { estadosEncargo, estadosPermitidos, prepararMensaje, prepararCambioEstado } from '../api/encargoDetalleContrato.mjs';
+import { pinturas, lienzos } from '../api/encargoContrato.js';
+import { estadosEncargo, estadosPermitidos, prepararMensaje, prepararCambioEstado } from '../api/encargoDetalleContrato.js';
 import './encargoDetalle.css';
 
 export default function EncargoDetalle() {
@@ -37,7 +37,14 @@ function Detalle({ id, recibidos, base }) {
       .then(respuesta => {
         if (!respuesta) throw new Error('No se pudo cargar el encargo.');
         pedido = respuesta;
-        return api.get(`/api/encargos/${id}/mensajes`);
+        return api.get(`/api/encargos/${id}/mensajes`)
+          .catch(error => {
+            // El backend responde 404 cuando el encargo todavía no tiene mensajes.
+            if (error.status === 404 && error.message === `El encargo con id ${id} todavía no tiene mensajes`) {
+              return [];
+            }
+            throw error;
+          });
       })
       .then(mensajes => {
         if (activo) setDatos({ encargo: { ...pedido, mensajes: lista(mensajes) }, error: '' });

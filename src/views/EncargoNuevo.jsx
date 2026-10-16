@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Boton from '../components/Boton';
 import CampoFormulario from '../components/CampoFormulario';
 import Estado from '../components/Estado';
-import { pinturas, lienzos, prepararEncargo } from '../api/encargoContrato.mjs';
+import { pinturas, lienzos, prepararEncargo } from '../api/encargoContrato.js';
 import './encargoNuevo.css';
 
 const inicial = {

@@ -9,70 +9,74 @@ const API = "http://localhost:8080"
 // El backend responde de tres formas: JSON con "mensaje", texto plano (casi todos los
 // 400 y 409) o nada (los 403). Con el código se puede distinguir un caso de otro:
 // por ejemplo, una lista vacía llega como 404 y no es una falla.
-const crearError = async (respuesta) => {
-    const texto = await respuesta.text().catch(() => "")
-    let mensaje = texto
+const crearError = (respuesta) => {
+    return respuesta.text()
+        .catch(() => "")
+        .then(texto => {
+            let mensaje = texto
 
-    try {
-        const cuerpo = JSON.parse(texto)
-        // Un texto plano como "404" o "true" también es JSON válido: solo un objeto trae campos.
-        if (cuerpo && typeof cuerpo === "object") mensaje = cuerpo.mensaje || cuerpo.message || ""
-    } catch {
-        // No era JSON: queda el texto plano tal cual.
-    }
+            try {
+                const cuerpo = JSON.parse(texto)
+                if (cuerpo && typeof cuerpo === "object") {
+                    mensaje = cuerpo.mensaje || cuerpo.message || ""
+                }
+            } catch {
+                // Si no es JSON, conservamos el texto.
+            }
 
-    if (!mensaje && respuesta.status === 403) mensaje = "No tenés permiso para hacer esto."
-    if (!mensaje) mensaje = "Error " + respuesta.status
+            if (!mensaje && respuesta.status === 403) {
+                mensaje = "No tenés permiso para hacer esto."
+            }
 
-    const error = new Error(mensaje)
-    error.status = respuesta.status
-    return error
+            if (!mensaje) mensaje = "Error " + respuesta.status
+
+            const error = new Error(mensaje)
+            error.status = respuesta.status
+            return error
+        })
 }
 
 // Hace el pedido y devuelve el JSON ya convertido en objeto.
 // Si la API responde con error, corta con el mensaje que mandó el backend (ver crearError).
-const pedir = async (ruta, opciones = {}) => {
+const pedir = (ruta, opciones = {}) => {
     const token = getToken()
 
-    const respuesta = await fetch(API + ruta, {
+    return fetch(API + ruta, {
         ...opciones,
         headers: {
             "Content-Type": "application/json",
             ...(token ? { Authorization: "Bearer " + token } : {}),
             ...opciones.headers
         }
-    }).catch(() => {
-        // fetch solo falla así cuando no hay conexión con el backend.
-        throw new Error("No se pudo conectar con el servidor.")
     })
+        .catch(() => {
+            throw new Error("No se pudo conectar con el servidor.")
+        })
+        .then(respuesta => {
+            if (respuesta.status === 401) {
+                if (ruta === "/api/v1/auth/authenticate") {
+                    return respuesta.text().then(mensaje => {
+                        throw new Error(
+                            mensaje || "Mail o contraseña incorrectos"
+                        )
+                    })
+                }
 
-    // 401 = el token no sirve. Se borra la sesión y se vuelve al login.
-    if (respuesta.status === 401) {
+                cerrarSesion()
+                window.location.href = "/login"
+                return
+            }
 
-        // Si el error ocurre intentando iniciar sesión,
-        // mostramos el mensaje y no recargamos la página.
-        if (ruta === "/api/v1/auth/authenticate") {
-            const mensaje = await respuesta.text()
+            if (!respuesta.ok) {
+                return crearError(respuesta).then(error => {
+                    throw error
+                })
+            }
 
-            throw new Error(
-                mensaje || "Mail o contraseña incorrectos"
-            )
-        }
+            if (respuesta.status === 204) return null
 
-        // Si ya había una sesión y el token dejó de ser válido,
-        // cerramos la sesión y volvemos al login.
-        cerrarSesion()
-        window.location.href = "/login"
-        return
-    }
-
-    if (!respuesta.ok) {
-        throw await crearError(respuesta)
-    }
-
-    // Un DELETE suele venir sin cuerpo.
-    if (respuesta.status === 204) return null
-    return respuesta.json().catch(() => null)
+            return respuesta.json().catch(() => null)
+        })
 }
 
 export const api = {
@@ -91,13 +95,18 @@ export const lista = (respuesta) => {
     return respuesta?.content ?? []
 }
 // Para subir fotos no se manda JSON: el navegador arma el multipart solo.
-export const subirArchivo = async (ruta, formData) => {
+export const subirArchivo = (ruta, formData) => {
     const token = getToken()
-    const respuesta = await fetch(API + ruta, {
+
+    return fetch(API + ruta, {
         method: "POST",
         headers: token ? { Authorization: "Bearer " + token } : {},
         body: formData
+    }).then(respuesta => {
+        if (!respuesta.ok) {
+            throw new Error("No se pudo subir el archivo")
+        }
+
+        return respuesta.json()
     })
-    if (!respuesta.ok) throw new Error("No se pudo subir el archivo")
-    return respuesta.json()
 }

@@ -1,4 +1,4 @@
-import { estadosEncargo } from '../api/encargoDetalleContrato.mjs';
+import { estadosEncargo } from '../api/encargoDetalleContrato.js';
 
 export default function EstadoEncargo({ estado }) {
   const sello = estadosEncargo[estado];
