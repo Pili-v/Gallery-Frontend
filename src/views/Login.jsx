@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 
 import CampoFormulario from "../components/CampoFormulario"
 import Boton from "../components/Boton"
@@ -10,14 +10,6 @@ import { guardarSesion } from "../api/sesion"
 const Login = () => {
 
     const navigate = useNavigate()
-    const ubicacion = useLocation()
-
-    // Si llegó porque la sesión venció o por una pantalla protegida, vuelve a esa pantalla.
-    // Solo se acepta una ruta de esta misma página (empieza con una sola barra).
-    const volverA = ubicacion.state && ubicacion.state.volverA
-    const destino = typeof volverA === "string" && volverA.startsWith("/") && !volverA.startsWith("//")
-        ? volverA
-        : "/"
 
     const [datos, setDatos] = useState({
         email_usuario: "",
@@ -62,7 +54,7 @@ const Login = () => {
         return Object.keys(nuevosErrores).length === 0
     }
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
 
         e.preventDefault()
 
@@ -73,40 +65,36 @@ const Login = () => {
         setCargando(true)
         setErrorGeneral("")
 
-        try {
+        api.post(
+            "/api/v1/auth/authenticate",
+            datos
+        )
+            .then((respuesta) => {
 
-            // 1. Mandamos email y contraseña al backend.
-            const respuesta = await api.post(
-                "/api/v1/auth/authenticate",
-                datos
-            )
+                const token = respuesta.access_token
 
-            // 2. El backend devuelve el token.
-            const token = respuesta.access_token
+                localStorage.setItem("token", token)
 
-            // Lo guardamos temporalmente para que cliente.js
-            // pueda mandarlo en el siguiente GET.
-            localStorage.setItem("token", token)
+                return api.get("/api/usuarios/me")
+            })
+            .then((perfil) => {
 
-            // 3. Pedimos los datos reales del usuario logueado.
-            const perfil = await api.get("/api/usuarios/me")
+                const token = localStorage.getItem("token")
 
-            // 4. Guardamos la sesión completa.
-            guardarSesion(token, perfil)
+                guardarSesion(token, perfil)
 
-            // 5. Login terminado.
-            navigate(destino)
+                navigate("/")
+            })
+            .catch((e) => {
 
-        } catch (e) {
+                setErrorGeneral(
+                    e.message || "No se pudo iniciar sesión."
+                )
+            })
+            .finally(() => {
 
-            setErrorGeneral(
-                e.message || "No se pudo iniciar sesión."
-            )
-
-        } finally {
-
-            setCargando(false)
-        }
+                setCargando(false)
+            })
     }
 
     return (
@@ -172,6 +160,7 @@ const Login = () => {
                     style={{ marginTop: "var(--md)" }}
                 >
                     ¿No tenés cuenta?{" "}
+
                     <Link
                         to="/registro"
                         style={{ color: "var(--bordo)" }}

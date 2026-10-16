@@ -24,13 +24,52 @@ const Registro = () => {
     const [cargando, setCargando] = useState(false)
     const [errorGeneral, setErrorGeneral] = useState("")
 
+    const limpiarNombre = (texto) => {
+
+        const soloLetras = texto.replace(
+            /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g,
+            ""
+        )
+
+        return soloLetras
+            .split(" ")
+            .map((palabra) => {
+
+                if (!palabra) {
+                    return ""
+                }
+
+                return (
+                    palabra.charAt(0).toUpperCase() +
+                    palabra.slice(1).toLowerCase()
+                )
+            })
+            .join(" ")
+    }
+
     const handleChange = (e) => {
 
         const { name, value } = e.target
 
+        let nuevoValor = value
+
+        if (
+            name === "nombre_persona" ||
+            name === "apellido_persona"
+        ) {
+            nuevoValor = limpiarNombre(value)
+        }
+
+        if (name === "telefono_usuario") {
+
+            nuevoValor = value
+                .replace(/\D/g, "")
+                .slice(0, 10)
+        }
+
         setDatos({
             ...datos,
-            [name]: value
+            [name]: nuevoValor
         })
 
         setErrores({
@@ -80,7 +119,7 @@ const Registro = () => {
         return Object.keys(nuevosErrores).length === 0
     }
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
 
         e.preventDefault()
 
@@ -91,38 +130,36 @@ const Registro = () => {
         setCargando(true)
         setErrorGeneral("")
 
-        try {
+        api.post(
+            "/api/v1/auth/register",
+            datos
+        )
+            .then((respuesta) => {
 
-            // 1. Registramos el usuario en el backend.
-            const respuesta = await api.post(
-                "/api/v1/auth/register",
-                datos
-            )
+                const token = respuesta.access_token
 
-            // 2. El registro devuelve un token.
-            const token = respuesta.access_token
+                localStorage.setItem("token", token)
 
-            localStorage.setItem("token", token)
+                return api.get("/api/usuarios/me")
+            })
+            .then((perfil) => {
 
-            // 3. Pedimos el usuario recién creado.
-            const perfil = await api.get("/api/usuarios/me")
+                const token = localStorage.getItem("token")
 
-            // 4. Guardamos la sesión.
-            guardarSesion(token, perfil.usuario)
+                guardarSesion(token, perfil)
 
-            // 5. Registro terminado.
-            navigate("/")
+                navigate("/")
+            })
+            .catch((e) => {
 
-        } catch (e) {
+                setErrorGeneral(
+                    e.message || "No se pudo crear la cuenta."
+                )
+            })
+            .finally(() => {
 
-            setErrorGeneral(
-                e.message || "No se pudo crear la cuenta."
-            )
-
-        } finally {
-
-            setCargando(false)
-        }
+                setCargando(false)
+            })
     }
 
     return (
@@ -185,9 +222,12 @@ const Registro = () => {
 
                     <CampoFormulario
                         etiqueta="Teléfono"
+                        tipo="tel"
                         name="telefono_usuario"
                         value={datos.telefono_usuario}
                         onChange={handleChange}
+                        maxLength={10}
+                        inputMode="numeric"
                         error={errores.telefono_usuario}
                     />
 
@@ -214,7 +254,10 @@ const Registro = () => {
                         bloque
                         type="submit"
                     >
-                        {cargando ? "Creando cuenta..." : "Crear cuenta"}
+                        {cargando
+                            ? "Creando cuenta..."
+                            : "Crear cuenta"
+                        }
                     </Boton>
 
                 </form>
@@ -224,6 +267,7 @@ const Registro = () => {
                     style={{ marginTop: "var(--md)" }}
                 >
                     ¿Ya tenés cuenta?{" "}
+
                     <Link
                         to="/login"
                         style={{ color: "var(--bordo)" }}
