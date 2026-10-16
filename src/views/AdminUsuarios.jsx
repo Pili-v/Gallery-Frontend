@@ -14,6 +14,8 @@ const ROLES = [
     "ADMIN"
 ]
 
+const USUARIOS_POR_PAGINA = 10
+
 const AdminUsuarios = () => {
 
     const [usuarios, setUsuarios] = useState([])
@@ -22,33 +24,40 @@ const AdminUsuarios = () => {
     const [error, setError] = useState("")
     const [guardando, setGuardando] = useState(null)
 
+    const [busqueda, setBusqueda] = useState("")
+    const [paginaActual, setPaginaActual] = useState(1)
+
     const usuarioActual = getUsuario()
 
-    const cargarUsuarios = async () => {
+    const cargarUsuarios = () => {
 
-        try {
+        setCargando(true)
+        setError("")
 
-            const respuesta = await api.get("/api/usuarios")
-            const usuariosRecibidos = lista(respuesta)
+        api.get("/api/usuarios")
+            .then((respuesta) => {
 
-            setUsuarios(usuariosRecibidos)
+                const usuariosRecibidos = lista(respuesta)
 
-            const rolesIniciales = {}
+                setUsuarios(usuariosRecibidos)
 
-            usuariosRecibidos.forEach((usuario) => {
-                rolesIniciales[usuario.id] = usuario.rol_usuario
+                const rolesIniciales = {}
+
+                usuariosRecibidos.forEach((usuario) => {
+                    rolesIniciales[usuario.id] =
+                        usuario.rol_usuario
+                })
+
+                setRoles(rolesIniciales)
             })
+            .catch((e) => {
 
-            setRoles(rolesIniciales)
+                setError(e.message)
+            })
+            .finally(() => {
 
-        } catch (e) {
-
-            setError(e.message)
-
-        } finally {
-
-            setCargando(false)
-        }
+                setCargando(false)
+            })
     }
 
     useEffect(() => {
@@ -63,37 +72,95 @@ const AdminUsuarios = () => {
         })
     }
 
-    const guardarRol = async (usuarioId) => {
+    const guardarRol = (usuarioId) => {
 
         setGuardando(usuarioId)
         setError("")
 
-        try {
+        const rol = roles[usuarioId]
 
-            const rol = roles[usuarioId]
+        api.patch(
+            "/api/usuarios/" +
+            usuarioId +
+            "/rol?rol=" +
+            encodeURIComponent(rol)
+        )
+            .then((usuarioActualizado) => {
 
-            const usuarioActualizado = await api.patch(
-                "/api/usuarios/" +
-                usuarioId +
-                "/rol?rol=" +
-                encodeURIComponent(rol)
-            )
-
-            setUsuarios(
-                usuarios.map((usuario) =>
-                    usuario.id === usuarioId
-                        ? usuarioActualizado
-                        : usuario
+                setUsuarios(
+                    usuarios.map((usuario) =>
+                        usuario.id === usuarioId
+                            ? usuarioActualizado
+                            : usuario
+                    )
                 )
+            })
+            .catch((e) => {
+
+                setError(e.message)
+            })
+            .finally(() => {
+
+                setGuardando(null)
+            })
+    }
+
+    const handleBusqueda = (e) => {
+
+        setBusqueda(e.target.value)
+        setPaginaActual(1)
+    }
+
+    const usuariosFiltrados = usuarios.filter((usuario) => {
+
+        if (!busqueda) {
+            return true
+        }
+
+        const nombreCompleto =
+            usuario.nombre_persona +
+            " " +
+            usuario.apellido_persona
+
+        return (
+            nombreCompleto.includes(busqueda) ||
+            usuario.email_usuario.includes(busqueda) ||
+            usuario.nombre_usuario?.includes(busqueda)
+        )
+    })
+
+    const totalPaginas = Math.max(
+        1,
+        Math.ceil(
+            usuariosFiltrados.length /
+            USUARIOS_POR_PAGINA
+        )
+    )
+
+    const inicio =
+        (paginaActual - 1) * USUARIOS_POR_PAGINA
+
+    const usuariosPagina =
+        usuariosFiltrados.slice(
+            inicio,
+            inicio + USUARIOS_POR_PAGINA
+        )
+
+    const paginaAnterior = () => {
+
+        if (paginaActual > 1) {
+            setPaginaActual(
+                paginaActual - 1
             )
+        }
+    }
 
-        } catch (e) {
+    const paginaSiguiente = () => {
 
-            setError(e.message)
-
-        } finally {
-
-            setGuardando(null)
+        if (paginaActual < totalPaginas) {
+            setPaginaActual(
+                paginaActual + 1
+            )
         }
     }
 
@@ -117,13 +184,20 @@ const AdminUsuarios = () => {
 
                 <p
                     className="body-lg muted"
-                    style={{ margin: "var(--xs) 0 var(--xl)" }}
+                    style={{
+                        margin:
+                            "var(--xs) 0 var(--xl)"
+                    }}
                 >
                     Asignar el rol define qué puede hacer cada cuenta.
                 </p>
 
                 {error && (
-                    <div style={{ marginBottom: "var(--md)" }}>
+                    <div
+                        style={{
+                            marginBottom: "var(--md)"
+                        }}
+                    >
                         <Estado
                             tipo="error"
                             mensaje={error}
@@ -131,124 +205,193 @@ const AdminUsuarios = () => {
                     </div>
                 )}
 
-                {usuarios.length === 0 ? (
+                <div
+                    style={{
+                        marginBottom: "var(--md)"
+                    }}
+                >
+                    <input
+                        className="input"
+                        type="text"
+                        placeholder="Buscar usuario..."
+                        value={busqueda}
+                        onChange={handleBusqueda}
+                    />
+                </div>
+
+                {usuariosFiltrados.length === 0 ? (
 
                     <Estado
                         tipo="vacio"
-                        mensaje="No hay usuarios registrados."
+                        mensaje="No se encontraron usuarios."
                     />
 
                 ) : (
 
-                    <table className="tabla">
+                    <>
+                        <table className="tabla">
 
-                        <thead>
-                            <tr>
-                                <th>Usuario</th>
-                                <th>Email</th>
-                                <th>Alta</th>
-                                <th>Rol</th>
-                                <th></th>
-                            </tr>
-                        </thead>
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Email</th>
+                                    <th>Alta</th>
+                                    <th>Rol</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
 
-                        <tbody>
+                            <tbody>
 
-                            {usuarios.map((usuario) => {
+                                {usuariosPagina.map((usuario) => {
 
-                                const esUsuarioActual =
-                                    usuarioActual?.id === usuario.id
+                                    const esUsuarioActual =
+                                        usuarioActual?.id ===
+                                        usuario.id
 
-                                return (
-                                    <tr key={usuario.id}>
+                                    return (
+                                        <tr key={usuario.id}>
 
-                                        <td>
-                                            {usuario.nombre_persona}{" "}
-                                            {usuario.apellido_persona}
-                                        </td>
+                                            <td>
+                                                {usuario.nombre_persona}{" "}
+                                                {usuario.apellido_persona}
+                                            </td>
 
-                                        <td>
-                                            {usuario.email_usuario}
-                                        </td>
+                                            <td>
+                                                {usuario.email_usuario}
+                                            </td>
 
-                                        <td>
-                                            {fecha(usuario.fecha_creacion)}
-                                        </td>
+                                            <td>
+                                                {fecha(
+                                                    usuario.fecha_creacion
+                                                )}
+                                            </td>
 
-                                        <td>
+                                            <td>
 
-                                            <select
-                                                className="select"
-                                                style={{ width: "auto" }}
-                                                value={
-                                                    roles[usuario.id]
-                                                }
-                                                onChange={(e) =>
-                                                    handleRol(
-                                                        usuario.id,
-                                                        e.target.value
-                                                    )
-                                                }
-                                                disabled={esUsuarioActual}
-                                            >
+                                                <select
+                                                    className="select"
+                                                    style={{
+                                                        width: "auto"
+                                                    }}
+                                                    value={
+                                                        roles[
+                                                            usuario.id
+                                                        ]
+                                                    }
+                                                    onChange={(e) =>
+                                                        handleRol(
+                                                            usuario.id,
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    disabled={
+                                                        esUsuarioActual
+                                                    }
+                                                >
 
-                                                {ROLES.map((rol) => (
-                                                    <option
-                                                        key={rol}
-                                                        value={rol}
+                                                    {ROLES.map((rol) => (
+                                                        <option
+                                                            key={rol}
+                                                            value={rol}
+                                                        >
+                                                            {rol}
+                                                        </option>
+                                                    ))}
+
+                                                </select>
+
+                                            </td>
+
+                                            <td>
+
+                                                {esUsuarioActual ? (
+
+                                                    <Boton
+                                                        tipo="deshabilitado"
                                                     >
-                                                        {rol}
-                                                    </option>
-                                                ))}
+                                                        Sos vos
+                                                    </Boton>
 
-                                            </select>
+                                                ) : (
 
-                                        </td>
+                                                    <Boton
+                                                        tipo={
+                                                            guardando ===
+                                                            usuario.id
+                                                                ? "deshabilitado"
+                                                                : "secundario"
+                                                        }
+                                                        onClick={() =>
+                                                            guardarRol(
+                                                                usuario.id
+                                                            )
+                                                        }
+                                                    >
+                                                        {guardando ===
+                                                        usuario.id
+                                                            ? "Guardando..."
+                                                            : "Guardar"
+                                                        }
+                                                    </Boton>
 
-                                        <td>
+                                                )}
 
-                                            {esUsuarioActual ? (
+                                            </td>
 
-                                                <Boton
-                                                    tipo="deshabilitado"
-                                                >
-                                                    Sos vos
-                                                </Boton>
+                                        </tr>
+                                    )
+                                })}
 
-                                            ) : (
+                            </tbody>
 
-                                                <Boton
-                                                    tipo={
-                                                        guardando === usuario.id
-                                                            ? "deshabilitado"
-                                                            : "secundario"
-                                                    }
-                                                    onClick={() =>
-                                                        guardarRol(usuario.id)
-                                                    }
-                                                >
-                                                    {guardando === usuario.id
-                                                        ? "Guardando..."
-                                                        : "Guardar"
-                                                    }
-                                                </Boton>
+                        </table>
 
-                                            )}
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: "var(--md)",
+                                marginTop: "var(--lg)"
+                            }}
+                        >
 
-                                        </td>
+                            <Boton
+                                tipo={
+                                    paginaActual === 1
+                                        ? "deshabilitado"
+                                        : "secundario"
+                                }
+                                onClick={paginaAnterior}
+                            >
+                                Anterior
+                            </Boton>
 
-                                    </tr>
-                                )
-                            })}
+                            <span className="body-sm muted">
+                                Página {paginaActual} de {totalPaginas}
+                            </span>
 
-                        </tbody>
+                            <Boton
+                                tipo={
+                                    paginaActual === totalPaginas
+                                        ? "deshabilitado"
+                                        : "secundario"
+                                }
+                                onClick={paginaSiguiente}
+                            >
+                                Siguiente
+                            </Boton>
 
-                    </table>
+                        </div>
+                    </>
                 )}
 
                 <p
                     className="body-sm muted"
-                    style={{ marginTop: "var(--md)" }}
+                    style={{
+                        marginTop: "var(--md)"
+                    }}
                 >
                     El cambio de rol tiene efecto en la siguiente petición:
                     no hace falta volver a entrar.
