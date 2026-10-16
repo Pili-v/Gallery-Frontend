@@ -1,9 +1,8 @@
 // Catálogo — Área 3 · Catálogo
-// La grilla sale de la API. Se piden las listas completas una sola vez y se
-// arman acá: pedir las variantes y las imagenes obra por obra serian diez
-// llamadas para cinco obras.
-// El filtro de estilo y el de precio los resuelve el backend, que ya acepta
-// estiloId, precioMin y precioMax como parametros de GET /api/obras.
+// Los datos de apoyo (variantes, imágenes, estilos, artistas) se piden una sola vez.
+// Las obras se piden cada vez que cambia un filtro. Si el filtro no devuelve nada
+// (404) o es inválido (400), la pantalla avisa DENTRO de la zona de resultados, deja
+// los filtros a la vista y ofrece un botón para quitarlos (no vuelve sola). Sin async/await y sin tocar el DOM.
 
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -11,81 +10,159 @@ import { api, lista } from "../api/cliente";
 import TarjetaObra from "../components/TarjetaObra";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
+import { pesos } from "../api/formato";
+
+// Una lista vacía llega como 404 (regla de la cátedra): para listas de apoyo significa "no hay".
+const sin404 = (promesa) =>
+  promesa.catch((e) => {
+    if (e.status === 404) return [];
+    throw e;
+  });
+
+const SIN_RANGO = { min: "", max: "" };
 
 export default function Catalogo() {
-  // Lo que llega de la API
-  const [obras, setObras] = useState([]);
+  // Datos de apoyo
   const [variantes, setVariantes] = useState([]);
   const [imagenes, setImagenes] = useState([]);
   const [estilos, setEstilos] = useState([]);
   const [artistas, setArtistas] = useState([]);
+  const [cargandoApoyo, setCargandoApoyo] = useState(true);
+  const [errorApoyo, setErrorApoyo] = useState("");
 
-  // Los tres estados que contempla toda pantalla que pide datos
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState("");
+  // Obras del resultado actual
+  const [obras, setObras] = useState([]);
+  const [cargandoObras, setCargandoObras] = useState(true);
+  const [aviso, setAviso] = useState(null); // { mensaje (null = sin resultados), deFiltro }
+  const [primeraObra, setPrimeraObra] = useState(null);
+  const [intento, setIntento] = useState(0);
 
-  // Los filtros de la pantalla
-  const [estiloSeleccionado, setEstiloSeleccionado] = useState(null);
+  // Filtros: lo que se escribe, y lo que está aplicado
+  const [estiloId, setEstiloId] = useState(null);
   const [precioMin, setPrecioMin] = useState("");
   const [precioMax, setPrecioMax] = useState("");
+  const [rango, setRango] = useState({ ...SIN_RANGO });
+  const [errorPrecio, setErrorPrecio] = useState("");
   const [orden, setOrden] = useState("recientes");
 
-  // Arma la URL con los filtros que esten puestos. Los filtros van como
-  // parametros sobre el mismo endpoint: la URL nombra el recurso y los
-  // parametros lo acotan.
-  const urlDeObras = (estiloId, min, max) => {
-    const partes = [];
-    if (estiloId) partes.push("estiloId=" + estiloId);
-    if (min !== "") partes.push("precioMin=" + min);
-    if (max !== "") partes.push("precioMax=" + max);
-    return "/api/obras" + (partes.length > 0 ? "?" + partes.join("&") : "");
-  };
+  const hayFiltros = estiloId !== null || rango.min !== "" || rango.max !== "";
 
-  const cargarTodo = async (estiloId, min, max) => {
-    try {
-      const susObras = lista(await api.get(urlDeObras(estiloId, min, max)));
-      const susVariantes = lista(await api.get("/api/variantes"));
-      const susImagenes = lista(await api.get("/api/imagenes"));
-      const susEstilos = lista(await api.get("/api/estilos"));
-      const susArtistas = lista(await api.get("/api/artistas"));
-
-      setObras(susObras);
-      setVariantes(susVariantes);
-      setImagenes(susImagenes);
-      setEstilos(susEstilos);
-      setArtistas(susArtistas);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setCargando(false);
-    }
-  };
-
-  // useEffect con [] vacio: corre una sola vez, cuando aparece la pantalla.
+  // Datos de apoyo: una sola vez
   useEffect(() => {
-    cargarTodo(null, "", "");
-  }, []);
+    let vigente = true;
 
-  // Al tocar un estilo o aplicar el precio se vuelve a preguntar al backend,
-  // porque el filtrado es suyo: el front no se guarda todas las obras.
-  const filtrarPorEstilo = (estiloId) => {
-    setEstiloSeleccionado(estiloId);
-    setCargando(true);
-    cargarTodo(estiloId, precioMin, precioMax);
+    Promise.all([
+      sin404(api.get("/api/variantes")),
+      sin404(api.get("/api/imagenes")),
+      sin404(api.get("/api/estilos")),
+      sin404(api.get("/api/artistas"))
+    ])
+      .then(([susVariantes, susImagenes, susEstilos, susArtistas]) => {
+        if (!vigente) return;
+        setVariantes(lista(susVariantes));
+        setImagenes(lista(susImagenes));
+        setEstilos(lista(susEstilos));
+        setArtistas(lista(susArtistas));
+      })
+      .catch((e) => {
+        if (vigente) setErrorApoyo(e.message);
+      })
+      .finally(() => {
+        if (vigente) setCargandoApoyo(false);
+      });
+
+    return () => {
+      vigente = false;
+    };
+  }, [intento]);
+
+  // Obras: se vuelven a pedir cuando cambia un filtro
+  useEffect(() => {
+    let vigente = true;
+
+    const partes = [];
+    if (estiloId !== null) partes.push("estiloId=" + estiloId);
+    if (rango.min !== "") partes.push("precioMin=" + rango.min);
+    if (rango.max !== "") partes.push("precioMax=" + rango.max);
+    const ruta = "/api/obras" + (partes.length > 0 ? "?" + partes.join("&") : "");
+    const conFiltros = partes.length > 0;
+
+    setCargandoObras(true);
+    setAviso(null);
+
+    api
+      .get(ruta)
+      .then((respuesta) => {
+        if (!vigente) return;
+        const lasObras = lista(respuesta);
+        setObras(lasObras);
+        // La obra del hero es la primera del catálogo SIN filtros
+        if (!conFiltros && lasObras.length > 0) setPrimeraObra(lasObras[0]);
+      })
+      .catch((e) => {
+        if (!vigente) return;
+        setObras([]);
+        const esDeFiltro = e.status === 404 || e.status === 400;
+        if (conFiltros && esDeFiltro) {
+          setAviso({
+            mensaje: e.status === 404 ? null : e.message,
+            deFiltro: true
+          });
+        } else if (e.status === 404) {
+          setAviso(null); // catálogo vacío de verdad: se muestra el estado vacío
+        } else {
+          setAviso({ mensaje: e.message, deFiltro: false });
+        }
+      })
+      .finally(() => {
+        if (vigente) setCargandoObras(false);
+      });
+
+    return () => {
+      vigente = false;
+    };
+  }, [estiloId, rango, intento]);
+
+  const quitarFiltros = () => {
+    setEstiloId(null);
+    setPrecioMin("");
+    setPrecioMax("");
+    setRango({ ...SIN_RANGO });
+    setErrorPrecio("");
+    setAviso(null);
   };
 
   const aplicarFiltroPrecio = () => {
-    setCargando(true);
-    cargarTodo(estiloSeleccionado, precioMin, precioMax);
+    setErrorPrecio("");
+    const min = precioMin.trim();
+    const max = precioMax.trim();
+
+    if ((min !== "" && Number(min) < 0) || (max !== "" && Number(max) < 0)) {
+      setErrorPrecio("Los precios no pueden ser negativos.");
+      return;
+    }
+    if (min !== "" && max !== "" && Number(min) > Number(max)) {
+      setErrorPrecio("El mínimo no puede ser mayor que el máximo.");
+      return;
+    }
+    setRango({ min, max });
   };
 
-  // La API devuelve ids, no nombres: la vista los traduce. La obra trae
-  // artista_id y estilo_ids, y de las otras listas sale como se llaman.
+  const reintentar = () => {
+    setErrorApoyo("");
+    setCargandoApoyo(true);
+    setIntento((n) => n + 1);
+  };
+
+  // La API devuelve ids, no nombres: la vista los traduce
   const armarItem = (obra) => {
     const variante = variantes.find((v) => v.obra_id === obra.id);
-    const imagen = imagenes.find((i) => i.obra_id === obra.id);
+    const susImagenes = imagenes
+      .filter((i) => i.obra_id === obra.id)
+      .sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0));
+    const portada = susImagenes[0];
     const artista = artistas.find((a) => a.id === obra.artista_id);
-    const estilo = estilos.find((e) => obra.estilo_ids.includes(e.id));
+    const estilo = estilos.find((e) => (obra.estilo_ids ?? []).includes(e.id));
 
     return {
       obra: {
@@ -94,36 +171,83 @@ export default function Catalogo() {
         artistaId: obra.artista_id,
         nombre_artistico: artista ? artista.nombre_artistico : "Artista"
       },
-      variante: variante,
-      // La foto no es una direccion web: viene en base64 desde la base.
-      imagen: imagen ? "data:image/jpeg;base64," + imagen.contenido_imagen : null
+      variante,
+      imagen: portada ? portada.url ?? "data:image/jpeg;base64," + portada.contenido_imagen : null
     };
   };
 
   let items = obras.map(armarItem);
-
-  // El orden se resuelve acá porque la API todavia no expone sort.
   if (orden === "menor-precio") {
     items = [...items].sort((a, b) => (a.variante?.precio_variante ?? 0) - (b.variante?.precio_variante ?? 0));
   } else if (orden === "mayor-precio") {
     items = [...items].sort((a, b) => (b.variante?.precio_variante ?? 0) - (a.variante?.precio_variante ?? 0));
   }
 
-  const cantidadArtistas = new Set(obras.map((o) => o.artista_id)).size;
-  const destacada = items[0];
+  const destacada = primeraObra ? armarItem(primeraObra) : null;
+  const cantidadArtistas = artistas.length;
 
-  const irALaGrilla = () => {
-    document.getElementById("grilla-catalogo")?.scrollIntoView({ behavior: "smooth" });
+  if (cargandoApoyo) {
+    return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>;
+  }
+  if (errorApoyo) {
+    return (
+      <div className="seccion">
+        <div className="contenido">
+          <Estado tipo="error" mensaje={errorApoyo} accion="Reintentar" onAccion={reintentar} />
+        </div>
+      </div>
+    );
+  }
+
+  // El texto depende de qué filtro dejó la lista vacía: estilo, precio o los dos.
+  const mensajeSinResultados = () => {
+    const estilo = estilos.find((e) => e.id === estiloId);
+    const hayPrecio = rango.min !== "" || rango.max !== "";
+
+    let precioTexto = "";
+    if (rango.min !== "" && rango.max !== "") precioTexto = "entre " + pesos(Number(rango.min)) + " y " + pesos(Number(rango.max));
+    else if (rango.min !== "") precioTexto = "desde " + pesos(Number(rango.min));
+    else if (rango.max !== "") precioTexto = "hasta " + pesos(Number(rango.max));
+
+    if (estilo && hayPrecio) return "No hay obras del estilo " + estilo.nombreEstilo + " " + precioTexto + ".";
+    if (estilo) return "Todavía no hay obras del estilo " + estilo.nombreEstilo + ".";
+    return "No hay obras " + precioTexto + ".";
   };
 
-  if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>;
-  if (error) return <div className="seccion"><div className="contenido"><Estado tipo="error" mensaje={error} /></div></div>;
+  // Lo que va en la zona de resultados
+  let resultados;
+  if (cargandoObras) {
+    resultados = <Estado tipo="cargando" />;
+  } else if (aviso && aviso.deFiltro) {
+    resultados = (
+      <div className="aviso apilado">
+        <p className="body-lg">{aviso.mensaje ?? mensajeSinResultados()}</p>
+        <div>
+          <Boton tipo="primario" onClick={quitarFiltros}>Quitar filtros</Boton>
+        </div>
+      </div>
+    );
+  } else if (aviso) {
+    resultados = (
+      <Estado tipo="error" mensaje={aviso.mensaje} accion="Reintentar" onAccion={() => setIntento((n) => n + 1)} />
+    );
+  } else if (items.length === 0) {
+    resultados = <Estado tipo="vacio" mensaje="Todavía no hay obras publicadas." />;
+  } else {
+    resultados = (
+      <div className="grilla-obras">
+        {items.map((item) => (
+          <TarjetaObra key={item.obra.id} obra={item.obra} variante={item.variante} imagen={item.imagen} />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div>
       {/* Hero editorial */}
       <section className="hero">
-        <div className="hero-texto ">
+        <div className="hero-texto">
           <div className="hero-regla" />
           <p className="catalog-number muted">
             OBRA ORIGINAL · {cantidadArtistas} ARTISTAS · ENVÍOS A TODO EL PAÍS
@@ -136,20 +260,19 @@ export default function Catalogo() {
             arma con esas dos decisiones, y el dinero va directo al artista.
           </p>
           <div className="fila" style={{ marginTop: "var(--lg)" }}>
-            <Boton tipo="primario" onClick={irALaGrilla}>Ver todas las obras</Boton>
+            <Boton tipo="primario" onClick={quitarFiltros}>Ver todas las obras</Boton>
             <Link to="/encargos/nuevo">
               <Boton tipo="secundario">Pedir un encargo</Boton>
             </Link>
           </div>
         </div>
 
-        {/* La obra del hero es la primera del catalogo, no una foto fija. */}
         {destacada && (
           <div className="hero-obra">
             {destacada.imagen && <img src={destacada.imagen} alt={destacada.obra.nombre_obra} />}
             <div className="hero-pie">
               <span className="cartela-artist">
-                Nº {String(destacada.obra.id).padStart(3, "0")} · {destacada.obra.nombre_obra} · {destacada.obra.nombre_artistico}
+                {destacada.obra.nombre_obra} · {destacada.obra.nombre_artistico}
               </span>
             </div>
           </div>
@@ -157,35 +280,35 @@ export default function Catalogo() {
       </section>
 
       <div className="contenido">
-        <section className="seccion-sm" id="grilla-catalogo">
+        <section className="seccion-sm">
 
-          {/* Filtro de estilo: los estilos salen de la API, no de una lista fija */}
+          {/* Estilos (salen de la API). Los filtros quedan siempre visibles. */}
           <div className="fila" style={{ flexWrap: "wrap", gap: "var(--sm)", marginBottom: "var(--lg)" }}>
             <button
-              className={"chip " + (estiloSeleccionado === null ? "activo" : "")}
-              onClick={() => filtrarPorEstilo(null)}
+              className={"chip " + (estiloId === null ? "activo" : "")}
+              onClick={() => setEstiloId(null)}
             >
               Todos
             </button>
-
             {estilos.map((estilo) => (
               <button
                 key={estilo.id}
-                className={"chip " + (estiloSeleccionado === estilo.id ? "activo" : "")}
-                onClick={() => filtrarPorEstilo(estilo.id)}
+                className={"chip " + (estiloId === estilo.id ? "activo" : "")}
+                onClick={() => setEstiloId(estilo.id)}
               >
                 {estilo.nombreEstilo}
               </button>
             ))}
           </div>
 
-          {/* Filtro de precio */}
-          <div className="fila" style={{ marginBottom: "var(--lg)" }}>
+          {/* Precio */}
+          <div className="fila" style={{ marginBottom: "var(--sm)" }}>
             <span className="cartela-meta">PRECIO</span>
             <input
               className="input"
               style={{ width: 120 }}
               type="number"
+              min="0"
               placeholder="Mínimo"
               value={precioMin}
               onChange={(e) => setPrecioMin(e.target.value)}
@@ -195,19 +318,23 @@ export default function Catalogo() {
               className="input"
               style={{ width: 120 }}
               type="number"
+              min="0"
               placeholder="Máximo"
               value={precioMax}
               onChange={(e) => setPrecioMax(e.target.value)}
             />
             <Boton tipo="secundario" onClick={aplicarFiltroPrecio}>Aplicar</Boton>
+            {hayFiltros && <Boton tipo="secundario" onClick={quitarFiltros}>Quitar filtros</Boton>}
           </div>
+          {errorPrecio && (
+            <p className="campo-error body-sm" style={{ marginBottom: "var(--sm)" }}>{errorPrecio}</p>
+          )}
 
           <hr className="divisor" />
 
-          {/* Contador + orden */}
-          <div className="entre" style={{ marginBottom: "var(--lg)" }}>
+          <div className="entre" style={{ margin: "var(--lg) 0" }}>
             <span className="catalog-number muted">
-              Todas las obras — {items.length} resultados
+              {hayFiltros ? "Resultados" : "Todas las obras"} — {items.length} resultados
             </span>
             <select className="select" style={{ width: 200 }} value={orden} onChange={(e) => setOrden(e.target.value)}>
               <option value="recientes">Más recientes</option>
@@ -216,25 +343,10 @@ export default function Catalogo() {
             </select>
           </div>
 
-          {/* Renderizado condicional: si el filtro no deja nada, se avisa */}
-          {items.length === 0 ? (
-            <Estado tipo="vacio" mensaje="No hay obras con esos filtros." />
-          ) : (
-            <div className="grilla-obras">
-              {items.map((item) => (
-                <TarjetaObra
-                  key={item.obra.id}
-                  obra={item.obra}
-                  variante={item.variante}
-                  imagen={item.imagen}
-                />
-              ))}
-            </div>
-          )}
+          {resultados}
         </section>
       </div>
 
-      {/* Banner de encargos */}
       <section className="seccion-oscura centro">
         <h2 className="headline-md">¿Buscás algo que todavía no existe?</h2>
         <p className="body-lg muted" style={{ marginTop: "var(--sm)" }}>

@@ -23,6 +23,7 @@ import AdminUsuarios from "./views/AdminUsuarios"
 import AdminCatalogos from "./views/AdminCatalogos"
 import SinPermiso from "./views/SinPermiso"
 import NoEncontrada from "./views/NoEncontrada"
+import Artistas from "./views/Artistas"
 
 // Quiénes pueden entrar a cada grupo de pantallas.
 const COMPRA = ["CLIENTE", "ARTISTA_CLIENTE", "ADMIN"]
@@ -40,6 +41,7 @@ const App = () => {
           <Route path="/" element={<Catalogo />} />
           <Route path="/demo/encargos/*" element={<Navigate to="/encargos" replace />} />
           <Route path="/obra/:id" element={<DetalleObra />} />
+          <Route path="/artistas" element={<Artistas />} />
           <Route path="/artista/:id" element={<PerfilArtista />} />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />

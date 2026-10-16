@@ -11,130 +11,124 @@ import TarjetaObra from "../components/TarjetaObra";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 
-const POR_PAGINA = 6;
-
-// Una lista vacía llega como 404 (regla de la cátedra): para una lista hija
-// significa "no hay", no que algo falló.
+// Una lista vacía llega como 404 (regla de la cátedra): para listas de apoyo significa "no hay".
 const sin404 = (promesa) =>
   promesa.catch((e) => {
     if (e.status === 404) return [];
     throw e;
   });
 
+const POR_PAGINA = 6;
+
 export default function PerfilArtista() {
   const { id } = useParams();
 
   const [artista, setArtista] = useState(null);
-  const [errorArtista, setErrorArtista] = useState("");
-
+  const [estilos, setEstilos] = useState([]);
   const [items, setItems] = useState([]);
   const [pagina, setPagina] = useState(0);
-  const [totalPaginas, setTotalPaginas] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalObras, setTotalObras] = useState(0);
+
   const [cargando, setCargando] = useState(true);
-  const [aviso, setAviso] = useState("");
-  const [errorObras, setErrorObras] = useState("");
+  const [cargandoObras, setCargandoObras] = useState(true);
+  const [error, setError] = useState("");
+  const [intento, setIntento] = useState(0);
 
-  // Al cambiar de artista se vuelve a empezar: datos nuevos y primera página.
+  // Al cambiar de artista se vuelve a la primera página
   useEffect(() => {
-    setArtista(null);
-    setErrorArtista("");
     setPagina(0);
-
-    api
-      .get("/api/artistas/" + id)
-      .then(setArtista)
-      .catch((e) => setErrorArtista(e.message));
   }, [id]);
 
-  // Las obras del artista, una página por vez.
+  // El artista y los estilos
   useEffect(() => {
-    if (!artista) return;
-
-    let activo = true;
+    let vigente = true;
     setCargando(true);
-    setAviso("");
-    setErrorObras("");
+    setError("");
 
-    const cargar = async () => {
-      try {
-        const respuesta = await api.get(
-          "/api/obras?artistaId=" + id + "&page=" + pagina + "&size=" + POR_PAGINA
-        );
-        const obras = lista(respuesta);
-        const estilos = lista(await sin404(api.get("/api/estilos")));
-
-        const armados = await Promise.all(
-          obras.map(async (obra) => {
-            const [variantes, imagenes] = await Promise.all([
-              sin404(api.get("/api/variantes?obraId=" + obra.id)).then(lista),
-              sin404(api.get("/api/imagenes?obraId=" + obra.id)).then(lista),
-            ]);
-
-            const estilo = estilos.find((e) => obra.estilo_ids.includes(e.id));
-            const variante = variantes.find((v) => v.stock_variante > 0) ?? variantes[0];
-
-            return {
-              obra: {
-                ...obra,
-                estilo: estilo ? estilo.nombreEstilo : "",
-                artistaId: obra.artista_id,
-                nombre_artistico: artista.nombre_artistico,
-              },
-              variante: variante,
-              imagen: imagenes[0]
-                ? "data:image/jpeg;base64," + imagenes[0].contenido_imagen
-                : null,
-            };
-          })
-        );
-
-        if (!activo) return;
-        setItems(armados);
-        setTotalPaginas(respuesta.totalPages ?? 1);
-        setTotalObras(respuesta.totalElements ?? armados.length);
-      } catch (e) {
-        if (!activo) return;
-        setItems([]);
-        setTotalPaginas(0);
-        setTotalObras(0);
-        // Sin obras el backend responde 404 con el motivo: se muestra, no es una falla.
-        if (e.status === 404) setAviso(e.message);
-        else setErrorObras(e.message);
-      } finally {
-        if (activo) setCargando(false);
-      }
-    };
-
-    cargar();
+    Promise.all([api.get("/api/artistas/" + id), sin404(api.get("/api/estilos"))])
+      .then(([suArtista, susEstilos]) => {
+        if (!vigente) return;
+        setArtista(suArtista);
+        setEstilos(lista(susEstilos));
+      })
+      .catch((e) => {
+        if (vigente) setError(e.message);
+      })
+      .finally(() => {
+        if (vigente) setCargando(false);
+      });
 
     return () => {
-      activo = false;
+      vigente = false;
     };
-  }, [artista, pagina]);
+  }, [id, intento]);
 
-  if (errorArtista) {
-    return (
-      <div className="seccion">
-        <div className="contenido apilado">
-          <Estado tipo="error" mensaje={errorArtista} />
-          <Link to="/">
-            <Boton tipo="secundario">Volver al catálogo</Boton>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Las obras de la página visible, con sus variantes e imágenes
+  useEffect(() => {
+    let vigente = true;
+    setCargandoObras(true);
 
-  if (!artista) {
+    sin404(api.get("/api/obras?artistaId=" + id + "&page=" + pagina + "&size=" + POR_PAGINA))
+      .then((respuesta) => {
+        const lasObras = lista(respuesta);
+        if (vigente) {
+          setTotalPaginas(respuesta?.totalPages ?? 1);
+          setTotalObras(respuesta?.totalElements ?? lasObras.length);
+        }
+        return Promise.all(
+          lasObras.map((obra) =>
+            Promise.all([
+              sin404(api.get("/api/variantes?obraId=" + obra.id)),
+              sin404(api.get("/api/imagenes?obraId=" + obra.id))
+            ]).then(([susVariantes, susImagenes]) => ({
+              obra,
+              variante: lista(susVariantes).find((v) => v.stock_variante > 0) ?? lista(susVariantes)[0],
+              imagenes: lista(susImagenes)
+            }))
+          )
+        );
+      })
+      .then((armadas) => {
+        if (vigente) setItems(armadas);
+      })
+      .catch((e) => {
+        if (vigente) setError(e.message);
+      })
+      .finally(() => {
+        if (vigente) setCargandoObras(false);
+      });
+
+    return () => {
+      vigente = false;
+    };
+  }, [id, pagina, intento]);
+
+  if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>;
+  if (error || !artista) {
     return (
       <div className="seccion">
         <div className="contenido">
-          <Estado tipo="cargando" />
+          <Estado tipo="error" mensaje={error || "No se encontró al artista."} accion="Reintentar" onAccion={() => setIntento((n) => n + 1)} />
         </div>
       </div>
     );
   }
+
+  const armarTarjeta = (item) => {
+    const portada = [...item.imagenes].sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0))[0];
+    const estilo = estilos.find((e) => (item.obra.estilo_ids ?? []).includes(e.id));
+    return {
+      obra: {
+        ...item.obra,
+        estilo: estilo ? estilo.nombreEstilo : "",
+        artistaId: artista.id,
+        nombre_artistico: artista.nombre_artistico
+      },
+      variante: item.variante,
+      imagen: portada ? portada.url ?? "data:image/jpeg;base64," + portada.contenido_imagen : null
+    };
+  };
 
   return (
     <div className="seccion">
@@ -142,10 +136,9 @@ export default function PerfilArtista() {
         <header className="entre" style={{ alignItems: "flex-start" }}>
           <div className="vendedor" style={{ gap: "var(--md)" }}>
             <div className="avatar" style={{ width: 64, height: 64, fontSize: 24 }}>
-              {artista.nombre_artistico[0]}
+              {(artista.nombre_artistico ?? "A")[0]}
             </div>
             <div>
-              <span className="cartela-meta">Artista</span>
               <h1 className="headline-lg">{artista.nombre_artistico}</h1>
               <p className="body-lg muted" style={{ marginTop: "var(--xs)" }}>
                 {artista.acepta_encargos ? "Acepta encargos" : "Por ahora no acepta encargos"}
@@ -167,37 +160,28 @@ export default function PerfilArtista() {
             Obras publicadas — {totalObras} resultados
           </p>
 
-          {cargando && <Estado tipo="cargando" />}
-          {!cargando && errorObras && <Estado tipo="error" mensaje={errorObras} />}
-          {!cargando && aviso && <Estado tipo="vacio" mensaje={aviso} />}
-
-          {!cargando && !errorObras && !aviso && (
+          {cargandoObras ? (
+            <Estado tipo="cargando" />
+          ) : items.length === 0 ? (
+            <Estado tipo="vacio" mensaje="Este artista todavía no publicó obras." />
+          ) : (
             <div className="grilla-obras">
-              {items.map((item) => (
-                <TarjetaObra
-                  key={item.obra.id}
-                  obra={item.obra}
-                  variante={item.variante}
-                  imagen={item.imagen}
-                />
-              ))}
+              {items.map((item) => {
+                const tarjeta = armarTarjeta(item);
+                return (
+                  <TarjetaObra key={tarjeta.obra.id} obra={tarjeta.obra} variante={tarjeta.variante} imagen={tarjeta.imagen} />
+                );
+              })}
             </div>
           )}
 
           {totalPaginas > 1 && (
-            <div className="entre" style={{ marginTop: "var(--xl)" }}>
+            <div className="fila" style={{ marginTop: "var(--lg)" }}>
+              <Boton tipo="secundario" onClick={pagina > 0 ? () => setPagina(pagina - 1) : undefined}>Anterior</Boton>
+              <span className="catalog-number muted">{pagina + 1} / {totalPaginas}</span>
               <Boton
-                tipo={pagina === 0 ? "deshabilitado" : "secundario"}
-                onClick={() => setPagina(pagina - 1)}
-              >
-                Anterior
-              </Boton>
-              <span className="catalog-number muted">
-                Página {pagina + 1} de {totalPaginas}
-              </span>
-              <Boton
-                tipo={pagina >= totalPaginas - 1 ? "deshabilitado" : "secundario"}
-                onClick={() => setPagina(pagina + 1)}
+                tipo="secundario"
+                onClick={pagina + 1 < totalPaginas ? () => setPagina(pagina + 1) : undefined}
               >
                 Siguiente
               </Boton>

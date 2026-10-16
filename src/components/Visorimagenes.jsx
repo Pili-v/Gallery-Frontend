@@ -14,7 +14,7 @@
 //
 // Usarlo con key={obra.id}: así, al cambiar de obra, vuelve a la primera imagen.
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function VisorImagenes({ imagenes, alt, atenuada = false, children }) {
   const [actual, setActual] = useState(0);
@@ -49,25 +49,12 @@ export default function VisorImagenes({ imagenes, alt, atenuada = false, childre
     setToqueX(null);
   };
 
-  // Con la imagen ampliada: Esc cierra, las flechas pasan de imagen y la página de atrás no se mueve.
-  useEffect(() => {
-    if (!ampliada) return;
-
-    const alApretar = (e) => {
-      if (e.key === "Escape") setAmpliada(false);
-      if (e.key === "ArrowLeft" && total > 1) setActual((a) => (a - 1 + total) % total);
-      if (e.key === "ArrowRight" && total > 1) setActual((a) => (a + 1) % total);
-    };
-
-    const overflowPrevio = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", alApretar);
-
-    return () => {
-      document.body.style.overflow = overflowPrevio;
-      window.removeEventListener("keydown", alApretar);
-    };
-  }, [ampliada, total]);
+  // Con la imagen ampliada: Esc cierra y las flechas pasan de imagen (eventos de React, sin tocar el DOM).
+  const alTeclearAmpliada = (e) => {
+    if (e.key === "Escape") setAmpliada(false);
+    if (e.key === "ArrowLeft") anterior();
+    if (e.key === "ArrowRight") siguiente();
+  };
 
   const descripcion = alt + (total > 1 ? " — imagen " + (indice + 1) + " de " + total : "");
 
@@ -130,7 +117,15 @@ export default function VisorImagenes({ imagenes, alt, atenuada = false, childre
 
       {/* Imagen completa. Un click afuera de la imagen, o Esc, la cierra. */}
       {ampliada && total > 0 && (
-        <div className="lightbox" role="dialog" aria-modal="true" onClick={() => setAmpliada(false)}>
+        <div
+          className="lightbox"
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+          autoFocus
+          onKeyDown={alTeclearAmpliada}
+          onClick={() => setAmpliada(false)}
+        >
           <img src={imagenes[indice]} alt={descripcion} onClick={(e) => e.stopPropagation()} />
 
           <button type="button" className="lightbox-cerrar" onClick={() => setAmpliada(false)} aria-label="Cerrar">
