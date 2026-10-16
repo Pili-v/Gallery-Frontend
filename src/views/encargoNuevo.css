@@ -1,0 +1,12 @@
+.encargo-volver { display: inline-block; color: var(--bordo); margin-bottom: var(--lg); }
+.encargo-aviso { margin: var(--lg) 0; }
+.encargo-formulario { padding: var(--lg); }
+.encargo-obligatorios { margin-bottom: var(--lg); }
+.encargo-contador { margin: calc(-1 * var(--sm)) 0 var(--lg); }
+.encargo-formulario .boton { margin-top: var(--md); }
+.encargo-formulario .con-error { border-color: var(--error); }
+.encargo-nuevo :focus-visible { outline: 2px solid var(--bordo); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .encargo-nuevo .fila-campos { grid-template-columns: 1fr; gap: 0; }
+  .encargo-formulario { padding: var(--md); }
+}
