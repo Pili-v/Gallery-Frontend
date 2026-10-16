@@ -5,7 +5,10 @@ import Boton from "../components/Boton"
 import Estado from "../components/Estado"
 
 import { api } from "../api/cliente"
-import { getToken, guardarSesion } from "../api/sesion"
+import {
+    getToken,
+    guardarSesion
+} from "../api/sesion"
 
 const MiCuenta = () => {
 
@@ -17,19 +20,49 @@ const MiCuenta = () => {
         telefono_usuario: ""
     })
 
+    const [contrasenias, setContrasenias] = useState({
+        contrasenia_actual: "",
+        contrasenia_nueva: ""
+    })
+
     const [errores, setErrores] = useState({})
+    const [erroresContrasenia, setErroresContrasenia] = useState({})
+
     const [cargando, setCargando] = useState(true)
     const [guardando, setGuardando] = useState(false)
+    const [cambiandoContrasenia, setCambiandoContrasenia] = useState(false)
+
     const [errorGeneral, setErrorGeneral] = useState("")
     const [mensaje, setMensaje] = useState("")
+    const [mensajeContrasenia, setMensajeContrasenia] = useState("")
+
+    const limpiarNombre = (texto) => {
+
+        const soloLetras = texto.replace(
+            /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g,
+            ""
+        )
+
+        return soloLetras
+            .split(" ")
+            .map((palabra) => {
+
+                if (!palabra) {
+                    return ""
+                }
+
+                return (
+                    palabra.charAt(0).toUpperCase() +
+                    palabra.slice(1).toLowerCase()
+                )
+            })
+            .join(" ")
+    }
 
     useEffect(() => {
 
-        const cargarUsuario = async () => {
-
-            try {
-
-                const perfil = await api.get("/api/usuarios/me")
+        api.get("/api/usuarios/me")
+            .then((perfil) => {
 
                 setDatos({
                     nombre_usuario:
@@ -47,20 +80,17 @@ const MiCuenta = () => {
                     telefono_usuario:
                         perfil.usuario.telefono_usuario ?? ""
                 })
-
-            } catch (e) {
+            })
+            .catch((e) => {
 
                 setErrorGeneral(
                     e.message || "No se pudo cargar la cuenta."
                 )
-
-            } finally {
+            })
+            .finally(() => {
 
                 setCargando(false)
-            }
-        }
-
-        cargarUsuario()
+            })
 
     }, [])
 
@@ -68,9 +98,25 @@ const MiCuenta = () => {
 
         const { name, value } = e.target
 
+        let nuevoValor = value
+
+        if (
+            name === "nombre_persona" ||
+            name === "apellido_persona"
+        ) {
+            nuevoValor = limpiarNombre(value)
+        }
+
+        if (name === "telefono_usuario") {
+
+            nuevoValor = value
+                .replace(/\D/g, "")
+                .slice(0, 10)
+        }
+
         setDatos({
             ...datos,
-            [name]: value
+            [name]: nuevoValor
         })
 
         setErrores({
@@ -79,6 +125,24 @@ const MiCuenta = () => {
         })
 
         setMensaje("")
+        setErrorGeneral("")
+    }
+
+    const handleContrasenia = (e) => {
+
+        const { name, value } = e.target
+
+        setContrasenias({
+            ...contrasenias,
+            [name]: value
+        })
+
+        setErroresContrasenia({
+            ...erroresContrasenia,
+            [name]: null
+        })
+
+        setMensajeContrasenia("")
         setErrorGeneral("")
     }
 
@@ -116,7 +180,26 @@ const MiCuenta = () => {
         return Object.keys(nuevosErrores).length === 0
     }
 
-    const handleSubmit = async (e) => {
+    const validarContrasenia = () => {
+
+        const nuevosErrores = {}
+
+        if (!contrasenias.contrasenia_actual.trim()) {
+            nuevosErrores.contrasenia_actual =
+                "Ingresá tu contraseña actual."
+        }
+
+        if (!contrasenias.contrasenia_nueva.trim()) {
+            nuevosErrores.contrasenia_nueva =
+                "Ingresá la nueva contraseña."
+        }
+
+        setErroresContrasenia(nuevosErrores)
+
+        return Object.keys(nuevosErrores).length === 0
+    }
+
+    const handleSubmit = (e) => {
 
         e.preventDefault()
 
@@ -128,39 +211,76 @@ const MiCuenta = () => {
         setErrorGeneral("")
         setMensaje("")
 
-        try {
+        api.patch(
+            "/api/usuarios/me",
+            datos
+        )
+            .then(() => {
 
-            // Actualizamos al usuario dueño del token.
-            await api.patch(
-                "/api/usuarios/me",
-                datos
-            )
+                return api.get("/api/usuarios/me")
+            })
+            .then((perfil) => {
 
-            // Volvemos a pedir el perfil completo actualizado.
-            const perfil = await api.get(
-                "/api/usuarios/me"
-            )
+                guardarSesion(
+                    getToken(),
+                    perfil
+                )
 
-            // Actualizamos también lo guardado en localStorage.
-            guardarSesion(
-                getToken(),
-                perfil
-            )
+                setMensaje(
+                    "Los cambios se guardaron correctamente."
+                )
+            })
+            .catch((e) => {
 
-            setMensaje(
-                "Los cambios se guardaron correctamente."
-            )
+                setErrorGeneral(
+                    e.message ||
+                    "No se pudieron guardar los cambios."
+                )
+            })
+            .finally(() => {
 
-        } catch (e) {
+                setGuardando(false)
+            })
+    }
 
-            setErrorGeneral(
-                e.message || "No se pudieron guardar los cambios."
-            )
+    const handleCambioContrasenia = (e) => {
 
-        } finally {
+        e.preventDefault()
 
-            setGuardando(false)
+        if (!validarContrasenia()) {
+            return
         }
+
+        setCambiandoContrasenia(true)
+        setErrorGeneral("")
+        setMensajeContrasenia("")
+
+        api.patch(
+            "/api/usuarios/me/contrasenia",
+            contrasenias
+        )
+            .then(() => {
+
+                setContrasenias({
+                    contrasenia_actual: "",
+                    contrasenia_nueva: ""
+                })
+
+                setMensajeContrasenia(
+                    "La contraseña se cambió correctamente."
+                )
+            })
+            .catch((e) => {
+
+                setErrorGeneral(
+                    e.message ||
+                    "No se pudo cambiar la contraseña."
+                )
+            })
+            .finally(() => {
+
+                setCambiandoContrasenia(false)
+            })
     }
 
     if (cargando) {
@@ -245,9 +365,12 @@ const MiCuenta = () => {
 
                     <CampoFormulario
                         etiqueta="Teléfono"
+                        tipo="tel"
                         name="telefono_usuario"
                         value={datos.telefono_usuario}
                         onChange={handleChange}
+                        maxLength={10}
+                        inputMode="numeric"
                         error={errores.telefono_usuario}
                     />
 
@@ -268,6 +391,66 @@ const MiCuenta = () => {
                         {guardando
                             ? "Guardando..."
                             : "Guardar cambios"
+                        }
+                    </Boton>
+
+                </form>
+
+                <form
+                    className="cartela"
+                    style={{
+                        padding: "var(--lg)",
+                        marginTop: "var(--xl)"
+                    }}
+                    onSubmit={handleCambioContrasenia}
+                >
+
+                    <h2
+                        className="headline-sm"
+                        style={{ marginBottom: "var(--md)" }}
+                    >
+                        Cambiar contraseña
+                    </h2>
+
+                    <CampoFormulario
+                        etiqueta="Contraseña actual"
+                        tipo="password"
+                        name="contrasenia_actual"
+                        value={contrasenias.contrasenia_actual}
+                        onChange={handleContrasenia}
+                        error={erroresContrasenia.contrasenia_actual}
+                    />
+
+                    <CampoFormulario
+                        etiqueta="Nueva contraseña"
+                        tipo="password"
+                        name="contrasenia_nueva"
+                        value={contrasenias.contrasenia_nueva}
+                        onChange={handleContrasenia}
+                        error={erroresContrasenia.contrasenia_nueva}
+                    />
+
+                    {mensajeContrasenia && (
+                        <p
+                            className="body-sm"
+                            style={{ marginBottom: "var(--md)" }}
+                        >
+                            {mensajeContrasenia}
+                        </p>
+                    )}
+
+                    <Boton
+                        tipo={
+                            cambiandoContrasenia
+                                ? "deshabilitado"
+                                : "secundario"
+                        }
+                        bloque
+                        type="submit"
+                    >
+                        {cambiandoContrasenia
+                            ? "Cambiando..."
+                            : "Cambiar contraseña"
                         }
                     </Boton>
 
