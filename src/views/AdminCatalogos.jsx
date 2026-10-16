@@ -12,6 +12,7 @@ const AdminCatalogos = () => {
     const [estilos, setEstilos] = useState([])
     const [tamanios, setTamanios] = useState([])
     const [marcos, setMarcos] = useState([])
+
     const [archivoMarco, setArchivoMarco] = useState(null)
 
     const [nuevoEstilo, setNuevoEstilo] = useState("")
@@ -32,38 +33,104 @@ const AdminCatalogos = () => {
     const [error, setError] = useState("")
     const [guardando, setGuardando] = useState("")
 
-    const cargarCatalogos = async () => {
+    const [errorTamanio, setErrorTamanio] = useState("")
+    const [errorMarco, setErrorMarco] = useState("")
 
-        try {
+    const capitalizarPalabras = (texto) => {
 
-            const respuestaEstilos =
-                await api.get("/api/estilos")
+        return texto
+            .toLowerCase()
+            .split(" ")
+            .map((palabra) => {
 
-            const respuestaTamanios =
-                await api.get("/api/tamanios-lienzo")
+                if (!palabra) {
+                    return ""
+                }
 
-            const respuestaMarcos =
-                await api.get("/api/marcos")
+                return (
+                    palabra.charAt(0).toUpperCase() +
+                    palabra.slice(1)
+                )
+            })
+            .join(" ")
+    }
 
-            setEstilos(lista(respuestaEstilos))
-            setTamanios(lista(respuestaTamanios))
-            setMarcos(lista(respuestaMarcos))
+    const limpiarSoloTexto = (texto) => {
 
-        } catch (e) {
+        const sinNumerosNiSimbolos =
+            texto.replace(
+                /[^A-Za-zÁÉÍÓÚáéíóúÜüÑñ\s]/g,
+                ""
+            )
 
-            setError(e.message)
+        return capitalizarPalabras(
+            sinNumerosNiSimbolos
+        )
+    }
 
-        } finally {
+    const limpiarTextoConNumeros = (texto) => {
 
-            setCargando(false)
-        }
+        const limpio =
+            texto.replace(
+                /[^A-Za-zÁÉÍÓÚáéíóúÜüÑñ0-9\s]/g,
+                ""
+            )
+
+        return capitalizarPalabras(
+            limpio
+        )
+    }
+
+    const cargarCatalogos = () => {
+
+        setCargando(true)
+        setError("")
+
+        Promise.all([
+            api.get("/api/estilos"),
+            api.get("/api/tamanios-lienzo"),
+            api.get("/api/marcos")
+        ])
+            .then((respuestas) => {
+
+                setEstilos(
+                    lista(respuestas[0])
+                )
+
+                setTamanios(
+                    lista(respuestas[1])
+                )
+
+                setMarcos(
+                    lista(respuestas[2])
+                )
+            })
+            .catch((e) => {
+
+                setError(e.message)
+            })
+            .finally(() => {
+
+                setCargando(false)
+            })
     }
 
     useEffect(() => {
+
         cargarCatalogos()
+
     }, [])
 
-    const crearEstilo = async (e) => {
+    const handleEstilo = (e) => {
+
+        setNuevoEstilo(
+            limpiarSoloTexto(
+                e.target.value
+            )
+        )
+    }
+
+    const crearEstilo = (e) => {
 
         e.preventDefault()
 
@@ -74,137 +141,263 @@ const AdminCatalogos = () => {
         setGuardando("estilo")
         setError("")
 
-        try {
+        api.post(
+            "/api/estilos",
+            {
+                nombreEstilo:
+                    nuevoEstilo.trim()
+            }
+        )
+            .then(() => {
 
-            await api.post(
-                "/api/estilos",
-                {
-                    nombreEstilo: nuevoEstilo
-                }
-            )
+                setNuevoEstilo("")
 
-            setNuevoEstilo("")
+                return api.get(
+                    "/api/estilos"
+                )
+            })
+            .then((respuesta) => {
 
-            const respuesta =
-                await api.get("/api/estilos")
+                setEstilos(
+                    lista(respuesta)
+                )
+            })
+            .catch((e) => {
 
-            setEstilos(lista(respuesta))
+                setError(e.message)
+            })
+            .finally(() => {
 
-        } catch (e) {
-
-            setError(e.message)
-
-        } finally {
-
-            setGuardando("")
-        }
+                setGuardando("")
+            })
     }
 
     const handleTamanio = (e) => {
 
         const { name, value } = e.target
 
+        let nuevoValor = value
+
+        if (name === "nombre_tamanio") {
+
+            nuevoValor =
+                limpiarTextoConNumeros(
+                    value
+                )
+        }
+
+        if (
+            name === "ancho_lienzo" ||
+            name === "largo_lienzo"
+        ) {
+
+            if (
+                value !== "" &&
+                Number(value) < 0
+            ) {
+                nuevoValor = ""
+            }
+        }
+
         setNuevoTamanio({
             ...nuevoTamanio,
-            [name]: value
+            [name]: nuevoValor
         })
+
+        setErrorTamanio("")
     }
 
-    const crearTamanio = async (e) => {
+    const crearTamanio = (e) => {
 
         e.preventDefault()
 
+        const ancho =
+            Number(
+                nuevoTamanio.ancho_lienzo
+            )
+
+        const largo =
+            Number(
+                nuevoTamanio.largo_lienzo
+            )
+
         if (
-            !nuevoTamanio.nombre_tamanio.trim() ||
-            !nuevoTamanio.ancho_lienzo ||
-            !nuevoTamanio.largo_lienzo
+            !nuevoTamanio.nombre_tamanio.trim()
         ) {
+
+            setErrorTamanio(
+                "Ingresá un nombre para el tamaño."
+            )
+
+            return
+        }
+
+        if (
+            ancho <= 0 ||
+            largo <= 0
+        ) {
+
+            setErrorTamanio(
+                "El ancho y el largo deben ser mayores a 0."
+            )
+
             return
         }
 
         setGuardando("tamanio")
         setError("")
+        setErrorTamanio("")
 
-        try {
+        api.post(
+            "/api/tamanios-lienzo",
+            {
+                nombre_tamanio:
+                    nuevoTamanio
+                        .nombre_tamanio
+                        .trim(),
 
-            await api.post(
-                "/api/tamanios-lienzo",
-                {
-                    nombre_tamanio:
-                        nuevoTamanio.nombre_tamanio,
+                ancho_lienzo:
+                    ancho,
 
-                    ancho_lienzo:
-                        Number(nuevoTamanio.ancho_lienzo),
+                largo_lienzo:
+                    largo
+            }
+        )
+            .then(() => {
 
-                    largo_lienzo:
-                        Number(nuevoTamanio.largo_lienzo)
-                }
-            )
+                setNuevoTamanio({
+                    nombre_tamanio: "",
+                    ancho_lienzo: "",
+                    largo_lienzo: ""
+                })
 
-            setNuevoTamanio({
-                nombre_tamanio: "",
-                ancho_lienzo: "",
-                largo_lienzo: ""
+                return api.get(
+                    "/api/tamanios-lienzo"
+                )
             })
+            .then((respuesta) => {
 
-            const respuesta =
-                await api.get("/api/tamanios-lienzo")
+                setTamanios(
+                    lista(respuesta)
+                )
+            })
+            .catch((e) => {
 
-            setTamanios(lista(respuesta))
+                setError(e.message)
+            })
+            .finally(() => {
 
-        } catch (e) {
-
-            setError(e.message)
-
-        } finally {
-
-            setGuardando("")
-        }
+                setGuardando("")
+            })
     }
 
     const handleMarco = (e) => {
 
         const { name, value } = e.target
 
+        let nuevoValor = value
+
+        if (
+            name === "nombre_marco" ||
+            name === "color_marco"
+        ) {
+
+            nuevoValor =
+                limpiarSoloTexto(
+                    value
+                )
+        }
+
+        if (
+            name === "precio_marco" &&
+            value !== "" &&
+            Number(value) < 0
+        ) {
+
+            nuevoValor = ""
+        }
+
         setNuevoMarco({
             ...nuevoMarco,
-            [name]: value
+            [name]: nuevoValor
         })
+
+        setErrorMarco("")
     }
 
-    const crearMarco = async (e) => {
+    const crearMarco = (e) => {
 
-    e.preventDefault()
+        e.preventDefault()
 
-    if (
-        !nuevoMarco.nombre_marco.trim() ||
-        !nuevoMarco.color_marco.trim() ||
-        !nuevoMarco.precio_marco ||
-        !archivoMarco
-    ) {
-        return
-    }
+        const precio =
+            Number(
+                nuevoMarco.precio_marco
+            )
 
-    setGuardando("marco")
-    setError("")
+        if (
+            !nuevoMarco.nombre_marco.trim()
+        ) {
 
-    try {
+            setErrorMarco(
+                "Ingresá un nombre para el marco."
+            )
 
-        const formData = new FormData()
+            return
+        }
+
+        if (
+            !nuevoMarco.color_marco.trim()
+        ) {
+
+            setErrorMarco(
+                "Ingresá un color para el marco."
+            )
+
+            return
+        }
+
+        if (precio <= 0) {
+
+            setErrorMarco(
+                "El precio debe ser mayor a 0."
+            )
+
+            return
+        }
+
+        if (!archivoMarco) {
+
+            setErrorMarco(
+                "Seleccioná una imagen para el marco."
+            )
+
+            return
+        }
+
+        setGuardando("marco")
+        setError("")
+        setErrorMarco("")
+
+        const formData =
+            new FormData()
 
         formData.append(
             "nombre_marco",
-            nuevoMarco.nombre_marco
+            nuevoMarco
+                .nombre_marco
+                .trim()
         )
 
         formData.append(
             "color_marco",
-            nuevoMarco.color_marco
+            nuevoMarco
+                .color_marco
+                .trim()
         )
 
         formData.append(
             "precio_marco",
-            nuevoMarco.precio_marco
+            precio
         )
 
         formData.append(
@@ -212,46 +405,60 @@ const AdminCatalogos = () => {
             archivoMarco
         )
 
-        await subirArchivo(
+        subirArchivo(
             "/api/marcos",
             formData
         )
+            .then(() => {
 
-        setNuevoMarco({
-            nombre_marco: "",
-            color_marco: "",
-            precio_marco: ""
-        })
+                setNuevoMarco({
+                    nombre_marco: "",
+                    color_marco: "",
+                    precio_marco: ""
+                })
 
-        setArchivoMarco(null)
+                setArchivoMarco(null)
 
-        const respuesta =
-            await api.get("/api/marcos")
+                return api.get(
+                    "/api/marcos"
+                )
+            })
+            .then((respuesta) => {
 
-        setMarcos(lista(respuesta))
+                setMarcos(
+                    lista(respuesta)
+                )
+            })
+            .catch((e) => {
 
-    } catch (e) {
+                setError(e.message)
+            })
+            .finally(() => {
 
-        setError(e.message)
-
-    } finally {
-
-        setGuardando("")
+                setGuardando("")
+            })
     }
-}
 
     if (cargando) {
+
         return (
             <div className="seccion">
+
                 <div className="contenido">
-                    <Estado tipo="cargando" />
+
+                    <Estado
+                        tipo="cargando"
+                    />
+
                 </div>
+
             </div>
         )
     }
 
     return (
         <div className="seccion">
+
             <div className="contenido">
 
                 <h1 className="headline-lg">
@@ -261,7 +468,8 @@ const AdminCatalogos = () => {
                 <p
                     className="body-lg muted"
                     style={{
-                        margin: "var(--xs) 0 var(--xl)"
+                        margin:
+                            "var(--xs) 0 var(--xl)"
                     }}
                 >
                     Estilos, tamaños y marcos son del sistema,
@@ -269,9 +477,11 @@ const AdminCatalogos = () => {
                 </p>
 
                 {error && (
+
                     <div
                         style={{
-                            marginBottom: "var(--md)"
+                            marginBottom:
+                                "var(--md)"
                         }}
                     >
                         <Estado
@@ -279,59 +489,85 @@ const AdminCatalogos = () => {
                             mensaje={error}
                         />
                     </div>
+
                 )}
 
                 <div
                     style={{
                         display: "grid",
                         gridTemplateColumns:
-                            "repeat(3, 1fr)",
-                        gap: "var(--xl)"
+                            "repeat(3, minmax(0, 1fr))",
+                        gap: "var(--xl)",
+                        alignItems: "start"
                     }}
                 >
 
                     {/* ESTILOS */}
 
-                    <div>
+                    <div
+                        className="cartela"
+                        style={{
+                            padding: "var(--lg)"
+                        }}
+                    >
 
                         <h3
                             className="headline-sm"
                             style={{
-                                marginBottom: "var(--sm)"
+                                marginBottom:
+                                    "var(--md)"
                             }}
                         >
                             Estilos
                         </h3>
 
-                        <table className="tabla">
-                            <tbody>
+                        <div
+                            style={{
+                                maxHeight: "260px",
+                                overflowY: "auto"
+                            }}
+                        >
 
-                                {estilos.map((estilo) => (
-                                    <tr key={estilo.id}>
-                                        <td>
-                                            {estilo.nombreEstilo}
-                                        </td>
-                                    </tr>
-                                ))}
+                            <table className="tabla">
 
-                            </tbody>
-                        </table>
+                                <tbody>
+
+                                    {estilos.map(
+                                        (estilo) => (
+
+                                            <tr
+                                                key={
+                                                    estilo.id
+                                                }
+                                            >
+                                                <td>
+                                                    {
+                                                        estilo.nombreEstilo
+                                                    }
+                                                </td>
+                                            </tr>
+
+                                        )
+                                    )}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
 
                         <form
                             onSubmit={crearEstilo}
                             style={{
-                                marginTop: "var(--md)"
+                                marginTop:
+                                    "var(--lg)"
                             }}
                         >
 
                             <CampoFormulario
                                 etiqueta="Nuevo estilo"
                                 value={nuevoEstilo}
-                                onChange={(e) =>
-                                    setNuevoEstilo(
-                                        e.target.value
-                                    )
-                                }
+                                onChange={handleEstilo}
                             />
 
                             <Boton
@@ -343,9 +579,10 @@ const AdminCatalogos = () => {
                                 bloque
                                 type="submit"
                             >
-                                {guardando === "estilo"
-                                    ? "Guardando..."
-                                    : "Agregar"
+                                {
+                                    guardando === "estilo"
+                                        ? "Guardando..."
+                                        : "Agregar"
                                 }
                             </Boton>
 
@@ -355,42 +592,76 @@ const AdminCatalogos = () => {
 
                     {/* TAMAÑOS */}
 
-                    <div>
+                    <div
+                        className="cartela"
+                        style={{
+                            padding: "var(--lg)"
+                        }}
+                    >
 
                         <h3
                             className="headline-sm"
                             style={{
-                                marginBottom: "var(--sm)"
+                                marginBottom:
+                                    "var(--md)"
                             }}
                         >
                             Tamaños
                         </h3>
 
-                        <table className="tabla">
-                            <tbody>
+                        <div
+                            style={{
+                                maxHeight: "260px",
+                                overflowY: "auto"
+                            }}
+                        >
 
-                                {tamanios.map((tamanio) => (
-                                    <tr key={tamanio.id}>
-                                        <td>
-                                            {tamanio.nombre_tamanio}
-                                        </td>
+                            <table className="tabla">
 
-                                        <td>
-                                            {tamanio.ancho_lienzo}
-                                            {" × "}
-                                            {tamanio.largo_lienzo}
-                                            {" cm"}
-                                        </td>
-                                    </tr>
-                                ))}
+                                <tbody>
 
-                            </tbody>
-                        </table>
+                                    {tamanios.map(
+                                        (tamanio) => (
+
+                                            <tr
+                                                key={
+                                                    tamanio.id
+                                                }
+                                            >
+
+                                                <td>
+                                                    {
+                                                        tamanio.nombre_tamanio
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    {
+                                                        tamanio.ancho_lienzo
+                                                    }
+                                                    {" × "}
+                                                    {
+                                                        tamanio.largo_lienzo
+                                                    }
+                                                    {" cm"}
+                                                </td>
+
+                                            </tr>
+
+                                        )
+                                    )}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
 
                         <form
                             onSubmit={crearTamanio}
                             style={{
-                                marginTop: "var(--md)"
+                                marginTop:
+                                    "var(--lg)"
                             }}
                         >
 
@@ -407,6 +678,8 @@ const AdminCatalogos = () => {
                                 etiqueta="Ancho"
                                 tipo="number"
                                 name="ancho_lienzo"
+                                min="0.01"
+                                step="0.01"
                                 value={
                                     nuevoTamanio.ancho_lienzo
                                 }
@@ -417,11 +690,27 @@ const AdminCatalogos = () => {
                                 etiqueta="Largo"
                                 tipo="number"
                                 name="largo_lienzo"
+                                min="0.01"
+                                step="0.01"
                                 value={
                                     nuevoTamanio.largo_lienzo
                                 }
                                 onChange={handleTamanio}
                             />
+
+                            {errorTamanio && (
+
+                                <p
+                                    className="campo-error body-sm"
+                                    style={{
+                                        marginBottom:
+                                            "var(--md)"
+                                    }}
+                                >
+                                    {errorTamanio}
+                                </p>
+
+                            )}
 
                             <Boton
                                 tipo={
@@ -432,9 +721,10 @@ const AdminCatalogos = () => {
                                 bloque
                                 type="submit"
                             >
-                                {guardando === "tamanio"
-                                    ? "Guardando..."
-                                    : "Agregar"
+                                {
+                                    guardando === "tamanio"
+                                        ? "Guardando..."
+                                        : "Agregar"
                                 }
                             </Boton>
 
@@ -444,50 +734,85 @@ const AdminCatalogos = () => {
 
                     {/* MARCOS */}
 
-                    <div>
+                    <div
+                        className="cartela"
+                        style={{
+                            padding: "var(--lg)"
+                        }}
+                    >
 
                         <h3
                             className="headline-sm"
                             style={{
-                                marginBottom: "var(--sm)"
+                                marginBottom:
+                                    "var(--md)"
                             }}
                         >
                             Marcos
                         </h3>
 
-                        <table className="tabla">
-                            <tbody>
+                        <div
+                            style={{
+                                maxHeight: "260px",
+                                overflowY: "auto"
+                            }}
+                        >
 
-                                {marcos.map((marco) => (
-                                    <tr key={marco.id}>
+                            <table className="tabla">
 
-                                        <td>
-                                            {marco.nombre_marco}
-                                            <br />
+                                <tbody>
 
-                                            <span
-                                                className="body-sm muted"
+                                    {marcos.map(
+                                        (marco) => (
+
+                                            <tr
+                                                key={
+                                                    marco.id
+                                                }
                                             >
-                                                {marco.color_marco}
-                                            </span>
-                                        </td>
 
-                                        <td className="price-md">
-                                            {pesos(
-                                                marco.precio_marco
-                                            )}
-                                        </td>
+                                                <td>
+                                                    {
+                                                        marco.nombre_marco
+                                                    }
 
-                                    </tr>
-                                ))}
+                                                    <br />
 
-                            </tbody>
-                        </table>
+                                                    <span
+                                                        className="body-sm muted"
+                                                    >
+                                                        {
+                                                            marco.color_marco
+                                                        }
+                                                    </span>
+                                                </td>
+
+                                                <td
+                                                    className="price-md"
+                                                >
+                                                    {
+                                                        pesos(
+                                                            marco.precio_marco
+                                                        )
+                                                    }
+                                                </td>
+
+                                            </tr>
+
+                                        )
+                                    )}
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
 
                         <form
                             onSubmit={crearMarco}
                             style={{
-                                marginTop: "var(--md)"
+                                marginTop:
+                                    "var(--lg)"
                             }}
                         >
 
@@ -513,6 +838,8 @@ const AdminCatalogos = () => {
                                 etiqueta="Precio"
                                 tipo="number"
                                 name="precio_marco"
+                                min="0.01"
+                                step="0.01"
                                 value={
                                     nuevoMarco.precio_marco
                                 }
@@ -530,11 +857,27 @@ const AdminCatalogos = () => {
                                     type="file"
                                     accept="image/*"
                                     onChange={(e) =>
-                                        setArchivoMarco(e.target.files[0])
+                                        setArchivoMarco(
+                                            e.target.files[0]
+                                        )
                                     }
                                 />
 
                             </div>
+
+                            {errorMarco && (
+
+                                <p
+                                    className="campo-error body-sm"
+                                    style={{
+                                        marginBottom:
+                                            "var(--md)"
+                                    }}
+                                >
+                                    {errorMarco}
+                                </p>
+
+                            )}
 
                             <Boton
                                 tipo={
@@ -545,9 +888,10 @@ const AdminCatalogos = () => {
                                 bloque
                                 type="submit"
                             >
-                                {guardando === "marco"
-                                    ? "Guardando..."
-                                    : "Agregar"
+                                {
+                                    guardando === "marco"
+                                        ? "Guardando..."
+                                        : "Agregar"
                                 }
                             </Boton>
 
@@ -558,6 +902,7 @@ const AdminCatalogos = () => {
                 </div>
 
             </div>
+
         </div>
     )
 }
