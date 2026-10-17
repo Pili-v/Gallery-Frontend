@@ -61,8 +61,17 @@ Ya están hechos en `src/components`. Se importan y se usan.
 | `Badge` | sello de descuento o sin stock |
 | `LineaItem` | fila de compra. Con `editable` muestra el contador |
 | `ResumenTotales` | subtotal, descuentos, marcos y total |
+| `Confirmacion` | ventana para confirmar una acción, con el estilo de la página (usa `<dialog>`). Sin `onCancelar` es un aviso sin salida |
+| `SesionVencida` | cartel "Tu sesión venció" que ya está en `Layout`: no hay que llamarlo |
+| `VisorImagenes` | imagen principal, miniaturas, flechas y ampliación (detalle de obra) |
+| `EstadoEncargo` | sello con el estado de un encargo |
+| `FilaObra` | fila de Mis obras (se abre para ver las variantes) |
+| `DetalleObra` | las variantes de una obra, dentro de Mis obras |
+| `DetalleVenta` | las obras vendidas de una factura, dentro de Mis ventas |
+| `TarjetaVariante` | un tamaño de la obra en el formulario de publicar y editar |
+| `SelectorEstilos` | los estilos como botones que se prenden y apagan |
 
-`Header`, `Footer`, `Layout` y `RutaProtegida` ya están puestos: no hay que llamarlos.
+`Header`, `Footer`, `Layout`, `RutaProtegida` y `SesionVencida` ya están puestos: no hay que llamarlos.
 
 ## Cómo se trae data
 
@@ -70,10 +79,10 @@ Siempre igual. El token lo mete solo `cliente.js`.
 
 ```jsx
 import { useEffect, useState } from "react";
-import { api } from "../api/cliente";
+import { api, lista } from "../api/cliente";
 import { getUsuario } from "../api/sesion"
 
-import Estado from "../componentes/Estado";
+import Estado from "../components/Estado";
 
 export default function Catalogo() {
     const usuario = getUsuario()        // usuario.id y usuario.rol_usuario
@@ -83,7 +92,7 @@ export default function Catalogo() {
 
   useEffect(() => {
     api.get("/api/obras")
-      .then(setObras)
+      .then((respuesta) => setObras(lista(respuesta)))
       .catch((e) => setError(e.message))
       .finally(() => setCargando(false));
   }, []);
@@ -102,10 +111,19 @@ export default function Catalogo() {
 }
 ```
 
+## Listas vacías, errores y sesión
+
+- **Lista vacía = 204 sin cuerpo.** `api.get` devuelve `null` y `lista(null)` es `[]`: siempre pasá las listas por `lista()` y mostrá el estado vacío de la pantalla. No es un error.
+- **404 = algo que no existe** (una obra, un artista, un carrito). Ese sí es un error: se muestra el mensaje.
+- **Los errores traen el mensaje del back** en `e.message` y el código HTTP en `e.status` (400 validación, 403 sin permiso, 409 choque con el estado actual).
+- **Sesión vencida:** si el back responde 401 a un pedido con token, `cliente.js` avisa y `SesionVencida` muestra el cartel; al volver a ingresar se vuelve a la página donde estaba. La pantalla no hace nada especial.
+- **Una escritura que puede repetirse** (guardar, eliminar) necesita una marca que frene el doble envío antes del siguiente render. Mirá `ObraForm`.
+
 ## Reglas
 
 - Cada uno en su rama: `front/cuenta`, `front/catalogo`, `front/compra`, `front/artista`, `front/encargos`
 - No se toca `src/components`, `src/api` ni `src/hooks` sin avisar
 - Toda pantalla que pida datos contempla cargando, vacío y error
 - Precios con la función `pesos()` de `src/api/formato.js`
+- Las reglas de negocio las valida el back; el front solo limita rangos obvios (`min`, `max`, `required`) y muestra el mensaje que devuelva el back
 - No se muestra ningún dato que el backend no tenga
