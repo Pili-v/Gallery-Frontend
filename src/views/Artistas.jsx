@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api, lista } from "../api/cliente";
+import { optimizada } from "../api/formato";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 
@@ -104,7 +105,7 @@ export default function Artistas() {
         portadas.push({
           id: obra.id,
           nombre: obra.nombre_obra,
-          src: portada.url ?? "data:image/jpeg;base64," + portada.contenido_imagen
+          src: optimizada(portada.url, 600)
         });
       }
     });

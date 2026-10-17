@@ -123,10 +123,11 @@ export default function DetalleObra() {
   else if (sinMarcos) textoBoton = "SIN MARCOS";
   else if (agregando) textoBoton = "AGREGANDO...";
 
-  // Imágenes en el orden que las cargó el artista. "url" (Cloudinary) tiene prioridad sobre base64.
+  // Las URLs de Cloudinary, en el orden que las cargó el artista.
   const fotos = [...imagenes]
+    .filter((img) => img.url)
     .sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0))
-    .map((img) => img.url ?? "data:image/jpeg;base64," + img.contenido_imagen);
+    .map((img) => img.url);
 
   return (
     <div className="seccion pagina-detalle-obra">
