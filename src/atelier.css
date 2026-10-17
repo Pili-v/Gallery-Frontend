@@ -536,3 +536,20 @@ body {
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .25));
 }
 .lightbox > img.con-marco-imagen { border-width: 54px; border-image-width: 54px; background: transparent; }
+
+/* ---------- Autocompletado de dirección ---------- */
+.autocompletar { position: relative; }
+.autocompletar-lista {
+  position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
+  background: var(--surface); border: 1px solid var(--border);
+  max-height: 220px; overflow-y: auto;
+}
+.autocompletar-lista button {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  font: inherit; font-size: 13px; color: inherit;
+  padding: 8px var(--md); background: transparent; border: 0;
+  border-bottom: 1px solid var(--border);
+}
+.autocompletar-lista button:last-child { border-bottom: 0; }
+.autocompletar-lista button:hover { background: var(--canvas); }
+.autocompletar-buscando { font-size: 11px; letter-spacing: .06em; opacity: .55; }

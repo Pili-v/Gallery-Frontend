@@ -2,6 +2,7 @@
 // Muestra los ítems del carrito del usuario logueado, deja cambiar
 // cantidades, quitar ítems y vaciarlo, y lleva a confirmar la compra.
 
+
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
@@ -26,57 +27,50 @@ const Carrito = () => {
     // Trae el carrito del usuario y después sus ítems.
     // El id del usuario sale de la sesión, no de la URL: así nadie
     // puede mirar el carrito de otro cambiando un número a mano.
-    const cargarCarrito = async () => {
-        try {
-            const miCarrito = await api.get("/api/usuarios/" + usuario.id + "/carrito")
-            const susItems = lista(await api.get("/api/carritos/" + miCarrito.id + "/items"))
-            const lasImagenes = lista(await api.get("/api/imagenes"))
-
-            setCarrito(miCarrito)
-            setItems(susItems)
-            setImagenes(lasImagenes)
-        } catch (e) {
-            setError(e.message)
-        } finally {
-            setCargando(false)
-        }
+    // Cada .then() devuelve el pedido siguiente, porque el segundo necesita
+    // el id que trajo el primero: por eso van encadenados y no en paralelo.
+    const cargarCarrito = () => {
+        api.get("/api/usuarios/" + usuario.id + "/carrito")
+            .then((miCarrito) => {
+                setCarrito(miCarrito)
+                return api.get("/api/carritos/" + miCarrito.id + "/items")
+            })
+            .then((susItems) => {
+                setItems(lista(susItems))
+                return api.get("/api/imagenes")
+            })
+            .then((lasImagenes) => setImagenes(lista(lasImagenes)))
+            .catch((e) => setError(e.message))
+            .finally(() => setCargando(false))
     }
 
     // useEffect con [] vacío: se ejecuta una sola vez, cuando la pantalla aparece.
     useEffect(() => { cargarCarrito() }, [])
 
     // Cambiar la cantidad de un ítem. Si baja a cero, se quita.
-    const cambiarCantidad = async (item, nuevaCantidad) => {
+    const cambiarCantidad = (item, nuevaCantidad) => {
         if (nuevaCantidad < 1) return quitarItem(item.id)
-        try {
-            await api.put("/api/items-carrito/" + item.id, {
-                carrito_id: carrito.id,
-                variante_id: item.variante_id,
-                marco_id: item.marco_id,
-                cantidad: nuevaCantidad
-            })
-            cargarCarrito()
-        } catch (e) {
-            setError(e.message)
-        }
+
+        api.put("/api/items-carrito/" + item.id, {
+            carrito_id: carrito.id,
+            variante_id: item.variante_id,
+            marco_id: item.marco_id,
+            cantidad: nuevaCantidad
+        })
+            .then(() => cargarCarrito())
+            .catch((e) => setError(e.message))
     }
 
-    const quitarItem = async (itemId) => {
-        try {
-            await api.delete("/api/items-carrito/" + itemId)
-            cargarCarrito()
-        } catch (e) {
-            setError(e.message)
-        }
+    const quitarItem = (itemId) => {
+        api.delete("/api/items-carrito/" + itemId)
+            .then(() => cargarCarrito())
+            .catch((e) => setError(e.message))
     }
 
-    const vaciarCarrito = async () => {
-        try {
-            await api.delete("/api/carritos/" + carrito.id + "/items")
-            setItems([])
-        } catch (e) {
-            setError(e.message)
-        }
+    const vaciarCarrito = () => {
+        api.delete("/api/carritos/" + carrito.id + "/items")
+            .then(() => setItems([]))
+            .catch((e) => setError(e.message))
     }
 
     // La miniatura: el ítem trae el obra_id y la foto sale de la lista de imágenes.
