@@ -50,14 +50,14 @@ const PanelObras = () => {
                             setVariantes((previas) => ({ ...previas, [obra.id]: lista(respuestaVariantes) }))
                         })
                         .catch((e) => {
-                            // Una obra sin variantes responde 404: no es un error, es una lista vacía.
+                            // Una obra sin variantes responde 204 (lista() la deja en []); el 404 también se toma como vacía.
                             const valor = e.status === 404 ? [] : null
                             setVariantes((previas) => ({ ...previas, [obra.id]: valor }))
                         })
                 })
             })
             .catch((e) => {
-                // Sin obras el backend responde 404: no es un error.
+                // Sin obras el back responde 204 y lista() deja []; un 404 tampoco se muestra como falla.
                 if (e.status !== 404) setError(e.message)
             })
             .finally(() => setCargando(false))

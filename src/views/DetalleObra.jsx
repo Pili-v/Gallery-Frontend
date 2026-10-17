@@ -11,7 +11,8 @@ import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 import VisorImagenes from "../components/Visorimagenes";
 
-// Una lista vacía llega como 404 (regla de la cátedra): para listas de apoyo significa "no hay".
+// Una lista vacía llega como 204 (lista() la deja en []) y, antes, como 404 (regla de la cátedra):
+// para listas de apoyo significa "no hay".
 const sin404 = (promesa) =>
   promesa.catch((e) => {
     if (e.status === 404) return [];
