@@ -4,6 +4,7 @@
 // acá se guarda ni se envía. Lo que sí es real es el POST /api/checkout,
 // que descuenta el stock y emite una factura por cada artista.
 
+
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { api, lista } from "../api/cliente"
@@ -97,18 +98,14 @@ const Pago = () => {
     // El backend cobra $1.500 por envio a domicilio. El retiro por el local no cuesta.
     const envio = tipoEntrega === "ENVIO_DOMICILIO" ? 1500 : 0
 
+    // El primer .then() devuelve el pedido siguiente: los items necesitan el
+    // id que trajo el carrito, asi que uno espera al otro.
     useEffect(() => {
-        const cargar = async () => {
-            try {
-                const miCarrito = await api.get("/api/usuarios/" + usuario.id + "/carrito")
-                setItems(lista(await api.get("/api/carritos/" + miCarrito.id + "/items")))
-            } catch (e) {
-                setError(e.message)
-            } finally {
-                setCargando(false)
-            }
-        }
-        cargar()
+        api.get("/api/usuarios/" + usuario.id + "/carrito")
+            .then((miCarrito) => api.get("/api/carritos/" + miCarrito.id + "/items"))
+            .then((susItems) => setItems(lista(susItems)))
+            .catch((e) => setError(e.message))
+            .finally(() => setCargando(false))
     }, [])
 
     // Un solo manejador para los cuatro campos: cada input dice su nombre y
@@ -159,20 +156,20 @@ const Pago = () => {
         return nuevos.length === 0
     }
 
-    const pagar = async () => {
+    const pagar = () => {
         if (!validar()) return
 
         setPagando(true)
         setError("")
-        try {
-            // Acá no va nada de la tarjeta: solo el tipo de entrega.
-            // Quién compra sale del token, igual que en el backend.
-            const compra = await api.post("/api/checkout", { tipo_entrega: tipoEntrega })
-            navegar("/compra/" + compra.id)
-        } catch (e) {
-            setError(e.message)
-            setPagando(false)
-        }
+
+        // Acá no va nada de la tarjeta: solo el tipo de entrega.
+        // Quién compra sale del token, igual que en el backend.
+        api.post("/api/checkout", { tipo_entrega: tipoEntrega })
+            .then((compra) => navegar("/compra/" + compra.id))
+            .catch((e) => {
+                setError(e.message)
+                setPagando(false)
+            })
     }
 
     const subtotal = items.reduce((suma, item) => suma + item.precio_unitario * item.cantidad, 0)
@@ -271,8 +268,6 @@ const Pago = () => {
                                             inputMode="numeric"
                                             placeholder={"•".repeat(MARCAS[marca].largoCodigo)} />
                                     </label>
-
-                                   
                                 </div>
 
                             </div>

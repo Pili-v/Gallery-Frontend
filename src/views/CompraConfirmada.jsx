@@ -2,6 +2,7 @@
 // Es la pantalla donde se ve lo que hace el checkout por dentro: una sola
 // compra, pero una factura por cada artista que vendió algo.
 
+
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
@@ -21,26 +22,27 @@ const CompraConfirmada = () => {
     const navegar = useNavigate()
 
     useEffect(() => {
-        const cargar = async () => {
-            try {
-                const laCompra = await api.get("/api/compras/" + id)
-                const susFacturas = lista(await api.get("/api/facturas/compra/" + id))
-                // Cada factura trae el id del artista, no su nombre. Lo buscamos
-                // para que la pantalla diga "Ana Gorriti" y no "artista 1".
-                for (const factura of susFacturas) {
-                    const artista = await api.get("/api/artistas/" + factura.artista_id)
-                    factura.nombre_artistico = artista.nombre_artistico
-                }
-
+        api.get("/api/compras/" + id)
+            .then((laCompra) => {
                 setCompra(laCompra)
-                setFacturas(susFacturas)
-            } catch (e) {
-                setError(e.message)
-            } finally {
-                setCargando(false)
-            }
-        }
-        cargar()
+                return api.get("/api/facturas/compra/" + id)
+            })
+            .then((respuesta) => {
+                const susFacturas = lista(respuesta)
+
+                // Cada factura trae el id del artista, no su nombre. Los pedimos
+                // todos juntos con Promise.all, porque no dependen entre si:
+                // uno atras del otro tardaria mas sin ninguna ventaja.
+                return Promise.all(
+                    susFacturas.map((factura) =>
+                        api.get("/api/artistas/" + factura.artista_id)
+                            .then((artista) => ({ ...factura, nombre_artistico: artista.nombre_artistico }))
+                    )
+                )
+            })
+            .then((facturasConNombre) => setFacturas(facturasConNombre))
+            .catch((e) => setError(e.message))
+            .finally(() => setCargando(false))
     }, [id])
 
     if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>
@@ -54,12 +56,12 @@ const CompraConfirmada = () => {
                     Compra Nº {String(compra.id).padStart(6, "0")}
                 </p>
                 <h1 className="headline-lg" style={{ margin: "var(--xs) 0" }}>Compra confirmada</h1>
-                              <p className="body-lg muted">{fecha(compra.fecha_compra)}</p>
+                <p className="body-lg muted">{fecha(compra.fecha_compra)}</p>
 
                 {/* De donde sale el total: las obras y, si eligio envio, el costo de envio. */}
                 <div className="resumen" style={{ marginTop: "var(--md)" }}>
                     <div className="resumen-fila">
-                        <span>Obras</span>
+                        <span>Obras y marcos </span>
                         <span>{pesos(compra.total_compra - compra.costo_envio)}</span>
                     </div>
                     {compra.costo_envio > 0 && (
@@ -107,4 +109,4 @@ const CompraConfirmada = () => {
     )
 }
 
-export default CompraConfirmada  
+export default CompraConfirmada

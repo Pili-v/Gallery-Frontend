@@ -1,6 +1,7 @@
 // Mis compras — Área 4 · Compra
 // Historial del usuario logueado. Esta pantalla solo lee: no modifica nada.
 
+
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { api, lista } from "../api/cliente"
@@ -14,15 +15,11 @@ const MisCompras = () => {
     const [error, setError] = useState(null)
 
     // El backend saca el usuario del token, por eso no hace falta mandarle el id.
-    const cargarCompras = async () => {
-        try {
-            const misCompras = lista(await api.get("/api/compras/me"))
-            setCompras(misCompras)
-        } catch (e) {
-            setError(e.message)
-        } finally {
-            setCargando(false)
-        }
+    const cargarCompras = () => {
+        api.get("/api/compras/me")
+            .then((misCompras) => setCompras(lista(misCompras)))
+            .catch((e) => setError(e.message))
+            .finally(() => setCargando(false))
     }
 
     useEffect(() => {
