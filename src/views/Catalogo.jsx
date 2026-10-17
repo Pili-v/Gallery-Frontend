@@ -122,6 +122,9 @@ export default function Catalogo() {
           return nuevos;
         });
         setObras(lasObras);
+        // Sin resultados el back responde 204 (sin cuerpo): con filtros se muestra el mismo aviso
+        // con "Quitar filtros" que antes daba el 404; sin filtros, el estado vacío del catálogo.
+        if (lasObras.length === 0 && conFiltros) setAviso({ mensaje: null, deFiltro: true });
         // La obra del hero es la primera del catálogo SIN filtros
         if (!conFiltros && pagina === 0 && lasObras.length > 0) setPrimeraObra(lasObras[0]);
       })

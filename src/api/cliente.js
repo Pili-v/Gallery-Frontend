@@ -12,7 +12,8 @@ export const SESION_VENCIDA = "sesion-vencida"
 // Arma el error con el mensaje que mandó el backend y el código HTTP en error.status.
 // El backend responde de tres formas: JSON con "mensaje", texto plano (casi todos los
 // 400 y 409) o nada (los 403). Con el código se puede distinguir un caso de otro:
-// por ejemplo, una lista vacía llega como 404 y no es una falla.
+// por ejemplo, un 404 es algo que no existe. Una lista vacía llega como 204 sin cuerpo
+// (api.get devuelve null y lista(null) es []).
 const crearError = (respuesta) => {
     return respuesta.text()
         .catch(() => "")

@@ -49,7 +49,7 @@ const Ventas = () => {
                 })
             })
             .catch((e) => {
-                // Sin ventas el backend responde 404: no es un error.
+                 // Sin ventas el back responde 204 y lista() deja []; un 404 tampoco se muestra como falla.
                 if (e.status !== 404) setError(e.message)
             })
             .finally(() => setCargando(false))

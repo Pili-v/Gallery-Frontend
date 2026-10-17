@@ -91,7 +91,7 @@ const FormularioObra = ({ id }) => {
     const [errorGeneral, setErrorGeneral] = useState("")
 
     useEffect(() => {
-        // Una lista vacía llega como 404: no es una falla, solo no hay datos.
+        // Una lista vacía llega como 204 (lista() la deja en []); un 404 también es "no hay datos", no una falla.
         const alFallarLista = (poner) => (e) => {
             if (e.status === 404) poner([])
             else setErrorCarga(e.message)
@@ -134,7 +134,7 @@ const FormularioObra = ({ id }) => {
                 setGuardado((previo) => ({ ...previo, variantes: textos }))
             })
             .catch((e) => {
-                // Una obra sin variantes responde 404: se edita con la lista vacía.
+                // Una obra sin variantes responde 204 (ya queda vacía con lista()); un 404 también se edita con la lista vacía.
                 if (e.status === 404) setFilas([])
                 else setErrorCarga(e.message)
             })

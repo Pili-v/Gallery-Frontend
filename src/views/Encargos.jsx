@@ -35,7 +35,8 @@ function ListaEncargos({ base, state, navigate, parametros, setParametros,
     // El backend obtiene el usuario o el artista desde el token de la sesión.
     const ruta = verRecibidos ? '/api/artistas/me/encargos' : '/api/usuarios/me/encargos';
     api.get(ruta)
-      .then(respuesta => { if (activo && respuesta) setDatos({ items: lista(respuesta), error: '' }); })
+      // Sin encargos el back responde 204 (sin cuerpo): lista(null) deja la lista vacía y borra el error anterior.
+      .then(respuesta => { if (activo) setDatos({ items: lista(respuesta), error: '' }); })
       .catch(error => {
         const mensajeVacio = verRecibidos ? 'Todavía no recibiste encargos' : 'Todavía no hiciste encargos';
         const sinEncargos = error.status === 404 && error.message === mensajeVacio;
