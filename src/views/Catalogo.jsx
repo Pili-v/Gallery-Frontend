@@ -1,6 +1,6 @@
 // Catálogo — Área 3 · Catálogo
-// Los datos de apoyo (variantes, imágenes, estilos, artistas) se piden una sola vez.
-// Las obras se piden cada vez que cambia un filtro. Si el filtro no devuelve nada
+// Estilos y artistas se piden una sola vez. Las obras se piden de a una PÁGINA (12) cada
+// vez que cambia un filtro o la página; de esas obras se traen sus variantes e imágenes. Si el filtro no devuelve nada
 // (404) o es inválido (400), la pantalla avisa DENTRO de la zona de resultados, deja
 // los filtros a la vista y ofrece un botón para quitarlos (no vuelve sola). Sin async/await y sin tocar el DOM.
 
@@ -20,22 +20,27 @@ const sin404 = (promesa) =>
   });
 
 const SIN_RANGO = { min: "", max: "" };
+const POR_PAGINA = 3;
 
 export default function Catalogo() {
-  // Datos de apoyo
-  const [variantes, setVariantes] = useState([]);
-  const [imagenes, setImagenes] = useState([]);
+  // Datos de apoyo (livianos, una sola vez)
   const [estilos, setEstilos] = useState([]);
   const [artistas, setArtistas] = useState([]);
   const [cargandoApoyo, setCargandoApoyo] = useState(true);
   const [errorApoyo, setErrorApoyo] = useState("");
 
-  // Obras del resultado actual
+  // Obras de la página actual y lo que se trajo de cada una (variante y fotos), por id de obra
   const [obras, setObras] = useState([]);
+  const [extras, setExtras] = useState({});
   const [cargandoObras, setCargandoObras] = useState(true);
   const [aviso, setAviso] = useState(null); // { mensaje (null = sin resultados), deFiltro }
   const [primeraObra, setPrimeraObra] = useState(null);
   const [intento, setIntento] = useState(0);
+
+  // Paginación
+  const [pagina, setPagina] = useState(0);
+  const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalObras, setTotalObras] = useState(0);
 
   // Filtros: lo que se escribe, y lo que está aplicado
   const [estiloId, setEstiloId] = useState(null);
@@ -47,20 +52,13 @@ export default function Catalogo() {
 
   const hayFiltros = estiloId !== null || rango.min !== "" || rango.max !== "";
 
-  // Datos de apoyo: una sola vez
+  // Estilos y artistas: una sola vez
   useEffect(() => {
     let vigente = true;
 
-    Promise.all([
-      sin404(api.get("/api/variantes")),
-      sin404(api.get("/api/imagenes")),
-      sin404(api.get("/api/estilos")),
-      sin404(api.get("/api/artistas"))
-    ])
-      .then(([susVariantes, susImagenes, susEstilos, susArtistas]) => {
+    Promise.all([sin404(api.get("/api/estilos")), sin404(api.get("/api/artistas"))])
+      .then(([susEstilos, susArtistas]) => {
         if (!vigente) return;
-        setVariantes(lista(susVariantes));
-        setImagenes(lista(susImagenes));
         setEstilos(lista(susEstilos));
         setArtistas(lista(susArtistas));
       })
@@ -76,38 +74,64 @@ export default function Catalogo() {
     };
   }, [intento]);
 
-  // Obras: se vuelven a pedir cuando cambia un filtro
+  // Obras: se vuelven a pedir cuando cambia un filtro o la página
   useEffect(() => {
     let vigente = true;
 
-    const partes = [];
+    const partes = ["page=" + pagina, "size=" + POR_PAGINA];
     if (estiloId !== null) partes.push("estiloId=" + estiloId);
     if (rango.min !== "") partes.push("precioMin=" + rango.min);
     if (rango.max !== "") partes.push("precioMax=" + rango.max);
-    const ruta = "/api/obras" + (partes.length > 0 ? "?" + partes.join("&") : "");
-    const conFiltros = partes.length > 0;
+    const conFiltros = estiloId !== null || rango.min !== "" || rango.max !== "";
 
     setCargandoObras(true);
     setAviso(null);
 
     api
-      .get(ruta)
+      .get("/api/obras?" + partes.join("&"))
       .then((respuesta) => {
-        if (!vigente) return;
         const lasObras = lista(respuesta);
+        if (vigente) {
+          setTotalPaginas(respuesta?.totalPages ?? 1);
+          setTotalObras(respuesta?.totalElements ?? lasObras.length);
+        }
+        // Variante e imágenes solo de las obras de ESTA página
+        return Promise.all(
+          lasObras.map((obra) =>
+            Promise.all([
+              sin404(api.get("/api/variantes?obraId=" + obra.id)),
+              sin404(api.get("/api/imagenes?obraId=" + obra.id))
+            ]).then(([susVariantes, susImagenes]) => {
+              const lasVariantes = lista(susVariantes);
+              return {
+                id: obra.id,
+                variante: lasVariantes.find((v) => v.stock_variante > 0) ?? lasVariantes[0],
+                imagenes: lista(susImagenes)
+              };
+            })
+          )
+        ).then((datos) => ({ lasObras, datos }));
+      })
+      .then(({ lasObras, datos }) => {
+        if (!vigente) return;
+        setExtras((previos) => {
+          const nuevos = { ...previos };
+          datos.forEach((d) => {
+            nuevos[d.id] = d;
+          });
+          return nuevos;
+        });
         setObras(lasObras);
         // La obra del hero es la primera del catálogo SIN filtros
-        if (!conFiltros && lasObras.length > 0) setPrimeraObra(lasObras[0]);
+        if (!conFiltros && pagina === 0 && lasObras.length > 0) setPrimeraObra(lasObras[0]);
       })
       .catch((e) => {
         if (!vigente) return;
         setObras([]);
+        setTotalObras(0);
         const esDeFiltro = e.status === 404 || e.status === 400;
         if (conFiltros && esDeFiltro) {
-          setAviso({
-            mensaje: e.status === 404 ? null : e.message,
-            deFiltro: true
-          });
+          setAviso({ mensaje: e.status === 404 ? null : e.message, deFiltro: true });
         } else if (e.status === 404) {
           setAviso(null); // catálogo vacío de verdad: se muestra el estado vacío
         } else {
@@ -121,7 +145,13 @@ export default function Catalogo() {
     return () => {
       vigente = false;
     };
-  }, [estiloId, rango, intento]);
+  }, [estiloId, rango, pagina, intento]);
+
+  // Cualquier cambio de filtro vuelve a la primera página
+  const elegirEstilo = (id) => {
+    setEstiloId(id);
+    setPagina(0);
+  };
 
   const quitarFiltros = () => {
     setEstiloId(null);
@@ -130,6 +160,7 @@ export default function Catalogo() {
     setRango({ ...SIN_RANGO });
     setErrorPrecio("");
     setAviso(null);
+    setPagina(0);
   };
 
   const aplicarFiltroPrecio = () => {
@@ -146,6 +177,7 @@ export default function Catalogo() {
       return;
     }
     setRango({ min, max });
+    setPagina(0);
   };
 
   const reintentar = () => {
@@ -156,11 +188,9 @@ export default function Catalogo() {
 
   // La API devuelve ids, no nombres: la vista los traduce
   const armarItem = (obra) => {
-    const variante = variantes.find((v) => v.obra_id === obra.id);
-    const susImagenes = imagenes
-      .filter((i) => i.obra_id === obra.id)
-      .sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0));
-    const portada = susImagenes[0];
+    const extra = extras[obra.id];
+    const variante = extra?.variante;
+    const portada = [...(extra?.imagenes ?? [])].sort((x, y) => (x.orden_imagen ?? 0) - (y.orden_imagen ?? 0))[0];
     const artista = artistas.find((a) => a.id === obra.artista_id);
     const estilo = estilos.find((e) => (obra.estilo_ids ?? []).includes(e.id));
 
@@ -250,14 +280,13 @@ export default function Catalogo() {
         <div className="hero-texto">
           <div className="hero-regla" />
           <p className="catalog-number muted">
-            OBRA ORIGINAL · {cantidadArtistas} ARTISTAS · ENVÍOS A TODO EL PAÍS
+            Actualmente contamos con {cantidadArtistas} Artistas · ENVÍOS A TODO EL PAÍS
           </p>
           <h1 className="display-hero" style={{ marginTop: "var(--sm)" }}>
-            Obra original, de quien la pintó
+            Obras Originales
           </h1>
           <p className="body-lg muted" style={{ marginTop: "var(--md)", maxWidth: 460 }}>
-            Cada pieza se vende en el tamaño y el marco que elijas. El precio se
-            arma con esas dos decisiones, y el dinero va directo al artista.
+            Cada pieza se vende en el tamaño y el marco que elijas. Luego tienes la libertad de decidir si lo enviamos a tu domicilio o lo retiras por nuestra sucursal principal
           </p>
           <div className="fila" style={{ marginTop: "var(--lg)" }}>
             <Boton tipo="primario" onClick={quitarFiltros}>Ver todas las obras</Boton>
@@ -272,7 +301,7 @@ export default function Catalogo() {
             {destacada.imagen && <img src={destacada.imagen} alt={destacada.obra.nombre_obra} />}
             <div className="hero-pie">
               <span className="cartela-artist">
-                {destacada.obra.nombre_obra} · {destacada.obra.nombre_artistico}
+               {destacada.obra.nombre_obra} · {destacada.obra.nombre_artistico}
               </span>
             </div>
           </div>
@@ -286,7 +315,7 @@ export default function Catalogo() {
           <div className="fila" style={{ flexWrap: "wrap", gap: "var(--sm)", marginBottom: "var(--lg)" }}>
             <button
               className={"chip " + (estiloId === null ? "activo" : "")}
-              onClick={() => setEstiloId(null)}
+              onClick={() => elegirEstilo(null)}
             >
               Todos
             </button>
@@ -294,7 +323,7 @@ export default function Catalogo() {
               <button
                 key={estilo.id}
                 className={"chip " + (estiloId === estilo.id ? "activo" : "")}
-                onClick={() => setEstiloId(estilo.id)}
+                onClick={() => elegirEstilo(estilo.id)}
               >
                 {estilo.nombreEstilo}
               </button>
@@ -334,7 +363,7 @@ export default function Catalogo() {
 
           <div className="entre" style={{ margin: "var(--lg) 0" }}>
             <span className="catalog-number muted">
-              {hayFiltros ? "Resultados" : "Todas las obras"} — {items.length} resultados
+              {hayFiltros ? "Resultados" : "Todas las obras"} — {totalObras} resultados
             </span>
             <select className="select" style={{ width: 200 }} value={orden} onChange={(e) => setOrden(e.target.value)}>
               <option value="recientes">Más recientes</option>
@@ -344,6 +373,21 @@ export default function Catalogo() {
           </div>
 
           {resultados}
+
+          {totalPaginas > 1 && !cargandoObras && !aviso && (
+            <div className="entre" style={{ marginTop: "var(--xl)" }}>
+              <Boton tipo={pagina === 0 ? "deshabilitado" : "secundario"} onClick={pagina > 0 ? () => setPagina(pagina - 1) : undefined}>
+                Anterior
+              </Boton>
+              <span className="catalog-number muted">Página {pagina + 1} de {totalPaginas}</span>
+              <Boton
+                tipo={pagina + 1 >= totalPaginas ? "deshabilitado" : "secundario"}
+                onClick={pagina + 1 < totalPaginas ? () => setPagina(pagina + 1) : undefined}
+              >
+                Siguiente
+              </Boton>
+            </div>
+          )}
         </section>
       </div>
 
