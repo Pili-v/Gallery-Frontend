@@ -1,8 +1,5 @@
 // Detalle de obra — Área 3 · Catálogo
-// Trae la obra de la API con sus variantes, sus imagenes y su artista.
-// El precio se arma con dos decisiones, el tamaño y el marco, y por eso
-// se muestra desglosado: la obra sola, cuanto suma el marco, y el total.
-
+// Trae la obra con sus variantes, imágenes, artista y marcos. Sin async/await.
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -12,7 +9,7 @@ import { pesos } from "../api/formato";
 import Badge from "../components/Badge";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
-import VisorImagenes from "../components/VisorImagenes";
+import VisorImagenes from "../components/Visorimagenes";
 
 // Una lista vacía llega como 404 (regla de la cátedra): para listas de apoyo significa "no hay".
 const sin404 = (promesa) =>
@@ -135,7 +132,7 @@ export default function DetalleObra() {
       <div className="contenido dos-columnas">
 
         <div className="detalle-visual">
-          <VisorImagenes key={obra.id} imagenes={fotos} alt={obra.nombre_obra} atenuada={sinStock}>
+          <VisorImagenes key={obra.id} imagenes={fotos} alt={obra.nombre_obra} atenuada={sinStock} marco={marcoSeleccionado}>
             {sinStock && <Badge tipo="sinstock">Sin stock</Badge>}
             {!sinStock && descuento > 0 && <Badge tipo="descuento">−{descuento}%</Badge>}
           </VisorImagenes>
@@ -143,7 +140,6 @@ export default function DetalleObra() {
 
         <div className="detalle-info apilado">
           <div>
-            <span className="catalog-number cartela-num">Nº {String(obra.id).padStart(3, "0")}</span>
             <h1 className="headline-lg" style={{ marginTop: "var(--xs)" }}>{obra.nombre_obra}</h1>
 
             <Link to={"/artista/" + obra.artista_id} className="vendedor" style={{ marginTop: "var(--sm)", textDecoration: "none" }}>
@@ -225,6 +221,3 @@ export default function DetalleObra() {
     </div>
   );
 }
-
-
-

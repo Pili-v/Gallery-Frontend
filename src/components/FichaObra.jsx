@@ -59,6 +59,7 @@ export default function FichaObra({ obra, variante }) {
 }
 
 function Disponibilidad({ stock }) {
+  if (stock == null) return <span className="cartela-meta">Sin tamaños cargados</span>;
   if (stock === 0) return <span className="cartela-meta">Sin stock</span>;
   if (stock === 1) return <span className="cartela-meta disponible poco">Última unidad</span>;
   return <span className="cartela-meta disponible">{stock} disponibles</span>;

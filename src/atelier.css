@@ -177,14 +177,6 @@ body {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Opcional: Pequeña elevación cuando el usuario pasa el cursor */
-.obra-imagen:hover {
-  transform: translateY(-4px);
-  box-shadow: 
-    0 22px 40px rgba(0, 0, 0, 0.40),
-    0 8px 16px rgba(0, 0, 0, 0.25);
-}
-
 .obra-imagen.sin-stock { filter: grayscale(.85); }
 .grilla-obras { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--xl); }
 .grilla-obras.cuatro { grid-template-columns: repeat(4, 1fr); gap: var(--lg); }
@@ -299,13 +291,15 @@ body {
 
 /* Un toque de UIverse: transicion suave en foco y en hover. Nada mas. */
 .input, .select, .textarea, .boton, .chip { transition: border-color .18s ease, background-color .18s ease, color .18s ease; }
-.tarjeta-obra .obra-imagen { transition: transform .22s ease; }
-.tarjeta-obra:hover .obra-imagen { transform: translateY(-4px); }
-
+.tarjeta-obra:hover .obra-imagen {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 40px rgba(0,0,0,.40), 0 8px 16px rgba(0,0,0,.25);
+}
 
 /* ---------- Pinturas de muestra ---------- */
 .pintura { width: 100%; height: 100%; display: block; }
-.obra-imagen, .linea-mini, .mini-hero { overflow: hidden; background: var(--border); }
+.obra-imagen, .linea-mini, .mini-hero { overflow: hidden; }
+.mini-hero { background: var(--border); }
 
 /* ---------- Hero editorial del catalogo ---------- */
 .hero { display: grid; grid-template-columns: 1fr 46%; align-items: stretch; min-height: 560px; }
@@ -404,43 +398,37 @@ body {
 @media (min-width: 1200px) { .hero-texto { padding-left: 64px; } }
 
 /* ===========================================================
-   Imágenes de obra — Que siempre se vean enteras y nítidas
-   (Reemplaza las reglas viejas de .obra-imagen img y .linea-mini img)
+   Imágenes de obra — que siempre se vean enteras y nítidas
    =========================================================== */
+
+/* La imagen se ve ENTERA, centrada sobre el fondo del marco, y nunca se agranda
+   más que su tamaño real. Antes se usaba "cover": recortaba la obra y, si la foto
+   era más chica que el marco, la estiraba hasta que se veía borrosa. Ahora, sea
+   cual sea la forma o el tamaño de la foto, el marco queda igual. */
 .obra-imagen,
-.linea-mini { 
-  background: var(--surface); 
-  position: relative;
-  overflow: visible;
-}
+.linea-mini { background: var(--surface); }
+.linea-mini { position: relative; }
 
-.linea-mini { 
-  width: 72px; 
-  aspect-ratio: 4/5; 
-  border: 1px solid var(--border); 
-}
-
-/* Ajuste nítido dentro del marco con paspartú controlado */
 .obra-imagen img,
-.linea-mini img,
-.hero-obra img {
-  position: absolute; 
-  inset: 8px; /* Margen interno elegante */
-  width: calc(100% - 16px); 
-  height: calc(100% - 16px);
-  object-fit: contain; /* Mantiene la obra entera sin recortarla ni deformarla */
-  display: block;
+.linea-mini img {
+  position: absolute; inset: 0; margin: auto;
+  width: auto; height: auto;
+  max-width: 100%; max-height: 100%;
+  object-fit: contain; display: block;
 }
+.obra-imagen img { outline: 1px solid var(--border); }
 
-
-
-/* Una columna de grilla crece con el tamaño real de su contenido */
+/* Una columna de grilla crece con el tamaño real de su contenido: sin esto, una foto
+   enorme ensancha la columna y empuja el resto de la pantalla. */
 .dos-columnas > *,
 .hero > * { min-width: 0; }
 
-/* ---------- Componente: Visor de imágenes (detalle de obra) ---------- */
+/* ---------- Visor de imágenes (detalle de obra) ---------- */
 .visor { display: flex; gap: var(--sm); align-items: flex-start; }
+/* flex:1 + min-width:0: la columna ocupa el ancho disponible (la foto va en absolute y no
+   cuenta para el tamaño). position:relative: ancla los badges, las flechas y el contador. */
 .visor-principal { position: relative; flex: 1; min-width: 0; outline: none; }
+.visor-principal:focus-visible { outline: 2px solid var(--bordo); outline-offset: 2px; }
 .visor-principal .obra-imagen { cursor: zoom-in; }
 
 .visor-miniaturas {
@@ -451,12 +439,10 @@ body {
   position: relative; flex-shrink: 0;
   width: 64px; aspect-ratio: 4/5; padding: 0;
   background: var(--surface); border: 1px solid var(--border); cursor: pointer;
-  overflow: visible;
 }
 .visor-miniatura img {
-  position: absolute; inset: 4px;
-  width: calc(100% - 8px); height: calc(100% - 8px);
-  max-width: none; max-height: none;
+  position: absolute; inset: 0; margin: auto;
+  width: auto; height: auto; max-width: 100%; max-height: 100%;
   object-fit: contain; display: block;
 }
 .visor-miniatura.activa { border-color: var(--bordo); }
@@ -466,7 +452,6 @@ body {
   width: 40px; height: 40px; padding: 0;
   background: var(--surface); border: 1px solid var(--border);
   color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer;
-  z-index: 2;
 }
 .visor-flecha:hover { border-color: var(--bordo); color: var(--bordo); }
 .visor-flecha.izquierda { left: var(--sm); }
@@ -475,7 +460,6 @@ body {
 .visor-contador {
   position: absolute; right: var(--sm); bottom: var(--sm);
   background: var(--surface); border: 1px solid var(--border); padding: 2px 8px;
-  z-index: 2;
 }
 .visor-vacio { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: var(--md); }
 
@@ -485,12 +469,28 @@ body {
   .visor-miniaturas { flex-direction: row; width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; }
 }
 
-/* ---------- Imagen ampliada (Lightbox) ---------- */
+/* Con marco elegido, el marco es el único marco: se saca el marco negro de la tarjeta y la
+   imagen pasa a ocupar su lugar normal, así la caja siempre se ajusta a la obra. */
+.visor-principal .obra-imagen:has(img.con-marco, img.con-marco-imagen) {
+  border: 0; padding: 0; box-shadow: none;
+  background: transparent; overflow: visible;
+  aspect-ratio: auto;
+  display: flex; justify-content: center; align-items: center;
+}
+.visor-principal .obra-imagen img.con-marco,
+.visor-principal .obra-imagen img.con-marco-imagen {
+  position: static; inset: auto; margin: 0;
+  width: auto; height: auto;
+  max-width: 100%; max-height: 80vh;
+}
+
+/* ---------- Imagen ampliada ---------- */
 .lightbox {
   position: fixed; inset: 0; z-index: 1000;
   background: rgba(28,28,25,.92);
   display: grid; place-items: center; cursor: zoom-out;
 }
+.lightbox:focus { outline: none; }
 .lightbox > img { max-width: 92vw; max-height: 92vh; object-fit: contain; background: var(--surface); cursor: default; }
 .lightbox-cerrar,
 .lightbox-flecha {
@@ -504,3 +504,35 @@ body {
 .lightbox-flecha { top: 50%; transform: translateY(-50%); font-size: 28px; }
 .lightbox-flecha.izquierda { left: var(--md); }
 .lightbox-flecha.derecha { right: var(--md); }
+
+/* ---------- Marco elegido, dibujado alrededor de la obra ----------
+   La imagen ya ajusta su caja a su propia forma (width/height auto + max 100%),
+   así que el borde queda pegado a la pintura, sin espacio de por medio. El color
+   viene de --color-marco (ver api/coloresMarco.js). */
+.obra-imagen img.con-marco,
+.lightbox > img.con-marco {
+  box-sizing: border-box;
+  border: 14px solid var(--color-marco);
+  background: transparent;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, .35),
+    inset 0 0 10px rgba(0, 0, 0, .45),
+    0 8px 18px rgba(0, 0, 0, .22);
+  transition: border-color .25s ease;
+}
+.lightbox > img.con-marco { border-width: 22px; }
+
+/* Marco con foto: el PNG (fondo y centro transparentes, grosor de 64 px) se usa como borde.
+   slice = 58 recorta un poco del filo interno para que no quede ninguna rendija contra la obra. */
+.obra-imagen img.con-marco-imagen,
+.lightbox > img.con-marco-imagen {
+  box-sizing: border-box;
+  border: 36px solid transparent;
+  border-image-slice: 58;
+  border-image-width: 36px;
+  border-image-repeat: stretch;
+  outline: none;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .25));
+}
+.lightbox > img.con-marco-imagen { border-width: 54px; border-image-width: 54px; background: transparent; }
