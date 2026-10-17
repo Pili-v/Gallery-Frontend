@@ -2,7 +2,6 @@
 // Muestra los ítems del carrito del usuario logueado, deja cambiar
 // cantidades, quitar ítems y vaciarlo, y lleva a confirmar la compra.
 
-
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
@@ -11,6 +10,15 @@ import LineaItem from "../components/LineaItem"
 import ResumenTotales from "../components/ResumenTotales"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
+
+// Una lista vacía no es una falla. El backend la informa de dos maneras según
+// el endpoint: 404 (no hay registros) o 409 (el carrito existe pero está vacío).
+// En los dos casos acá devolvemos [] y la pantalla muestra su estado vacío.
+const listaVacia = (promesa) =>
+    promesa.catch((e) => {
+        if (e.status === 404 || e.status === 409) return []
+        throw e
+    })
 
 const Carrito = () => {
 
@@ -27,17 +35,17 @@ const Carrito = () => {
     // Trae el carrito del usuario y después sus ítems.
     // El id del usuario sale de la sesión, no de la URL: así nadie
     // puede mirar el carrito de otro cambiando un número a mano.
-    // Cada .then() devuelve el pedido siguiente, porque el segundo necesita
-    // el id que trajo el primero: por eso van encadenados y no en paralelo.
     const cargarCarrito = () => {
+        setError("")
+
         api.get("/api/usuarios/" + usuario.id + "/carrito")
             .then((miCarrito) => {
                 setCarrito(miCarrito)
-                return api.get("/api/carritos/" + miCarrito.id + "/items")
+                return listaVacia(api.get("/api/carritos/" + miCarrito.id + "/items"))
             })
             .then((susItems) => {
                 setItems(lista(susItems))
-                return api.get("/api/imagenes")
+                return listaVacia(api.get("/api/imagenes"))
             })
             .then((lasImagenes) => setImagenes(lista(lasImagenes)))
             .catch((e) => setError(e.message))
@@ -133,7 +141,7 @@ const Carrito = () => {
                             marcos={marcos}
                             total={total}
                             boton="Confirmar compra"
-                            onBoton={() => navegar("/checkout")}
+                            onBoton={() => navegar("/carrito/confirmar")}
                             nota="El stock se verifica al confirmar." />
                     </div>}
 
