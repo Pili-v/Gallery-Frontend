@@ -10,8 +10,8 @@ import { api, lista } from "../api/cliente";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 
-//Comentario random para que se suba esta cosa
-const POR_PAGINA = 12;
+
+const POR_PAGINA = 3;
 const MAX_PORTADAS = 3;
 const MAX_ESTILOS = 4;
 
