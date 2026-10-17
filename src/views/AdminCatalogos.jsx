@@ -13,8 +13,6 @@ const AdminCatalogos = () => {
     const [tamanios, setTamanios] = useState([])
     const [marcos, setMarcos] = useState([])
 
-    const [archivoMarco, setArchivoMarco] = useState(null)
-
     const [nuevoEstilo, setNuevoEstilo] = useState("")
 
     const [nuevoTamanio, setNuevoTamanio] = useState({
@@ -29,10 +27,19 @@ const AdminCatalogos = () => {
         precio_marco: ""
     })
 
-    const [cargando, setCargando] = useState(true)
-    const [error, setError] = useState("")
-    const [guardando, setGuardando] = useState("")
+    const [archivoMarco, setArchivoMarco] = useState(null)
 
+    const [editandoEstilo, setEditandoEstilo] = useState(null)
+    const [editandoTamanio, setEditandoTamanio] = useState(null)
+    const [editandoMarco, setEditandoMarco] = useState(null)
+
+    const [confirmando, setConfirmando] = useState(null)
+
+    const [cargando, setCargando] = useState(true)
+    const [guardando, setGuardando] = useState("")
+    const [eliminando, setEliminando] = useState("")
+
+    const [error, setError] = useState("")
     const [errorTamanio, setErrorTamanio] = useState("")
     const [errorMarco, setErrorMarco] = useState("")
 
@@ -57,80 +64,80 @@ const AdminCatalogos = () => {
 
     const limpiarSoloTexto = (texto) => {
 
-        const sinNumerosNiSimbolos =
-            texto.replace(
-                /[^A-Za-zÁÉÍÓÚáéíóúÜüÑñ\s]/g,
-                ""
-            )
-
-        return capitalizarPalabras(
-            sinNumerosNiSimbolos
+        const limpio = texto.replace(
+            /[^A-Za-zÁÉÍÓÚáéíóúÜüÑñ\s]/g,
+            ""
         )
+
+        return capitalizarPalabras(limpio)
     }
 
     const limpiarTextoConNumeros = (texto) => {
 
-        const limpio =
-            texto.replace(
-                /[^A-Za-zÁÉÍÓÚáéíóúÜüÑñ0-9\s]/g,
-                ""
-            )
-
-        return capitalizarPalabras(
-            limpio
+        const limpio = texto.replace(
+            /[^A-Za-zÁÉÍÓÚáéíóúÜüÑñ0-9\s]/g,
+            ""
         )
+
+        return capitalizarPalabras(limpio)
     }
 
     const cargarCatalogos = () => {
 
-        setCargando(true)
         setError("")
 
-        Promise.all([
+        return Promise.all([
             api.get("/api/estilos"),
             api.get("/api/tamanios-lienzo"),
             api.get("/api/marcos")
         ])
             .then((respuestas) => {
 
-                setEstilos(
-                    lista(respuestas[0])
-                )
-
-                setTamanios(
-                    lista(respuestas[1])
-                )
-
-                setMarcos(
-                    lista(respuestas[2])
-                )
+                setEstilos(lista(respuestas[0]))
+                setTamanios(lista(respuestas[1]))
+                setMarcos(lista(respuestas[2]))
             })
             .catch((e) => {
 
                 setError(e.message)
-            })
-            .finally(() => {
-
-                setCargando(false)
             })
     }
 
     useEffect(() => {
 
         cargarCatalogos()
+            .finally(() => {
+                setCargando(false)
+            })
 
     }, [])
+
+    // -------------------------
+    // ESTILOS
+    // -------------------------
 
     const handleEstilo = (e) => {
 
         setNuevoEstilo(
-            limpiarSoloTexto(
-                e.target.value
-            )
+            limpiarSoloTexto(e.target.value)
         )
     }
 
-    const crearEstilo = (e) => {
+    const editarEstilo = (estilo) => {
+
+        setEditandoEstilo(estilo.id)
+        setNuevoEstilo(estilo.nombreEstilo)
+        setConfirmando(null)
+        setError("")
+    }
+
+    const cancelarEdicionEstilo = () => {
+
+        setEditandoEstilo(null)
+        setNuevoEstilo("")
+    }
+
+    const guardarEstilo = (e) => {
 
         e.preventDefault()
 
@@ -141,26 +148,49 @@ const AdminCatalogos = () => {
         setGuardando("estilo")
         setError("")
 
-        api.post(
-            "/api/estilos",
-            {
-                nombreEstilo:
-                    nuevoEstilo.trim()
-            }
-        )
+        const datos = {
+            nombreEstilo: nuevoEstilo.trim()
+        }
+
+        const pedido = editandoEstilo
+            ? api.put(
+                "/api/estilos/" + editandoEstilo,
+                datos
+            )
+            : api.post(
+                "/api/estilos",
+                datos
+            )
+
+        pedido
             .then(() => {
 
                 setNuevoEstilo("")
+                setEditandoEstilo(null)
 
-                return api.get(
-                    "/api/estilos"
-                )
+                return cargarCatalogos()
             })
-            .then((respuesta) => {
+            .finally(() => {
 
-                setEstilos(
-                    lista(respuesta)
-                )
+                setGuardando("")
+            })
+    }
+
+    const eliminarEstilo = (id) => {
+
+        setEliminando("estilo-" + id)
+        setError("")
+
+        api.delete("/api/estilos/" + id)
+            .then(() => {
+
+                setConfirmando(null)
+
+                if (editandoEstilo === id) {
+                    cancelarEdicionEstilo()
+                }
+
+                return cargarCatalogos()
             })
             .catch((e) => {
 
@@ -168,9 +198,13 @@ const AdminCatalogos = () => {
             })
             .finally(() => {
 
-                setGuardando("")
+                setEliminando("")
             })
     }
+
+    // -------------------------
+    // TAMAÑOS
+    // -------------------------
 
     const handleTamanio = (e) => {
 
@@ -181,9 +215,7 @@ const AdminCatalogos = () => {
         if (name === "nombre_tamanio") {
 
             nuevoValor =
-                limpiarTextoConNumeros(
-                    value
-                )
+                limpiarTextoConNumeros(value)
         }
 
         if (
@@ -207,23 +239,50 @@ const AdminCatalogos = () => {
         setErrorTamanio("")
     }
 
-    const crearTamanio = (e) => {
+    const editarTamanio = (tamanio) => {
+
+        setEditandoTamanio(tamanio.id)
+
+        setNuevoTamanio({
+            nombre_tamanio:
+                tamanio.nombre_tamanio ?? "",
+
+            ancho_lienzo:
+                tamanio.ancho_lienzo ?? "",
+
+            largo_lienzo:
+                tamanio.largo_lienzo ?? ""
+        })
+
+        setConfirmando(null)
+        setError("")
+        setErrorTamanio("")
+    }
+
+    const cancelarEdicionTamanio = () => {
+
+        setEditandoTamanio(null)
+
+        setNuevoTamanio({
+            nombre_tamanio: "",
+            ancho_lienzo: "",
+            largo_lienzo: ""
+        })
+
+        setErrorTamanio("")
+    }
+
+    const guardarTamanio = (e) => {
 
         e.preventDefault()
 
         const ancho =
-            Number(
-                nuevoTamanio.ancho_lienzo
-            )
+            Number(nuevoTamanio.ancho_lienzo)
 
         const largo =
-            Number(
-                nuevoTamanio.largo_lienzo
-            )
+            Number(nuevoTamanio.largo_lienzo)
 
-        if (
-            !nuevoTamanio.nombre_tamanio.trim()
-        ) {
+        if (!nuevoTamanio.nombre_tamanio.trim()) {
 
             setErrorTamanio(
                 "Ingresá un nombre para el tamaño."
@@ -232,10 +291,7 @@ const AdminCatalogos = () => {
             return
         }
 
-        if (
-            ancho <= 0 ||
-            largo <= 0
-        ) {
+        if (ancho <= 0 || largo <= 0) {
 
             setErrorTamanio(
                 "El ancho y el largo deben ser mayores a 0."
@@ -248,38 +304,33 @@ const AdminCatalogos = () => {
         setError("")
         setErrorTamanio("")
 
-        api.post(
-            "/api/tamanios-lienzo",
-            {
-                nombre_tamanio:
-                    nuevoTamanio
-                        .nombre_tamanio
-                        .trim(),
+        const datos = {
 
-                ancho_lienzo:
-                    ancho,
+            nombre_tamanio:
+                nuevoTamanio.nombre_tamanio.trim(),
 
-                largo_lienzo:
-                    largo
-            }
-        )
+            ancho_lienzo: ancho,
+
+            largo_lienzo: largo
+        }
+
+        const pedido = editandoTamanio
+            ? api.put(
+                "/api/tamanios-lienzo/" +
+                editandoTamanio,
+                datos
+            )
+            : api.post(
+                "/api/tamanios-lienzo",
+                datos
+            )
+
+        pedido
             .then(() => {
 
-                setNuevoTamanio({
-                    nombre_tamanio: "",
-                    ancho_lienzo: "",
-                    largo_lienzo: ""
-                })
+                cancelarEdicionTamanio()
 
-                return api.get(
-                    "/api/tamanios-lienzo"
-                )
-            })
-            .then((respuesta) => {
-
-                setTamanios(
-                    lista(respuesta)
-                )
+                return cargarCatalogos()
             })
             .catch((e) => {
 
@@ -290,6 +341,38 @@ const AdminCatalogos = () => {
                 setGuardando("")
             })
     }
+
+    const eliminarTamanio = (id) => {
+
+        setEliminando("tamanio-" + id)
+        setError("")
+
+        api.delete(
+            "/api/tamanios-lienzo/" + id
+        )
+            .then(() => {
+
+                setConfirmando(null)
+
+                if (editandoTamanio === id) {
+                    cancelarEdicionTamanio()
+                }
+
+                return cargarCatalogos()
+            })
+            .catch((e) => {
+
+                setError(e.message)
+            })
+            .finally(() => {
+
+                setEliminando("")
+            })
+    }
+
+    // -------------------------
+    // MARCOS
+    // -------------------------
 
     const handleMarco = (e) => {
 
@@ -303,9 +386,7 @@ const AdminCatalogos = () => {
         ) {
 
             nuevoValor =
-                limpiarSoloTexto(
-                    value
-                )
+                limpiarSoloTexto(value)
         }
 
         if (
@@ -325,18 +406,49 @@ const AdminCatalogos = () => {
         setErrorMarco("")
     }
 
-    const crearMarco = (e) => {
+    const editarMarco = (marco) => {
+
+        setEditandoMarco(marco.id)
+
+        setNuevoMarco({
+            nombre_marco:
+                marco.nombre_marco ?? "",
+
+            color_marco:
+                marco.color_marco ?? "",
+
+            precio_marco:
+                marco.precio_marco ?? ""
+        })
+
+        setArchivoMarco(null)
+        setConfirmando(null)
+        setError("")
+        setErrorMarco("")
+    }
+
+    const cancelarEdicionMarco = () => {
+
+        setEditandoMarco(null)
+
+        setNuevoMarco({
+            nombre_marco: "",
+            color_marco: "",
+            precio_marco: ""
+        })
+
+        setArchivoMarco(null)
+        setErrorMarco("")
+    }
+
+    const guardarMarco = (e) => {
 
         e.preventDefault()
 
         const precio =
-            Number(
-                nuevoMarco.precio_marco
-            )
+            Number(nuevoMarco.precio_marco)
 
-        if (
-            !nuevoMarco.nombre_marco.trim()
-        ) {
+        if (!nuevoMarco.nombre_marco.trim()) {
 
             setErrorMarco(
                 "Ingresá un nombre para el marco."
@@ -345,9 +457,7 @@ const AdminCatalogos = () => {
             return
         }
 
-        if (
-            !nuevoMarco.color_marco.trim()
-        ) {
+        if (!nuevoMarco.color_marco.trim()) {
 
             setErrorMarco(
                 "Ingresá un color para el marco."
@@ -365,7 +475,12 @@ const AdminCatalogos = () => {
             return
         }
 
-        if (!archivoMarco) {
+        /*
+         * Para crear, la imagen sigue siendo obligatoria.
+         * Para editar no: el backend mantiene la imagen
+         * anterior si no se manda un archivo nuevo.
+         */
+        if (!editandoMarco && !archivoMarco) {
 
             setErrorMarco(
                 "Seleccioná una imagen para el marco."
@@ -378,21 +493,16 @@ const AdminCatalogos = () => {
         setError("")
         setErrorMarco("")
 
-        const formData =
-            new FormData()
+        const formData = new FormData()
 
         formData.append(
             "nombre_marco",
-            nuevoMarco
-                .nombre_marco
-                .trim()
+            nuevoMarco.nombre_marco.trim()
         )
 
         formData.append(
             "color_marco",
-            nuevoMarco
-                .color_marco
-                .trim()
+            nuevoMarco.color_marco.trim()
         )
 
         formData.append(
@@ -400,34 +510,31 @@ const AdminCatalogos = () => {
             precio
         )
 
-        formData.append(
-            "archivo",
-            archivoMarco
-        )
+        if (archivoMarco) {
 
-        subirArchivo(
-            "/api/marcos",
-            formData
-        )
+            formData.append(
+                "archivo",
+                archivoMarco
+            )
+        }
+
+        const pedido = editandoMarco
+            ? subirArchivo(
+                "/api/marcos/" + editandoMarco,
+                formData,
+                "PUT"
+            )
+            : subirArchivo(
+                "/api/marcos",
+                formData
+            )
+
+        pedido
             .then(() => {
 
-                setNuevoMarco({
-                    nombre_marco: "",
-                    color_marco: "",
-                    precio_marco: ""
-                })
+                cancelarEdicionMarco()
 
-                setArchivoMarco(null)
-
-                return api.get(
-                    "/api/marcos"
-                )
-            })
-            .then((respuesta) => {
-
-                setMarcos(
-                    lista(respuesta)
-                )
+                return cargarCatalogos()
             })
             .catch((e) => {
 
@@ -439,19 +546,68 @@ const AdminCatalogos = () => {
             })
     }
 
+    const eliminarMarco = (id) => {
+
+        setEliminando("marco-" + id)
+        setError("")
+
+        api.delete(
+            "/api/marcos/" + id
+        )
+            .then(() => {
+
+                setConfirmando(null)
+
+                if (editandoMarco === id) {
+                    cancelarEdicionMarco()
+                }
+
+                return cargarCatalogos()
+            })
+            .catch((e) => {
+
+                setError(e.message)
+            })
+            .finally(() => {
+
+                setEliminando("")
+            })
+    }
+
+    // -------------------------
+    // CONFIRMACIÓN
+    // -------------------------
+
+    const pedirConfirmacion = (tipo, id) => {
+
+        setConfirmando({
+            tipo,
+            id
+        })
+    }
+
+    const cancelarConfirmacion = () => {
+
+        setConfirmando(null)
+    }
+
+    const esConfirmacion = (tipo, id) => {
+
+        return (
+            confirmando?.tipo === tipo &&
+            confirmando?.id === id
+        )
+    }
+
     if (cargando) {
 
         return (
             <div className="seccion">
-
                 <div className="contenido">
 
-                    <Estado
-                        tipo="cargando"
-                    />
+                    <Estado tipo="cargando" />
 
                 </div>
-
             </div>
         )
     }
@@ -523,7 +679,7 @@ const AdminCatalogos = () => {
 
                         <div
                             style={{
-                                maxHeight: "260px",
+                                maxHeight: "300px",
                                 overflowY: "auto"
                             }}
                         >
@@ -532,23 +688,106 @@ const AdminCatalogos = () => {
 
                                 <tbody>
 
-                                    {estilos.map(
-                                        (estilo) => (
+                                    {estilos.map((estilo) => (
 
-                                            <tr
-                                                key={
-                                                    estilo.id
-                                                }
+                                        <tr key={estilo.id}>
+
+                                            <td>
+                                                {estilo.nombreEstilo}
+                                            </td>
+
+                                            <td
+                                                style={{
+                                                    textAlign: "right"
+                                                }}
                                             >
-                                                <td>
-                                                    {
-                                                        estilo.nombreEstilo
-                                                    }
-                                                </td>
-                                            </tr>
 
-                                        )
-                                    )}
+                                                {esConfirmacion(
+                                                    "estilo",
+                                                    estilo.id
+                                                ) ? (
+
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            gap: "var(--xs)",
+                                                            justifyContent: "flex-end"
+                                                        }}
+                                                    >
+
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={
+                                                                cancelarConfirmacion
+                                                            }
+                                                        >
+                                                            Cancelar
+                                                        </Boton>
+
+                                                        <Boton
+                                                            tipo={
+                                                                eliminando ===
+                                                                "estilo-" + estilo.id
+                                                                    ? "deshabilitado"
+                                                                    : "primario"
+                                                            }
+                                                            onClick={() =>
+                                                                eliminarEstilo(
+                                                                    estilo.id
+                                                                )
+                                                            }
+                                                        >
+                                                            {eliminando ===
+                                                            "estilo-" + estilo.id
+                                                                ? "Eliminando..."
+                                                                : "Confirmar"
+                                                            }
+                                                        </Boton>
+
+                                                    </div>
+
+                                                ) : (
+
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            gap: "var(--xs)",
+                                                            justifyContent: "flex-end"
+                                                        }}
+                                                    >
+
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={() =>
+                                                                editarEstilo(
+                                                                    estilo
+                                                                )
+                                                            }
+                                                        >
+                                                            Editar
+                                                        </Boton>
+
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={() =>
+                                                                pedirConfirmacion(
+                                                                    "estilo",
+                                                                    estilo.id
+                                                                )
+                                                            }
+                                                        >
+                                                            Eliminar
+                                                        </Boton>
+
+                                                    </div>
+
+                                                )}
+
+                                            </td>
+
+                                        </tr>
+
+                                    ))}
 
                                 </tbody>
 
@@ -557,7 +796,7 @@ const AdminCatalogos = () => {
                         </div>
 
                         <form
-                            onSubmit={crearEstilo}
+                            onSubmit={guardarEstilo}
                             style={{
                                 marginTop:
                                     "var(--lg)"
@@ -565,7 +804,11 @@ const AdminCatalogos = () => {
                         >
 
                             <CampoFormulario
-                                etiqueta="Nuevo estilo"
+                                etiqueta={
+                                    editandoEstilo
+                                        ? "Editar estilo"
+                                        : "Nuevo estilo"
+                                }
                                 value={nuevoEstilo}
                                 onChange={handleEstilo}
                             />
@@ -579,12 +822,34 @@ const AdminCatalogos = () => {
                                 bloque
                                 type="submit"
                             >
-                                {
-                                    guardando === "estilo"
-                                        ? "Guardando..."
+                                {guardando === "estilo"
+                                    ? "Guardando..."
+                                    : editandoEstilo
+                                        ? "Guardar cambios"
                                         : "Agregar"
                                 }
                             </Boton>
+
+                            {editandoEstilo && (
+
+                                <div
+                                    style={{
+                                        marginTop: "var(--sm)"
+                                    }}
+                                >
+                                    <Boton
+                                        tipo="secundario"
+                                        bloque
+                                        type="button"
+                                        onClick={
+                                            cancelarEdicionEstilo
+                                        }
+                                    >
+                                        Cancelar edición
+                                    </Boton>
+                                </div>
+
+                            )}
 
                         </form>
 
@@ -611,7 +876,7 @@ const AdminCatalogos = () => {
 
                         <div
                             style={{
-                                maxHeight: "260px",
+                                maxHeight: "300px",
                                 overflowY: "auto"
                             }}
                         >
@@ -620,36 +885,115 @@ const AdminCatalogos = () => {
 
                                 <tbody>
 
-                                    {tamanios.map(
-                                        (tamanio) => (
+                                    {tamanios.map((tamanio) => (
 
-                                            <tr
-                                                key={
-                                                    tamanio.id
-                                                }
+                                        <tr key={tamanio.id}>
+
+                                            <td>
+                                                {tamanio.nombre_tamanio}
+
+                                                <br />
+
+                                                <span className="body-sm muted">
+                                                    {tamanio.ancho_lienzo}
+                                                    {" × "}
+                                                    {tamanio.largo_lienzo}
+                                                    {" cm"}
+                                                </span>
+                                            </td>
+
+                                            <td
+                                                style={{
+                                                    textAlign: "right"
+                                                }}
                                             >
 
-                                                <td>
-                                                    {
-                                                        tamanio.nombre_tamanio
-                                                    }
-                                                </td>
+                                                {esConfirmacion(
+                                                    "tamanio",
+                                                    tamanio.id
+                                                ) ? (
 
-                                                <td>
-                                                    {
-                                                        tamanio.ancho_lienzo
-                                                    }
-                                                    {" × "}
-                                                    {
-                                                        tamanio.largo_lienzo
-                                                    }
-                                                    {" cm"}
-                                                </td>
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            gap: "var(--xs)",
+                                                            justifyContent: "flex-end"
+                                                        }}
+                                                    >
 
-                                            </tr>
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={
+                                                                cancelarConfirmacion
+                                                            }
+                                                        >
+                                                            Cancelar
+                                                        </Boton>
 
-                                        )
-                                    )}
+                                                        <Boton
+                                                            tipo={
+                                                                eliminando ===
+                                                                "tamanio-" + tamanio.id
+                                                                    ? "deshabilitado"
+                                                                    : "primario"
+                                                            }
+                                                            onClick={() =>
+                                                                eliminarTamanio(
+                                                                    tamanio.id
+                                                                )
+                                                            }
+                                                        >
+                                                            {eliminando ===
+                                                            "tamanio-" + tamanio.id
+                                                                ? "Eliminando..."
+                                                                : "Confirmar"
+                                                            }
+                                                        </Boton>
+
+                                                    </div>
+
+                                                ) : (
+
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            gap: "var(--xs)",
+                                                            justifyContent: "flex-end"
+                                                        }}
+                                                    >
+
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={() =>
+                                                                editarTamanio(
+                                                                    tamanio
+                                                                )
+                                                            }
+                                                        >
+                                                            Editar
+                                                        </Boton>
+
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={() =>
+                                                                pedirConfirmacion(
+                                                                    "tamanio",
+                                                                    tamanio.id
+                                                                )
+                                                            }
+                                                        >
+                                                            Eliminar
+                                                        </Boton>
+
+                                                    </div>
+
+                                                )}
+
+                                            </td>
+
+                                        </tr>
+
+                                    ))}
 
                                 </tbody>
 
@@ -658,7 +1002,7 @@ const AdminCatalogos = () => {
                         </div>
 
                         <form
-                            onSubmit={crearTamanio}
+                            onSubmit={guardarTamanio}
                             style={{
                                 marginTop:
                                     "var(--lg)"
@@ -721,12 +1065,35 @@ const AdminCatalogos = () => {
                                 bloque
                                 type="submit"
                             >
-                                {
-                                    guardando === "tamanio"
-                                        ? "Guardando..."
+                                {guardando === "tamanio"
+                                    ? "Guardando..."
+                                    : editandoTamanio
+                                        ? "Guardar cambios"
                                         : "Agregar"
                                 }
                             </Boton>
+
+                            {editandoTamanio && (
+
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "var(--sm)"
+                                    }}
+                                >
+                                    <Boton
+                                        tipo="secundario"
+                                        bloque
+                                        type="button"
+                                        onClick={
+                                            cancelarEdicionTamanio
+                                        }
+                                    >
+                                        Cancelar edición
+                                    </Boton>
+                                </div>
+
+                            )}
 
                         </form>
 
@@ -753,7 +1120,7 @@ const AdminCatalogos = () => {
 
                         <div
                             style={{
-                                maxHeight: "260px",
+                                maxHeight: "300px",
                                 overflowY: "auto"
                             }}
                         >
@@ -762,45 +1129,122 @@ const AdminCatalogos = () => {
 
                                 <tbody>
 
-                                    {marcos.map(
-                                        (marco) => (
+                                    {marcos.map((marco) => (
 
-                                            <tr
-                                                key={
-                                                    marco.id
-                                                }
+                                        <tr key={marco.id}>
+
+                                            <td>
+
+                                                {marco.nombre_marco}
+
+                                                <br />
+
+                                                <span className="body-sm muted">
+                                                    {marco.color_marco}
+                                                </span>
+
+                                                <br />
+
+                                                <span className="price-md">
+                                                    {pesos(
+                                                        marco.precio_marco
+                                                    )}
+                                                </span>
+
+                                            </td>
+
+                                            <td
+                                                style={{
+                                                    textAlign: "right"
+                                                }}
                                             >
 
-                                                <td>
-                                                    {
-                                                        marco.nombre_marco
-                                                    }
+                                                {esConfirmacion(
+                                                    "marco",
+                                                    marco.id
+                                                ) ? (
 
-                                                    <br />
-
-                                                    <span
-                                                        className="body-sm muted"
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            gap: "var(--xs)",
+                                                            justifyContent: "flex-end"
+                                                        }}
                                                     >
-                                                        {
-                                                            marco.color_marco
-                                                        }
-                                                    </span>
-                                                </td>
 
-                                                <td
-                                                    className="price-md"
-                                                >
-                                                    {
-                                                        pesos(
-                                                            marco.precio_marco
-                                                        )
-                                                    }
-                                                </td>
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={
+                                                                cancelarConfirmacion
+                                                            }
+                                                        >
+                                                            Cancelar
+                                                        </Boton>
 
-                                            </tr>
+                                                        <Boton
+                                                            tipo={
+                                                                eliminando ===
+                                                                "marco-" + marco.id
+                                                                    ? "deshabilitado"
+                                                                    : "primario"
+                                                            }
+                                                            onClick={() =>
+                                                                eliminarMarco(
+                                                                    marco.id
+                                                                )
+                                                            }
+                                                        >
+                                                            {eliminando ===
+                                                            "marco-" + marco.id
+                                                                ? "Eliminando..."
+                                                                : "Confirmar"
+                                                            }
+                                                        </Boton>
 
-                                        )
-                                    )}
+                                                    </div>
+
+                                                ) : (
+
+                                                    <div
+                                                        style={{
+                                                            display: "flex",
+                                                            gap: "var(--xs)",
+                                                            justifyContent: "flex-end"
+                                                        }}
+                                                    >
+
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={() =>
+                                                                editarMarco(
+                                                                    marco
+                                                                )
+                                                            }
+                                                        >
+                                                            Editar
+                                                        </Boton>
+
+                                                        <Boton
+                                                            tipo="secundario"
+                                                            onClick={() =>
+                                                                pedirConfirmacion(
+                                                                    "marco",
+                                                                    marco.id
+                                                                )
+                                                            }
+                                                        >
+                                                            Eliminar
+                                                        </Boton>
+
+                                                    </div>
+
+                                                )}
+
+                                            </td>
+
+                                        </tr>
+
+                                    ))}
 
                                 </tbody>
 
@@ -809,7 +1253,7 @@ const AdminCatalogos = () => {
                         </div>
 
                         <form
-                            onSubmit={crearMarco}
+                            onSubmit={guardarMarco}
                             style={{
                                 marginTop:
                                     "var(--lg)"
@@ -848,8 +1292,11 @@ const AdminCatalogos = () => {
 
                             <div className="campo">
 
-                                <label>
-                                    Imagen
+                                <label className="catalog-number muted">
+                                    {editandoMarco
+                                        ? "Nueva imagen (opcional)"
+                                        : "Imagen"
+                                    }
                                 </label>
 
                                 <input
@@ -858,7 +1305,8 @@ const AdminCatalogos = () => {
                                     accept="image/*"
                                     onChange={(e) =>
                                         setArchivoMarco(
-                                            e.target.files[0]
+                                            e.target.files[0] ||
+                                            null
                                         )
                                     }
                                 />
@@ -888,12 +1336,35 @@ const AdminCatalogos = () => {
                                 bloque
                                 type="submit"
                             >
-                                {
-                                    guardando === "marco"
-                                        ? "Guardando..."
+                                {guardando === "marco"
+                                    ? "Guardando..."
+                                    : editandoMarco
+                                        ? "Guardar cambios"
                                         : "Agregar"
                                 }
                             </Boton>
+
+                            {editandoMarco && (
+
+                                <div
+                                    style={{
+                                        marginTop:
+                                            "var(--sm)"
+                                    }}
+                                >
+                                    <Boton
+                                        tipo="secundario"
+                                        bloque
+                                        type="button"
+                                        onClick={
+                                            cancelarEdicionMarco
+                                        }
+                                    >
+                                        Cancelar edición
+                                    </Boton>
+                                </div>
+
+                            )}
 
                         </form>
 

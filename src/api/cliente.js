@@ -108,18 +108,22 @@ export const lista = (respuesta) => {
     return respuesta?.content ?? []
 }
 // Para subir fotos no se manda JSON: el navegador arma el multipart solo.
-export const subirArchivo = (ruta, formData) => {
+export const subirArchivo = (ruta, formData, metodo = "POST") => {
     const token = getToken()
 
     return fetch(API + ruta, {
-        method: "POST",
+        method: metodo,
         headers: token ? { Authorization: "Bearer " + token } : {},
         body: formData
     }).then(respuesta => {
         if (!respuesta.ok) {
-            throw new Error("No se pudo subir el archivo")
+            return crearError(respuesta).then(error => {
+                throw error
+            })
         }
 
-        return respuesta.json()
+        if (respuesta.status === 204) return null
+
+        return respuesta.json().catch(() => null)
     })
 }
