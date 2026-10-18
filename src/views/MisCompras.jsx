@@ -9,14 +9,22 @@ import { pesos, fecha } from "../api/formato"
 
 import Estado from "../components/Estado"
 
+
+// Una lista vacía no es una falla: el backend la informa con 404 o con 409
+// según el endpoint. En los dos casos devolvemos [].
+const listaVacia = (promesa) =>
+    promesa.catch((e) => {
+        if (e.status === 404 || e.status === 409) return []
+        throw e
+    })
 const MisCompras = () => {
     const [compras, setCompras] = useState([])
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState(null)
-
+    
     // El backend saca el usuario del token, por eso no hace falta mandarle el id.
     const cargarCompras = () => {
-        api.get("/api/compras/me")
+        listaVacia(api.get("/api/compras/me"))
             .then((misCompras) => setCompras(lista(misCompras)))
             .catch((e) => setError(e.message))
             .finally(() => setCargando(false))

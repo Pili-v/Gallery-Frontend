@@ -1,111 +1,94 @@
 // Confirmar compra — Área 4 · Compra
 // Repasa lo que se está por comprar, pide la dirección y deja elegir
 // si la obra se envía o se retira por el local. Después pasa al pago.
-// Sin async/await: cada pedido se encadena con .then().
+// Todo lo que sabe de direcciones vive en ../api/direcciones.
 
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
 import { getUsuario } from "../api/sesion"
+import {
+    traerProvincias,
+    separarZona,
+    buscarDirecciones,
+    textoDeDireccion,
+    nombreCorto
+} from "../api/direcciones"
 import { optimizada, portadaDe } from "../api/formato"
 import LineaItem from "../components/LineaItem"
 import ResumenTotales from "../components/ResumenTotales"
 import CampoFormulario from "../components/CampoFormulario"
 import Estado from "../components/Estado"
 
-// Como se muestra cada sugerencia: calle, altura y localidad, que es lo que
-// uno escribiria en un sobre. La "nomenclatura" que devuelve Georef incluye la
-// comuna y queda larga de leer.
-const textoDeDireccion = (sugerida) => {
-    const altura = sugerida.altura?.valor ? " " + sugerida.altura.valor : ""
-    const lugar = sugerida.localidad_censal?.nombre ?? sugerida.departamento?.nombre ?? ""
-
-    return sugerida.calle.nombre + altura
-        + (lugar ? ", " + lugar : "")
-        + ", " + sugerida.provincia.nombre
-}
+// Una lista vacía no es una falla: el backend la informa con 404 o con 409
+// según el endpoint. En los dos casos devolvemos [].
+const listaVacia = (promesa) =>
+    promesa.catch((e) => {
+        if (e.status === 404 || e.status === 409) return []
+        throw e
+    })
 
 const ConfirmarCompra = () => {
 
     const [carrito, setCarrito] = useState(null)
     const [items, setItems] = useState([])
     const [imagenes, setImagenes] = useState([])
+    const [provincias, setProvincias] = useState([])
     const [direccion, setDireccion] = useState("")
+    const [sugerencias, setSugerencias] = useState([])
+    const [buscando, setBuscando] = useState(false)
+    const [elegida, setElegida] = useState(false)
     const [tipoEntrega, setTipoEntrega] = useState("ENVIO_DOMICILIO")
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState("")
 
-    // Autocompletado de la dirección.
-    const [sugerencias, setSugerencias] = useState([])
-    const [buscando, setBuscando] = useState(false)
-    const [elegida, setElegida] = useState(false)
-
     const usuario = getUsuario()
     const navegar = useNavigate()
 
-    // Mismo par de llamadas que en el carrito: primero el carrito, después sus ítems.
-    // El segundo pedido necesita el id que trajo el primero, por eso se devuelve
-    // adentro del .then() en vez de pedirse todo junto.
+    // El carrito, sus ítems y las fotos para la miniatura. Encadenados porque
+    // cada paso necesita el id del anterior.
     useEffect(() => {
         api.get("/api/usuarios/" + usuario.id + "/carrito")
             .then((miCarrito) => {
                 setCarrito(miCarrito)
                 setDireccion(miCarrito.direccion_cliente || "")
-                setElegida(true)
-                return api.get("/api/carritos/" + miCarrito.id + "/items")
+                // Una dirección ya guardada no es algo recién tecleado:
+                // no hay que salir a buscar sugerencias por ella.
+                if (miCarrito.direccion_cliente) setElegida(true)
+                return listaVacia(api.get("/api/carritos/" + miCarrito.id + "/items"))
             })
             .then((susItems) => {
                 setItems(lista(susItems))
-                return api.get("/api/imagenes")
+                return listaVacia(api.get("/api/imagenes"))
             })
             .then((lasImagenes) => setImagenes(lista(lasImagenes)))
             .catch((e) => setError(e.message))
             .finally(() => setCargando(false))
     }, [])
 
-    // Autocompletado contra Georef, la API de direcciones del Estado argentino:
-    // es gratis, no pide clave y busca en todo el país. Va con fetch directo y
-    // no por cliente.js, porque cliente.js está hecho para nuestro backend: le
-    // pega el token y entiende sus errores, y nada de eso aplica acá.
-    //
-    // No se busca en cada tecla: se esperan 400 ms desde la última. El return
-    // del useEffect cancela el temporizador anterior cada vez que el texto
-    // cambia, así sale un solo pedido cuando la persona deja de escribir.
+    // Las provincias no dependen del carrito: efecto aparte, en paralelo.
+    useEffect(() => {
+        traerProvincias().then(setProvincias)
+    }, [])
+
+    // Autocompletado. El setTimeout de 400 ms es el "debounce": no se consulta
+    // en cada tecla sino cuando la persona deja de escribir, y el clearTimeout
+    // del return cancela la consulta pendiente si sigue tecleando.
     useEffect(() => {
         if (elegida) return
-        if (direccion.trim().length < 4) {
-            setSugerencias([])
-            return
-        }
+
+        const { calle, provincia } = separarZona(direccion, provincias)
+        if (calle.length < 4) { setSugerencias([]); return }
 
         const temporizador = setTimeout(() => {
             setBuscando(true)
-
-            const url = "https://apis.datos.gob.ar/georef/api/direcciones"
-                + "?max=8&direccion=" + encodeURIComponent(direccion)
-
-            fetch(url)
-                .then((respuesta) => respuesta.json())
-                .then((datos) => {
-                    const encontradas = datos.direcciones ?? []
-
-                    // Georef devuelve la misma calle una vez por cada tramo. Nos
-                    // quedamos con una sola de cada texto: no tiene sentido ofrecer
-                    // dos veces lo mismo, y React necesita que la key sea única.
-                    const textos = encontradas.map(textoDeDireccion)
-                    const unicas = encontradas.filter((sugerida, indice) =>
-                        textos.indexOf(textos[indice]) === indice)
-
-                    setSugerencias(unicas)
-                })
-                // Si Georef no responde, no pasa nada: la dirección se escribe
-                // a mano igual. Un servicio externo caído no frena una compra.
-                .catch(() => setSugerencias([]))
+            buscarDirecciones(calle, provincia)
+                .then(setSugerencias)
                 .finally(() => setBuscando(false))
         }, 400)
 
         return () => clearTimeout(temporizador)
-    }, [direccion, elegida])
+    }, [direccion, elegida, provincias])
 
     const escribirDireccion = (e) => {
         setDireccion(e.target.value)
@@ -114,13 +97,12 @@ const ConfirmarCompra = () => {
 
     const elegirSugerencia = (sugerida) => {
         setDireccion(textoDeDireccion(sugerida))
-        setSugerencias([])
         setElegida(true)
+        setSugerencias([])
     }
 
-    // Guarda la dirección en el carrito y pasa al pago.
-    // El tipo de entrega viaja a la pantalla siguiente, que es la que
-    // hace el POST /api/checkout.
+    // Guarda la dirección en el carrito y pasa al pago. El tipo de entrega
+    // viaja a la pantalla siguiente, que es la que hace el POST /api/checkout.
     const irAlPago = () => {
         if (tipoEntrega === "ENVIO_DOMICILIO" && direccion.trim() === "") {
             setError("Para el envío a domicilio hace falta una dirección.")
@@ -143,6 +125,8 @@ const ConfirmarCompra = () => {
     const subtotal = items.reduce((suma, item) => suma + item.precio_unitario * item.cantidad, 0)
     const marcos = items.reduce((suma, item) => suma + item.precio_marco * item.cantidad, 0)
     const total = items.reduce((suma, item) => suma + item.subtotal, 0) + envio
+
+    const zona = separarZona(direccion, provincias)
 
     if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>
 
@@ -192,24 +176,38 @@ const ConfirmarCompra = () => {
                                     <CampoFormulario
                                         etiqueta="Dirección de entrega"
                                         value={direccion}
-                                        onChange={escribirDireccion}
-                                        autoComplete="off"
-                                        placeholder="Calle y altura, por ejemplo Mitre 750" />
+                                        onChange={escribirDireccion} />
 
-                                    {sugerencias.length > 0 && (
-                                        <div className="autocompletar-lista">
-                                            {sugerencias.map((sugerida) => (
-                                                <button
-                                                    key={textoDeDireccion(sugerida)}
-                                                    type="button"
-                                                    onClick={() => elegirSugerencia(sugerida)}>
-                                                    {textoDeDireccion(sugerida)}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    <p className="body-sm muted" style={{ marginTop: "var(--xs)" }}>
+                                        Si no aparece, agregá la provincia después de una coma:
+                                        “Florida 500, CABA”.
+                                    </p>
+
+                                    {zona.provincia && (
+                                        <p className="body-sm muted">
+                                            Buscando solo en {nombreCorto(zona.provincia)}.
+                                        </p>
                                     )}
 
-                                    {buscando && <span className="autocompletar-buscando">Buscando…</span>}
+                                    {zona.desconocida && (
+                                        <p className="body-sm muted">
+                                            “{zona.desconocida}” no es una provincia: busco en todo el país.
+                                        </p>
+                                    )}
+
+                                    {buscando && <div className="autocompletar-buscando">Buscando…</div>}
+
+                                    {sugerencias.length > 0 && (
+                                        <ul className="autocompletar-lista">
+                                            {sugerencias.map((sugerida) => (
+                                                <li
+                                                    key={textoDeDireccion(sugerida)}
+                                                    onClick={() => elegirSugerencia(sugerida)}>
+                                                    {textoDeDireccion(sugerida)}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </div>
                             )}
                         </div>
