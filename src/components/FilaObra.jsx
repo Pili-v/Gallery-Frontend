@@ -1,12 +1,10 @@
 import { Link } from "react-router-dom"
 
 // Una fila de la tabla de Mis obras. Solo dibuja lo que recibe: la pantalla pide los datos.
-// cantidadVariantes y variantesSinStock llegan en null mientras se están pidiendo (o si el pedido falló).
-// portada es la URL de la miniatura: undefined mientras llega, null si la obra no tiene fotos.
+// Todo llega con la lista de obras: portada es la URL de la miniatura (null si la obra no tiene fotos),
+// estilos el texto ya armado, y cantidadVariantes y variantesSinStock los conteos.
 // Al hacer click en la fila se llama a onAlternar, que abre o cierra el detalle de la obra.
 const FilaObra = ({ obra, portada, estilos, cantidadVariantes, variantesSinStock, abierta, onAlternar }) => {
-    const cargada = cantidadVariantes !== null
-
     return (
         <tr onClick={onAlternar} style={{ cursor: "pointer" }}>
             <td>
@@ -23,8 +21,8 @@ const FilaObra = ({ obra, portada, estilos, cantidadVariantes, variantesSinStock
             </td>
             <td className="muted">{estilos}</td>
             <td>
-                {cargada ? cantidadVariantes : "—"}
-                {cargada && variantesSinStock > 0 && (
+                {cantidadVariantes}
+                {variantesSinStock > 0 && (
                     <span style={{ color: "var(--error)" }}> · {variantesSinStock} sin stock</span>
                 )}
             </td>
