@@ -27,7 +27,7 @@ const DetalleVenta = ({ entrada, lineas }) => {
                 if (estado.error) return <Estado key={item.id} tipo="error" mensaje={estado.error} />
                 if (!estado.linea) return <Estado key={item.id} tipo="cargando" />
 
-                return <LineaItem key={item.id} item={estado.linea} />
+                return <LineaItem key={item.id} item={estado.linea} imagen={estado.linea.imagen} />
             })}
         </div>
     )

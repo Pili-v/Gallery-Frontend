@@ -17,6 +17,7 @@
 
 import { useState } from "react";
 import { colorDeMarco } from "../api/Coloresmarco";
+import { optimizada } from "../api/formato";
 
 export default function VisorImagenes({ imagenes, alt, atenuada = false, marco = null, children }) {
   const [actual, setActual] = useState(0);
@@ -59,13 +60,14 @@ export default function VisorImagenes({ imagenes, alt, atenuada = false, marco =
   };
 
   // El marco se dibuja con CSS alrededor de la imagen (que ya se ajusta a su propia forma).
-  // Si el marco tiene foto (imagen_marco, un PNG con fondo y centro transparentes) se usa como
-  // borde; si no, se pinta con el color de color_marco.
+  // Si el marco tiene foto (url, un PNG con fondo y centro transparentes, en Cloudinary) se usa
+  // como borde; si no, se pinta con el color de color_marco. La foto del marco no se transforma:
+  // tiene que seguir siendo un PNG con transparencia.
   let claseMarco = "";
   let estiloMarco;
-  if (marco && marco.imagen_marco) {
+  if (marco && marco.url) {
     claseMarco = "con-marco-imagen";
-    estiloMarco = { borderImageSource: 'url("data:image/png;base64,' + marco.imagen_marco + '")' };
+    estiloMarco = { borderImageSource: 'url("' + marco.url + '")' };
   } else if (marco) {
     claseMarco = "con-marco";
     estiloMarco = { "--color-marco": colorDeMarco(marco.color_marco) };
@@ -88,7 +90,7 @@ export default function VisorImagenes({ imagenes, alt, atenuada = false, marco =
               onClick={() => setActual(i)}
               aria-label={"Ver la imagen " + (i + 1)}
             >
-              <img src={src} alt="" />
+              <img src={optimizada(src, 160)} alt="" />
             </button>
           ))}
         </div>
@@ -106,7 +108,7 @@ export default function VisorImagenes({ imagenes, alt, atenuada = false, marco =
             <img
               className={claseMarco}
               style={estiloMarco}
-              src={imagenes[indice]}
+              src={optimizada(imagenes[indice], 1200)}
               alt={descripcion}
               onClick={() => setAmpliada(true)}
               draggable={false}
@@ -143,7 +145,7 @@ export default function VisorImagenes({ imagenes, alt, atenuada = false, marco =
           onKeyDown={alTeclearAmpliada}
           onClick={() => setAmpliada(false)}
         >
-          <img className={claseMarco} style={estiloMarco} src={imagenes[indice]} alt={descripcion} onClick={(e) => e.stopPropagation()} />
+          <img className={claseMarco} style={estiloMarco} src={optimizada(imagenes[indice])} alt={descripcion} onClick={(e) => e.stopPropagation()} />
 
           <button type="button" className="lightbox-cerrar" onClick={() => setAmpliada(false)} aria-label="Cerrar">
             ✕
