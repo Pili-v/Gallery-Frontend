@@ -11,7 +11,8 @@ import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 import VisorImagenes from "../components/Visorimagenes";
 
-// Una lista vacía llega como 404 (regla de la cátedra): para listas de apoyo significa "no hay".
+// Una lista vacía llega como 204 (lista() la deja en []) y, antes, como 404 (regla de la cátedra):
+// para listas de apoyo significa "no hay".
 const sin404 = (promesa) =>
   promesa.catch((e) => {
     if (e.status === 404) return [];
@@ -122,10 +123,11 @@ export default function DetalleObra() {
   else if (sinMarcos) textoBoton = "SIN MARCOS";
   else if (agregando) textoBoton = "AGREGANDO...";
 
-  // Imágenes en el orden que las cargó el artista. "url" (Cloudinary) tiene prioridad sobre base64.
+  // Las URLs de Cloudinary, en el orden que las cargó el artista.
   const fotos = [...imagenes]
+    .filter((img) => img.url)
     .sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0))
-    .map((img) => img.url ?? "data:image/jpeg;base64," + img.contenido_imagen);
+    .map((img) => img.url);
 
   return (
     <div className="seccion pagina-detalle-obra">

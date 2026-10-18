@@ -14,6 +14,7 @@ import {
     textoDeDireccion,
     nombreCorto
 } from "../api/direcciones"
+import { optimizada, portadaDe } from "../api/formato"
 import LineaItem from "../components/LineaItem"
 import ResumenTotales from "../components/ResumenTotales"
 import CampoFormulario from "../components/CampoFormulario"
@@ -113,9 +114,10 @@ const ConfirmarCompra = () => {
             .catch((e) => setError(e.message))
     }
 
+    // La miniatura: el ítem trae el obra_id y la foto sale de la lista de imágenes (su portada).
     const fotoDe = (obraId) => {
-        const imagen = imagenes.find((i) => i.obra_id === obraId)
-        return imagen ? "data:image/jpeg;base64," + imagen.contenido_imagen : null
+        const imagen = portadaDe(imagenes, obraId)
+        return imagen ? optimizada(imagen.url, 160) : null
     }
 
     // El backend cobra $1.500 por envío a domicilio. El retiro por el local no cuesta.

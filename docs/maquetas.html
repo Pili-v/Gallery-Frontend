@@ -1091,7 +1091,7 @@ ${Header("artista","/panel/obras")}
   <div class="contenido col-media">
     ${TituloPagina(editando ? "Editar obra" : "Publicar obra",
       editando ? "Es la misma vista que publicar, con los datos ya cargados."
-               : "Primero la obra, después sus tamaños y sus fotos.")}
+               : "Primero la obra, después sus variantes y sus fotos.")}
     <div class="cartela" style="padding:var(--lg)">
       <p class="catalog-number muted" style="margin-bottom:var(--md)">1 · La obra</p>
       ${CampoFormulario("Nombre","text", editando ? "Composición en Terracota" : "")}
@@ -1103,7 +1103,7 @@ ${Header("artista","/panel/obras")}
       <label class="body-sm"><input type="checkbox" checked> En venta</label>
     </div>
     <div class="cartela" style="padding:var(--lg);margin-top:var(--md)">
-      <p class="catalog-number muted" style="margin-bottom:var(--md)">2 · Tamaños y precios</p>
+      <p class="catalog-number muted" style="margin-bottom:var(--md)">2 · Variantes</p>
       <table class="tabla" style="border:0">
         <tr><th>Tamaño</th><th>Precio</th><th>Stock</th><th>Descuento</th><th>Vence</th></tr>
         <tr>
@@ -1121,7 +1121,7 @@ ${Header("artista","/panel/obras")}
           <td><input class="input" type="date" value="2026-10-30"></td>
         </tr>` : ""}
       </table>
-      <button class="boton boton-secundario" style="margin-top:var(--md)">Agregar otro tamaño</button>
+      <button class="boton boton-secundario" style="margin-top:var(--md)">Agregar variante</button>
     </div>
     <div class="cartela" style="padding:var(--lg);margin-top:var(--md)">
       <p class="catalog-number muted" style="margin-bottom:var(--md)">3 · Fotos</p>

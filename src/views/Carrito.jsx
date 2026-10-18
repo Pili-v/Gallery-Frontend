@@ -6,6 +6,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
 import { getUsuario } from "../api/sesion"
+import { optimizada, portadaDe } from "../api/formato"
 import LineaItem from "../components/LineaItem"
 import ResumenTotales from "../components/ResumenTotales"
 import Estado from "../components/Estado"
@@ -81,10 +82,10 @@ const Carrito = () => {
             .catch((e) => setError(e.message))
     }
 
-    // La miniatura: el ítem trae el obra_id y la foto sale de la lista de imágenes.
+    // La miniatura: el ítem trae el obra_id y la foto sale de la lista de imágenes (su portada).
     const fotoDe = (obraId) => {
-        const imagen = imagenes.find((i) => i.obra_id === obraId)
-        return imagen ? "data:image/jpeg;base64," + imagen.contenido_imagen : null
+        const imagen = portadaDe(imagenes, obraId)
+        return imagen ? optimizada(imagen.url, 160) : null
     }
 
     // Los totales se calculan con lo que ya devuelve la API por cada ítem.

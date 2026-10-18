@@ -10,7 +10,7 @@ import { api, lista } from "../api/cliente";
 import TarjetaObra from "../components/TarjetaObra";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
-import { pesos } from "../api/formato";
+import { pesos, optimizada } from "../api/formato";
 
 // Una lista vacía llega como 404 (regla de la cátedra): para listas de apoyo significa "no hay".
 const sin404 = (promesa) =>
@@ -122,6 +122,9 @@ export default function Catalogo() {
           return nuevos;
         });
         setObras(lasObras);
+        // Sin resultados el back responde 204 (sin cuerpo): con filtros se muestra el mismo aviso
+        // con "Quitar filtros" que antes daba el 404; sin filtros, el estado vacío del catálogo.
+        if (lasObras.length === 0 && conFiltros) setAviso({ mensaje: null, deFiltro: true });
         // La obra del hero es la primera del catálogo SIN filtros
         if (!conFiltros && pagina === 0 && lasObras.length > 0) setPrimeraObra(lasObras[0]);
       })
@@ -202,7 +205,7 @@ export default function Catalogo() {
         nombre_artistico: artista ? artista.nombre_artistico : "Artista"
       },
       variante,
-      imagen: portada ? portada.url ?? "data:image/jpeg;base64," + portada.contenido_imagen : null
+      imagen: portada ? optimizada(portada.url, 600) : null
     };
   };
 
