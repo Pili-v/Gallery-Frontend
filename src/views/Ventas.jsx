@@ -7,6 +7,9 @@ import { pesos, fecha, optimizada, portadaDe } from "../api/formato"
 
 import Estado from "../components/Estado"
 import DetalleVenta from "../components/DetalleVenta"
+import Paginador from "../components/Paginador"
+
+const POR_PAGINA = 10
 
 const numero = (id) => "Nº " + String(id).padStart(6, "0")
 
@@ -28,12 +31,22 @@ const Ventas = () => {
     // por separado, así que cada una está cargando, lista o con error por su cuenta.
     const [lineas, setLineas] = useState({})
 
+    // La página que se está viendo (empieza en 0, como en el back) y cuánto hay en total.
+    const [pagina, setPagina] = useState(0)
+    const [totalPaginas, setTotalPaginas] = useState(1)
+    const [totalFacturas, setTotalFacturas] = useState(0)
+
     // El backend saca el artista del token, por eso no hace falta mandarle el id.
     useEffect(() => {
-        api.get("/api/artistas/me/facturas")
+        let vigente = true
+
+        api.get("/api/artistas/me/facturas?page=" + pagina + "&size=" + POR_PAGINA)
             .then((respuesta) => {
+                if (!vigente) return
                 const propias = lista(respuesta)
                 setFacturas(propias)
+                setTotalPaginas(respuesta && respuesta.totalPages ? respuesta.totalPages : 1)
+                setTotalFacturas(respuesta && respuesta.totalElements ? respuesta.totalElements : 0)
 
                 // La factura no dice cuántas obras tiene: hay que pedir sus items.
                 propias.forEach((factura) => {
@@ -50,10 +63,22 @@ const Ventas = () => {
             })
             .catch((e) => {
                  // Sin ventas el back responde 204 y lista() deja []; un 404 tampoco se muestra como falla.
-                if (e.status !== 404) setError(e.message)
+                if (vigente && e.status !== 404) setError(e.message)
             })
-            .finally(() => setCargando(false))
-    }, [])
+            .finally(() => {
+                if (vigente) setCargando(false)
+            })
+
+        // Si se cambia de página antes de que llegue la respuesta, la vieja se descarta.
+        return () => {
+            vigente = false
+        }
+    }, [pagina])
+
+    const cambiarPagina = (nueva) => {
+        setCargando(true)
+        setPagina(nueva)
+    }
 
     // Pide los datos de una obra vendida. El item de factura solo trae ids (variante, marco):
     // los nombres salen de la variante, su obra y el marco. Se guarda con los nombres de
@@ -160,12 +185,13 @@ const Ventas = () => {
                     <>
                         <div className="fila" style={{ margin: "var(--lg) 0" }}>
                             <div className="cartela" style={{ padding: "var(--md) var(--lg)" }}>
-                                <p className="catalog-number muted">Vendido</p>
+                                {/* La suma sale de las facturas que se están viendo: con varias páginas no es el total. */}
+                                <p className="catalog-number muted">{totalPaginas > 1 ? "Vendido en esta página" : "Vendido"}</p>
                                 <p className="price-lg">{pesos(vendido)}</p>
                             </div>
                             <div className="cartela" style={{ padding: "var(--md) var(--lg)" }}>
                                 <p className="catalog-number muted">Facturas</p>
-                                <p className="price-lg">{facturas.length}</p>
+                                <p className="price-lg">{totalFacturas}</p>
                             </div>
                         </div>
 
@@ -201,6 +227,8 @@ const Ventas = () => {
                                 </tbody>
                             ))}
                         </table>
+
+                        <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={cambiarPagina} />
                     </>
                 )}
             </div>
