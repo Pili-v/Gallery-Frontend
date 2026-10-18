@@ -47,6 +47,14 @@ const Header = () => {
                                 {link[0]}
                             </NavLink>
                         ))}
+                        {/* Solo los clientes: quien ya publica (o administra) no lo necesita. */}
+                        {rol === "CLIENTE" && (
+                            <Link to="/quiero-publicar" className="boton boton-secundario"
+                                title="¿Querés publicar tus obras? Creá tu perfil de artista"
+                                style={{ padding: "8px 14px", color: "var(--bordo)", whiteSpace: "nowrap" }}>
+                                ¿Querés publicar?
+                            </Link>
+                        )}
                         {usuario && (
                             <>
                                 <Link to="/mi-cuenta" className="avatar" style={{ textDecoration: "none" }}>

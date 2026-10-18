@@ -8,6 +8,7 @@ import PerfilArtista from "./views/PerfilArtista"
 import Login from "./views/Login"
 import Registro from "./views/Registro"
 import MiCuenta from "./views/MiCuenta"
+import QuieroPublicar from "./views/QuieroPublicar"
 import Carrito from "./views/Carrito"
 import ConfirmarCompra from "./views/ConfirmarCompra"
 import Pago from "./views/Pago"
@@ -48,6 +49,7 @@ const App = () => {
 
           {/* Hay que estar logueado, sin importar el rol */}
           <Route path="/mi-cuenta" element={<RutaProtegida><MiCuenta /></RutaProtegida>} />
+          <Route path="/quiero-publicar" element={<RutaProtegida><QuieroPublicar /></RutaProtegida>} />
           <Route path="/mis-compras" element={<RutaProtegida><MisCompras /></RutaProtegida>} />
           <Route path="/encargos" element={<RutaProtegida><Encargos /></RutaProtegida>} />
           <Route path="/encargos/:id" element={<RutaProtegida><EncargoDetalle /></RutaProtegida>} />
