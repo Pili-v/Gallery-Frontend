@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { api, lista } from "../api/cliente";
+import { optimizada } from "../api/formato";
 import TarjetaObra from "../components/TarjetaObra";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
@@ -126,7 +127,7 @@ export default function PerfilArtista() {
         nombre_artistico: artista.nombre_artistico
       },
       variante: item.variante,
-      imagen: portada ? portada.url ?? "data:image/jpeg;base64," + portada.contenido_imagen : null
+      imagen: portada ? optimizada(portada.url, 600) : null
     };
   };
 

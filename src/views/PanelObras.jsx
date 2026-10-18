@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
+import { optimizada, portadaDe } from "../api/formato"
 
 import Boton from "../components/Boton"
 import Estado from "../components/Estado"
@@ -26,6 +27,10 @@ const PanelObras = () => {
     const [variantes, setVariantes] = useState({})
     const [estilosDeObra, setEstilosDeObra] = useState({})
 
+    // La miniatura de cada obra (su portada, la foto de orden 1), por id de obra: sin entrada es que
+    // todavía no llegó, una URL es la foto y null es que la obra no tiene fotos (o falló el pedido).
+    const [portadas, setPortadas] = useState({})
+
     // El backend saca el artista del token, por eso no hace falta mandarle el id.
     useEffect(() => {
         api.get("/api/estilos")
@@ -44,6 +49,13 @@ const PanelObras = () => {
                             setEstilosDeObra((previos) => ({ ...previos, [obra.id]: detalle.estilo_ids }))
                         })
                         .catch(() => setEstilosDeObra((previos) => ({ ...previos, [obra.id]: null })))
+
+                    api.get("/api/imagenes?obraId=" + obra.id)
+                        .then((respuestaImagenes) => {
+                            const portada = portadaDe(lista(respuestaImagenes), obra.id)
+                            setPortadas((previas) => ({ ...previas, [obra.id]: portada ? optimizada(portada.url, 160) : null }))
+                        })
+                        .catch(() => setPortadas((previas) => ({ ...previas, [obra.id]: null })))
 
                     api.get("/api/variantes?obraId=" + obra.id)
                         .then((respuestaVariantes) => {
@@ -128,6 +140,7 @@ const PanelObras = () => {
                         <tbody key={obra.id}>
                             <FilaObra
                                 obra={obra}
+                                portada={portadas[obra.id]}
                                 estilos={nombresDeEstilos(obra)}
                                 cantidadVariantes={cargada ? variantes[obra.id].length : null}
                                 variantesSinStock={cargada ? variantesSinStock(obra) : null}
