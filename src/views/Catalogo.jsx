@@ -10,6 +10,7 @@ import { api, lista } from "../api/cliente";
 import TarjetaObra from "../components/TarjetaObra";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
+import Paginador from "../components/Paginador";
 import { pesos, optimizada } from "../api/formato";
 
 // Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
@@ -411,20 +412,7 @@ export default function Catalogo() {
 
           {resultados}
 
-          {totalPaginas > 1 && !cargandoObras && !aviso && (
-            <div className="entre" style={{ marginTop: "var(--xl)" }}>
-              <Boton tipo={pagina === 0 ? "deshabilitado" : "secundario"} onClick={pagina > 0 ? () => setPagina(pagina - 1) : undefined}>
-                Anterior
-              </Boton>
-              <span className="catalog-number muted">Página {pagina + 1} de {totalPaginas}</span>
-              <Boton
-                tipo={pagina + 1 >= totalPaginas ? "deshabilitado" : "secundario"}
-                onClick={pagina + 1 < totalPaginas ? () => setPagina(pagina + 1) : undefined}
-              >
-                Siguiente
-              </Boton>
-            </div>
-          )}
+          {!cargandoObras && !aviso && <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />}
         </section>
       </div>
 
