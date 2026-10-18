@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react"
 import { api, lista } from "../api/cliente"
-import { pesos, fecha } from "../api/formato"
+import { pesos, fecha, optimizada, portadaDe } from "../api/formato"
 
 import Estado from "../components/Estado"
 import DetalleVenta from "../components/DetalleVenta"
@@ -81,9 +81,20 @@ const Ventas = () => {
                     nombre_marco: marco.nombre_marco,
                     cantidad: item.cantidad_items,
                     descuento: item.descuento,
-                    subtotal: item.total_item
+                    subtotal: item.total_item,
+                    imagen: null
                 }
                 setLineas((previas) => ({ ...previas, [item.id]: { linea } }))
+
+                // La portada llega aparte: si falla o la obra no tiene fotos, la fila queda sin miniatura.
+                api.get("/api/imagenes?obraId=" + obra.id)
+                    .then((respuesta) => {
+                        const portada = portadaDe(lista(respuesta), obra.id)
+                        if (!portada) return
+                        const conImagen = { ...linea, imagen: optimizada(portada.url, 160) }
+                        setLineas((previas) => ({ ...previas, [item.id]: { linea: conImagen } }))
+                    })
+                    .catch(() => {})
             })
             .catch((e) => setLineas((previas) => ({ ...previas, [item.id]: { error: e.message } })))
     }
