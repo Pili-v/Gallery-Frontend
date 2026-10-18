@@ -9,14 +9,15 @@ import { Link } from "react-router-dom";
 import { api, lista } from "../api/cliente";
 import { optimizada } from "../api/formato";
 import Estado from "../components/Estado";
-import Boton from "../components/Boton";
+import Paginador from "../components/Paginador";
 
 
 const POR_PAGINA = 3;
 const MAX_PORTADAS = 3;
 const MAX_ESTILOS = 4;
 
-// Una lista vacía llega como 404 (regla de la cátedra): para listas de apoyo significa "no hay".
+// Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
+// respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
 const sin404 = (promesa) =>
   promesa.catch((e) => {
     if (e.status === 404) return [];
@@ -77,7 +78,7 @@ export default function Artistas() {
       .catch((e) => {
         if (!vigente) return;
         setArtistas([]);
-        // Sin artistas el backend responde 404: no es un error, es una lista vacía
+        // Sin artistas el backend responde 204 (llega como lista vacía); el 404 queda como respaldo
         if (e.status === 404) setVacio(true);
         else setError(e.message);
       })
@@ -222,18 +223,7 @@ export default function Artistas() {
 
         {cuerpo}
 
-        {totalPaginas > 1 && !error && (
-          <div className="fila">
-            <Boton tipo="secundario" onClick={pagina > 0 ? () => setPagina(pagina - 1) : undefined}>Anterior</Boton>
-            <span className="catalog-number muted">{pagina + 1} / {totalPaginas}</span>
-            <Boton
-              tipo="secundario"
-              onClick={pagina + 1 < totalPaginas ? () => setPagina(pagina + 1) : undefined}
-            >
-              Siguiente
-            </Boton>
-          </div>
-        )}
+        {!cargando && !error && <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />}
       </div>
     </div>
   );

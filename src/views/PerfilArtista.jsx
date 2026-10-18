@@ -11,8 +11,10 @@ import { optimizada } from "../api/formato";
 import TarjetaObra from "../components/TarjetaObra";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
+import Paginador from "../components/Paginador";
 
-// Una lista vacía llega como 404 (regla de la cátedra): para listas de apoyo significa "no hay".
+// Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
+// respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
 const sin404 = (promesa) =>
   promesa.catch((e) => {
     if (e.status === 404) return [];
@@ -176,18 +178,7 @@ export default function PerfilArtista() {
             </div>
           )}
 
-          {totalPaginas > 1 && (
-            <div className="fila" style={{ marginTop: "var(--lg)" }}>
-              <Boton tipo="secundario" onClick={pagina > 0 ? () => setPagina(pagina - 1) : undefined}>Anterior</Boton>
-              <span className="catalog-number muted">{pagina + 1} / {totalPaginas}</span>
-              <Boton
-                tipo="secundario"
-                onClick={pagina + 1 < totalPaginas ? () => setPagina(pagina + 1) : undefined}
-              >
-                Siguiente
-              </Boton>
-            </div>
-          )}
+          {!cargandoObras && <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />}
         </section>
       </div>
     </div>
