@@ -10,9 +10,10 @@ import Badge from "../components/Badge";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 import VisorImagenes from "../components/Visorimagenes";
+import ObrasRelacionadas from "../components/ObrasRelacionadas";
 
-// Una lista vacía llega como 204 (lista() la deja en []) y, antes, como 404 (regla de la cátedra):
-// para listas de apoyo significa "no hay".
+// Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
+// respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
 const sin404 = (promesa) =>
   promesa.catch((e) => {
     if (e.status === 404) return [];
@@ -123,9 +124,8 @@ export default function DetalleObra() {
   else if (sinMarcos) textoBoton = "SIN MARCOS";
   else if (agregando) textoBoton = "AGREGANDO...";
 
-  // Las URLs de Cloudinary, en el orden que las cargó el artista.
+  // Imágenes (Cloudinary) en el orden que las cargó el artista. El visor les pide el tamaño justo.
   const fotos = [...imagenes]
-    .filter((img) => img.url)
     .sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0))
     .map((img) => img.url);
 
@@ -142,6 +142,7 @@ export default function DetalleObra() {
 
         <div className="detalle-info apilado">
           <div>
+            <span className="catalog-number cartela-num">Nº {String(obra.id).padStart(3, "0")}</span>
             <h1 className="headline-lg" style={{ marginTop: "var(--xs)" }}>{obra.nombre_obra}</h1>
 
             <Link to={"/artista/" + obra.artista_id} className="vendedor" style={{ marginTop: "var(--sm)", textDecoration: "none" }}>
@@ -219,6 +220,23 @@ export default function DetalleObra() {
           </div>
 
         </div>
+      </div>
+
+      {/* Complementos: otras obras del mismo artista y obras de estilos parecidos */}
+      <div className="contenido apilado" style={{ marginTop: "var(--xxl)" }}>
+        <ObrasRelacionadas
+          key={"artista-" + obra.id}
+          titulo={"Más obras de " + (artista?.nombre_artistico ?? "este artista")}
+          consultas={["artistaId=" + obra.artista_id]}
+          excluirId={obra.id}
+        />
+        <ObrasRelacionadas
+          key={"estilo-" + obra.id}
+          titulo="Obras parecidas"
+          consultas={(obra.estilo_ids ?? []).map((idEstilo) => "estiloId=" + idEstilo)}
+          excluirId={obra.id}
+          excluirArtistaId={obra.artista_id}
+        />
       </div>
     </div>
   );
