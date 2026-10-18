@@ -9,7 +9,7 @@ const hoy = () => {
     return ahora.getFullYear() + "-" + mes + "-" + dia
 }
 
-// Un tamaño de la obra en el formulario: tamaño, precio, stock y descuento.
+// Una variante de la obra en el formulario: su tamaño, precio, stock y descuento.
 // Solo dibuja y avisa los cambios: el estado vive en ObraForm.
 // Los min, max y required son los límites obvios; las reglas de negocio las valida el back.
 const TarjetaVariante = ({ fila, tamanios, usados, onCambiar, onQuitar }) => {
@@ -41,7 +41,7 @@ const TarjetaVariante = ({ fila, tamanios, usados, onCambiar, onQuitar }) => {
                 <CampoFormulario etiqueta="Descuento (%)" tipo="number" min="0" max="100" step="1"
                     value={fila.porcentaje_descuento} onChange={cambiar("porcentaje_descuento")} />
 
-                {/* Un tamaño nuevo no puede vencer antes de hoy. En uno ya guardado no se exige, para
+                {/* Una variante nueva no puede vencer antes de hoy. En una ya guardada no se exige, para
                     que un descuento vencido no impida guardar otros cambios. El back no lo valida. */}
                 <CampoFormulario etiqueta="Descuento hasta" tipo="date" min={fila.id === null ? hoy() : undefined}
                     value={fila.descuento_hasta} onChange={cambiar("descuento_hasta")} />
@@ -49,7 +49,7 @@ const TarjetaVariante = ({ fila, tamanios, usados, onCambiar, onQuitar }) => {
 
             <button type="button" onClick={() => onQuitar(fila)} className="body-sm"
                 style={{ all: "unset", cursor: "pointer", color: "var(--error)" }}>
-                Quitar este tamaño
+                Quitar variante
             </button>
         </div>
     )
