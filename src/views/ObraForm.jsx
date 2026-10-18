@@ -5,7 +5,7 @@
 // Las fotos se suben a Cloudinary a través del back: se agregan, reordenan, reemplazan y quitan
 // acá, y se guardan junto con el resto (ver planDeFotos).
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { api, lista, subirArchivo } from "../api/cliente"
 import { prepararImagen } from "../api/Imagen"
@@ -130,9 +130,6 @@ const FormularioObra = ({ id }) => {
     const [guardando, setGuardando] = useState(false)
     const [confirmandoEliminar, setConfirmandoEliminar] = useState(false)
 
-    // `guardando` solo cambia en el próximo render: si llegan dos envíos casi juntos, los dos
-    // lo ven en falso. Esta marca cambia al instante y los frena (no se duplica nada).
-    const enCurso = useRef(false)
     const [errorGeneral, setErrorGeneral] = useState("")
 
     useEffect(() => {
@@ -378,15 +375,13 @@ const FormularioObra = ({ id }) => {
             .catch((e) => {
                 setErrorGeneral(e.message)
                 setGuardando(false)
-                enCurso.current = false
             })
     }
 
     const guardar = (e) => {
         e.preventDefault()
         // Mientras se achican las fotos elegidas todavía no están en la lista: guardar ahora las dejaría afuera.
-        if (preparando || enCurso.current) return
-        enCurso.current = true
+        if (preparando || guardando) return
 
         // Solo se manda lo que cambió desde lo último que guardó el back.
         const tareas = []
@@ -413,8 +408,7 @@ const FormularioObra = ({ id }) => {
     // Eliminar: el back marca la obra como eliminada (deja de verse en todos lados) y conserva
     // sus variantes. Si no se puede (por ejemplo, error del back), vuelve el mensaje.
     const eliminar = () => {
-        if (enCurso.current) return
-        enCurso.current = true
+        if (guardando) return
         setErrorGeneral("")
         setGuardando(true)
 
@@ -424,7 +418,6 @@ const FormularioObra = ({ id }) => {
                 setErrorGeneral(e.message)
                 setGuardando(false)
                 setConfirmandoEliminar(false)
-                enCurso.current = false
             })
     }
 
