@@ -68,7 +68,7 @@ Ya están hechos en `src/components`. Se importan y se usan.
 | `FilaObra` | fila de Mis obras (se abre para ver las variantes) |
 | `DetalleObra` | las variantes de una obra, dentro de Mis obras |
 | `DetalleVenta` | las obras vendidas de una factura, dentro de Mis ventas |
-| `TarjetaVariante` | un tamaño de la obra en el formulario de publicar y editar |
+| `TarjetaVariante` | una variante de la obra (tamaño, precio, stock y descuento) en el formulario de publicar y editar |
 | `SelectorEstilos` | los estilos como botones que se prenden y apagan |
 
 `Header`, `Footer`, `Layout`, `RutaProtegida` y `SesionVencida` ya están puestos: no hay que llamarlos.

@@ -7,7 +7,7 @@ import Estado from "./Estado"
 const DetalleObra = ({ variantes }) => {
     if (variantes === null) return <Estado tipo="error" mensaje="No se pudieron cargar las variantes." />
     if (variantes.length === 0) {
-        return <p className="body-sm muted">Esta obra todavía no tiene variantes: agregá tamaños y precios desde Editar.</p>
+        return <p className="body-sm muted">Esta obra todavía no tiene variantes: agregá variantes desde Editar.</p>
     }
 
     return (

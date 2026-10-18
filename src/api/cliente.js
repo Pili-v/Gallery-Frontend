@@ -49,7 +49,8 @@ const pedir = (ruta, opciones = {}) => {
     return fetch(API + ruta, {
         ...opciones,
         headers: {
-            "Content-Type": "application/json",
+            // Con un FormData (fotos) el navegador arma solo el Content-Type, con su separador.
+            ...(opciones.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
             ...(token ? { Authorization: "Bearer " + token } : {}),
             ...opciones.headers
         }
@@ -108,23 +109,6 @@ export const lista = (respuesta) => {
     if (Array.isArray(respuesta)) return respuesta
     return respuesta?.content ?? []
 }
-// Para subir fotos no se manda JSON: el navegador arma el multipart solo.
-export const subirArchivo = (ruta, formData, metodo = "POST") => {
-    const token = getToken()
-
-    return fetch(API + ruta, {
-        method: metodo,
-        headers: token ? { Authorization: "Bearer " + token } : {},
-        body: formData
-    }).then(respuesta => {
-        if (!respuesta.ok) {
-            return crearError(respuesta).then(error => {
-                throw error
-            })
-        }
-
-        if (respuesta.status === 204) return null
-
-        return respuesta.json().catch(() => null)
-    })
-}
+// Para subir fotos no se manda JSON sino un FormData (multipart). Pasa por el mismo pedir() que
+// el resto: mensajes de error del back, falta de conexión y sesión vencida se tratan igual.
+export const subirArchivo = (ruta, formData, metodo = "POST") => pedir(ruta, { method: metodo, body: formData })

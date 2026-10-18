@@ -6,10 +6,10 @@
 //
 // Qué resuelve:
 // - Una foto de 8000 px y varios MB se achica a 1600 px de lado mayor. Se ve igual de bien,
-//   pesa una fracción y no hace lenta la pantalla (hoy cada imagen viaja en base64).
+//   pesa una fracción y sube más rápido a Cloudinary.
 // - Una imagen demasiado chica se rechaza con un mensaje claro: estirada se ve borrosa
 //   y no hay forma de arreglarlo después.
-// - Todas quedan en JPEG, y por eso "data:image/jpeg" es siempre correcto al mostrarlas.
+// - Todas quedan en JPEG.
 // - Respeta la rotación de las fotos sacadas con el celular.
 
 export async function prepararImagen(archivo, { maxLado = 1600, minLado = 600, calidad = 0.85 } = {}) {
@@ -26,9 +26,11 @@ export async function prepararImagen(archivo, { maxLado = 1600, minLado = 600, c
 
     const ladoMayor = Math.max(imagen.width, imagen.height)
     if (ladoMayor < minLado) {
+        // El ancho y el alto se leen antes de cerrar la imagen: después valen 0.
+        const medidas = imagen.width + " × " + imagen.height
         imagen.close()
         throw new Error(
-            "La imagen es muy chica (" + imagen.width + " × " + imagen.height + " px) y se vería borrosa. " +
+            "La imagen es muy chica (" + medidas + " px) y se vería borrosa. " +
             "Subí una de al menos " + minLado + " px de lado."
         )
     }
