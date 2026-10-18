@@ -141,7 +141,7 @@ const Carrito = () => {
                             marcos={marcos}
                             total={total}
                             boton="Confirmar compra"
-                            onBoton={() => navegar("/carrito/confirmar")}
+                            onBoton={() => navegar("/checkout")}
                             nota="El stock se verifica al confirmar." />
                     </div>}
 
