@@ -30,6 +30,7 @@ Abrís `http://localhost:5173`. Las maquetas de todas las pantallas están en **
 | `/login` | `Login.jsx` | `POST /api/v1/auth/authenticate` |
 | `/registro` | `Registro.jsx` | `POST /api/usuarios` |
 | `/mi-cuenta` | `MiCuenta.jsx` | `GET /api/usuarios/me` · `PATCH /api/usuarios/{id}` |
+| `/quiero-publicar` | `QuieroPublicar.jsx` | `POST /api/usuarios/me/perfil-artista` · `GET /api/usuarios/me` |
 | `/carrito` | `Carrito.jsx` | `GET /api/usuarios/{id}/carrito` · `/api/carritos/{id}/items` · `PUT` y `DELETE /api/items-carrito/{id}` |
 | `/checkout` | `ConfirmarCompra.jsx` | `PUT /api/carritos/{id}` |
 | `/checkout/pago` | `Pago.jsx` | `POST /api/checkout` |
