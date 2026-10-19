@@ -9,7 +9,7 @@ const SelectorEstilos = ({ estilos, elegidos, onAlternar }) => {
                     className={"chip" + (elegidos.includes(estilo.id) ? " activo" : "")}
                     aria-pressed={elegidos.includes(estilo.id)}
                     onClick={() => onAlternar(estilo.id)}>
-                    {estilo.nombreEstilo}
+                    {estilo.nombre_estilo}
                 </button>
             ))}
         </div>

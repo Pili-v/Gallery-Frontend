@@ -169,7 +169,7 @@ export default function Artistas() {
       });
     });
     const nombresEstilos = idsEstilos
-      .map((idEstilo) => estilos.find((e) => e.id === idEstilo)?.nombreEstilo)
+      .map((idEstilo) => estilos.find((e) => e.id === idEstilo)?.nombre_estilo)
       .filter(Boolean);
 
     return {
@@ -186,7 +186,7 @@ export default function Artistas() {
   } else if (error) {
     cuerpo = <Estado tipo="error" mensaje={error} accion="Reintentar" onAccion={() => setIntento((n) => n + 1)} />;
   } else if ((vacio || artistas.length === 0) && hayFiltros) {
-    const nombresEstilos = estilos.filter((e) => estiloIds.includes(e.id)).map((e) => e.nombreEstilo);
+    const nombresEstilos = estilos.filter((e) => estiloIds.includes(e.id)).map((e) => e.nombre_estilo);
     const partes = [];
     if (busqueda !== "") partes.push("que coincidan con “" + busqueda + "”");
     if (nombresEstilos.length > 0) {

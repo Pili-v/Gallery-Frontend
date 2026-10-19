@@ -124,7 +124,7 @@ export default function PerfilArtista() {
     return {
       obra: {
         ...item.obra,
-        estilo: estilo ? estilo.nombreEstilo : "",
+        estilo: estilo ? estilo.nombre_estilo : "",
         artistaId: artista.id,
         nombre_artistico: artista.nombre_artistico
       },
