@@ -4,6 +4,7 @@
 // (lista vacía: 204) o es inválido (400), la pantalla avisa DENTRO de la zona de resultados, deja
 // los filtros a la vista y ofrece un botón para quitarlos (no vuelve sola). Sin async/await y sin tocar el DOM.
 
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api, lista } from "../api/cliente";
@@ -11,6 +12,7 @@ import TarjetaObra from "../components/TarjetaObra";
 import Estado from "../components/Estado";
 import Boton from "../components/Boton";
 import Paginador from "../components/Paginador";
+import FiltroEstilos from "../components/FiltroEstilos";
 import { pesos, optimizada } from "../api/formato";
 
 // Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
@@ -45,7 +47,7 @@ export default function Catalogo() {
   const [totalObras, setTotalObras] = useState(0);
 
   // Filtros: lo que se escribe, y lo que está aplicado
-  const [estiloId, setEstiloId] = useState(null);
+  const [estiloIds, setEstiloIds] = useState([]); // varios estilos: se muestran las obras de ALGUNO de ellos
   const [precioMin, setPrecioMin] = useState("");
   const [precioMax, setPrecioMax] = useState("");
   const [rango, setRango] = useState({ ...SIN_RANGO });
@@ -54,7 +56,7 @@ export default function Catalogo() {
   const [texto, setTexto] = useState("");
   const [busqueda, setBusqueda] = useState("");
 
-  const hayFiltros = estiloId !== null || rango.min !== "" || rango.max !== "" || busqueda !== "";
+  const hayFiltros = estiloIds.length > 0 || rango.min !== "" || rango.max !== "" || busqueda !== "";
 
   // Estilos y artistas: una sola vez
   useEffect(() => {
@@ -83,11 +85,11 @@ export default function Catalogo() {
     let vigente = true;
 
     const partes = ["page=" + pagina, "size=" + POR_PAGINA, "orden=" + orden];
-    if (estiloId !== null) partes.push("estiloId=" + estiloId);
+    if (estiloIds.length > 0) partes.push("estiloId=" + estiloIds.join(","));
     if (rango.min !== "") partes.push("precioMin=" + rango.min);
     if (rango.max !== "") partes.push("precioMax=" + rango.max);
     if (busqueda !== "") partes.push("q=" + encodeURIComponent(busqueda));
-    const conFiltros = estiloId !== null || rango.min !== "" || rango.max !== "" || busqueda !== "";
+    const conFiltros = estiloIds.length > 0 || rango.min !== "" || rango.max !== "" || busqueda !== "";
 
     setCargandoObras(true);
     setAviso(null);
@@ -153,11 +155,11 @@ export default function Catalogo() {
     return () => {
       vigente = false;
     };
-  }, [estiloId, rango, busqueda, orden, pagina, intento]);
+  }, [estiloIds, rango, busqueda, orden, pagina, intento]);
 
   // Cualquier cambio de filtro u orden vuelve a la primera página
-  const elegirEstilo = (id) => {
-    setEstiloId(id);
+  const cambiarEstilos = (ids) => {
+    setEstiloIds(ids);
     setPagina(0);
   };
 
@@ -175,7 +177,7 @@ export default function Catalogo() {
 
   // El orden no es un filtro: queda como está al quitar filtros.
   const quitarFiltros = () => {
-    setEstiloId(null);
+    setEstiloIds([]);
     setPrecioMin("");
     setPrecioMax("");
     setRango({ ...SIN_RANGO });
@@ -250,7 +252,8 @@ export default function Catalogo() {
 
   // El texto depende de qué filtro dejó la lista vacía: búsqueda, estilo, precio o una combinación.
   const mensajeSinResultados = () => {
-    const estilo = estilos.find((e) => e.id === estiloId);
+    const nombresEstilos = estilos.filter((e) => estiloIds.includes(e.id)).map((e) => e.nombreEstilo);
+    const textoEstilos = (nombresEstilos.length === 1 ? "del estilo " : "de los estilos ") + nombresEstilos.join(" o ");
     const hayPrecio = rango.min !== "" || rango.max !== "";
 
     let precioTexto = "";
@@ -261,10 +264,10 @@ export default function Catalogo() {
     // Lo que se buscó, más los filtros que se sumaron
     const partes = [];
     if (busqueda !== "") partes.push("que coincidan con “" + busqueda + "”");
-    if (estilo) partes.push("del estilo " + estilo.nombreEstilo);
+    if (nombresEstilos.length > 0) partes.push(textoEstilos);
     if (hayPrecio) partes.push(precioTexto);
 
-    if (busqueda === "" && estilo && !hayPrecio) return "Todavía no hay obras del estilo " + estilo.nombreEstilo + ".";
+    if (busqueda === "" && nombresEstilos.length > 0 && !hayPrecio) return "Todavía no hay obras " + textoEstilos + ".";
     return "No hay obras " + partes.join(" ") + ".";
   };
 
@@ -349,23 +352,9 @@ export default function Catalogo() {
             <button type="submit" className="boton boton-secundario">Buscar</button>
           </form>
 
-          {/* Estilos (salen de la API). Los filtros quedan siempre visibles. */}
-          <div className="fila" style={{ flexWrap: "wrap", gap: "var(--sm)", marginBottom: "var(--lg)" }}>
-            <button
-              className={"chip " + (estiloId === null ? "activo" : "")}
-              onClick={() => elegirEstilo(null)}
-            >
-              Todos
-            </button>
-            {estilos.map((estilo) => (
-              <button
-                key={estilo.id}
-                className={"chip " + (estiloId === estilo.id ? "activo" : "")}
-                onClick={() => elegirEstilo(estilo.id)}
-              >
-                {estilo.nombreEstilo}
-              </button>
-            ))}
+          {/* Estilos (salen de la API): se pueden elegir varios. Los filtros quedan siempre visibles. */}
+          <div style={{ marginBottom: "var(--lg)" }}>
+            <FiltroEstilos estilos={estilos} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
           </div>
 
           {/* Precio */}
