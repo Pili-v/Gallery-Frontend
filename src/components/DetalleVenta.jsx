@@ -1,34 +1,28 @@
-import { fecha } from "../api/formato"
+import { fecha, optimizada } from "../api/formato"
 
 import Estado from "./Estado"
 import LineaItem from "./LineaItem"
 
-// Lo que se ve al abrir una venta del artista: cómo y cuándo se compró y qué obras llevó.
-// entrada: { compra, items } cuando ya llegó, { error } si falló, vacía mientras se pide.
-// lineas: lo que Ventas guardó de cada obra, por id de item: { linea }, { error } o vacío.
-// No pide nada por su cuenta.
-const DetalleVenta = ({ entrada, lineas }) => {
+// Lo que se ve al abrir una venta del artista: quién la compró, cómo y cuándo, y qué obras llevó.
+// entrada: { detalle } cuando ya llegó, { error } si falló, vacía mientras se pide.
+// El detalle trae todo junto (comprador, entrega y obras con su nombre y portada). No pide nada por su cuenta.
+const DetalleVenta = ({ entrada }) => {
     if (entrada.error) return <Estado tipo="error" mensaje={entrada.error} />
-    if (!entrada.compra) return <Estado tipo="cargando" />
+    if (!entrada.detalle) return <Estado tipo="cargando" />
 
-    const compra = entrada.compra
+    const detalle = entrada.detalle
 
     return (
         <div>
             <p className="body-sm muted" style={{ marginBottom: "var(--sm)" }}>
-                Comprado el {fecha(compra.fecha_compra)} ·{" "}
-                {compra.tipo_entrega === "ENVIO_DOMICILIO"
-                    ? "Envío a domicilio: " + compra.direccion_entrega
+                Comprado el {fecha(detalle.fecha_compra)} por {detalle.nombre_comprador} ·{" "}
+                {detalle.tipo_entrega === "ENVIO_DOMICILIO"
+                    ? "Envío a domicilio: " + detalle.direccion_entrega
                     : "Retiro en el local"}
             </p>
-            {entrada.items.map((item) => {
-                const estado = lineas[item.id] || {}
-
-                if (estado.error) return <Estado key={item.id} tipo="error" mensaje={estado.error} />
-                if (!estado.linea) return <Estado key={item.id} tipo="cargando" />
-
-                return <LineaItem key={item.id} item={estado.linea} imagen={estado.linea.imagen} />
-            })}
+            {detalle.items.map((item) => (
+                <LineaItem key={item.id} item={item} imagen={optimizada(item.portada_url, 160)} />
+            ))}
         </div>
     )
 }
