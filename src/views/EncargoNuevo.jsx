@@ -1,6 +1,6 @@
 import { api, lista as convertirLista } from '../api/cliente';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Boton from '../components/Boton';
 import CampoFormulario from '../components/CampoFormulario';
 import Estado from '../components/Estado';
@@ -17,6 +17,10 @@ function normalizarNombre(texto) {
 }
 
 export default function EncargoNuevo() {
+  const [parametros] = useSearchParams();
+  const [formulario, setFormulario] = useState(() => ({
+    ...inicial, artista_id: parametros.get('artistaId') || '',
+  }));
   const [artistas, setArtistas] = useState([]);
   const [tamanios, setTamanios] = useState([]);
   const [marcos, setMarcos] = useState([]);
@@ -29,8 +33,15 @@ export default function EncargoNuevo() {
     let activo = true;
     api.get('/api/artistas')
       .then(respuesta => {
-        if (activo) setArtistas(convertirLista(respuesta).filter(item => item.acepta_encargos)
-          .map(item => ({ id: item.id, nombre: item.nombre_artistico })));
+        if (activo) {
+          const disponibles = convertirLista(respuesta).filter(item => item.acepta_encargos)
+            .map(item => ({ id: item.id, nombre: item.nombre_artistico }));
+          setArtistas(disponibles);
+          setFormulario(actual => ({
+            ...actual,
+            artista_id: disponibles.some(item => String(item.id) === actual.artista_id) ? actual.artista_id : '',
+          }));
+        }
         return api.get('/api/tamanios-lienzo');
       })
       .then(respuesta => {
@@ -48,7 +59,6 @@ export default function EncargoNuevo() {
   const artistasFiltrados = artistas.filter(artista =>
     normalizarNombre(artista.nombre).includes(normalizarNombre(busquedaArtista))
   );
-  const [formulario, setFormulario] = useState(inicial);
   const [errores, setErrores] = useState({});
   const [errorGuardado, setErrorGuardado] = useState('');
   const navigate = useNavigate();
