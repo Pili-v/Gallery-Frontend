@@ -142,7 +142,6 @@ export default function DetalleObra() {
 
         <div className="detalle-info apilado">
           <div>
-            <span className="catalog-number cartela-num">Nº {String(obra.id).padStart(3, "0")}</span>
             <h1 className="headline-lg" style={{ marginTop: "var(--xs)" }}>{obra.nombre_obra}</h1>
 
             <Link to={"/artista/" + obra.artista_id} className="vendedor" style={{ marginTop: "var(--sm)", textDecoration: "none" }}>
