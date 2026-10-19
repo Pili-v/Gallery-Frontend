@@ -150,7 +150,7 @@ export default function PerfilArtista() {
           </div>
 
           {artista.acepta_encargos && (
-            <Link to="/encargos/nuevo">
+            <Link to={"/encargos/nuevo?artistaId=" + artista.id}>
               <Boton tipo="primario">Pedirle un encargo</Boton>
             </Link>
           )}
