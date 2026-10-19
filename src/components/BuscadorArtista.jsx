@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import './buscadorArtista.css';
 import { normalizarNombre } from '../api/formato';
 
-export default function BuscadorArtista({ artistas, value, onChange, onSearch, error, disabled, required = true }) {
+export default function BuscadorArtista({ artistas, value, onChange, onSearch, error, disabled, required = true, enviarConEnter = false }) {
   const id = useId();
   const lista = useRef(null);
   const [busqueda, setBusqueda] = useState(null);
@@ -38,7 +38,8 @@ export default function BuscadorArtista({ artistas, value, onChange, onSearch, e
         return actual < 0 ? resultados.length - 1 : Math.max(actual - 1, 0);
       });
     } else if (evento.key === 'Enter' && abierto) {
-      evento.preventDefault();
+      // Con enviarConEnter solo se frena si hay una opción marcada; si no, el formulario puede buscar.
+      if (!enviarConEnter || (activo >= 0 && resultados[activo])) evento.preventDefault();
       if (activo >= 0 && resultados[activo]) elegir(resultados[activo]);
     } else if (evento.key === 'Escape') {
       setAbierto(false);
