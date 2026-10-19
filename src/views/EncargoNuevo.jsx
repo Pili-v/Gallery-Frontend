@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Boton from '../components/Boton';
 import CampoFormulario from '../components/CampoFormulario';
+import BuscadorArtista from '../components/BuscadorArtista';
 import Estado from '../components/Estado';
 import { pinturas, lienzos, prepararEncargo } from '../api/encargoContrato.js';
 import './encargoNuevo.css';
@@ -11,10 +12,6 @@ const inicial = {
   artista_id: '', tamanio_id: '', marco_id: '',
   tipo_pintura: '', tipo_lienzo: '', descripcion_encargo: '',
 };
-
-function normalizarNombre(texto) {
-  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-}
 
 export default function EncargoNuevo() {
   const [parametros] = useSearchParams();
@@ -55,10 +52,6 @@ export default function EncargoNuevo() {
       .finally(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
   }, [intento]);
-  const [busquedaArtista, setBusquedaArtista] = useState('');
-  const artistasFiltrados = artistas.filter(artista =>
-    normalizarNombre(artista.nombre).includes(normalizarNombre(busquedaArtista))
-  );
   const [errores, setErrores] = useState({});
   const [errorGuardado, setErrorGuardado] = useState('');
   const navigate = useNavigate();
@@ -109,26 +102,9 @@ export default function EncargoNuevo() {
           <Estado tipo="vacio" mensaje="Faltan artistas disponibles, tamaños o marcos para poder pedir un encargo." />}
         <form className="cartela encargo-formulario" onSubmit={enviar} noValidate>
           <p className="body-sm muted encargo-obligatorios">Todos los campos son obligatorios.</p>
-          <CampoFormulario etiqueta="Buscar artista" tipo="search"
-            aria-label="Buscar artista" aria-controls="artistas-disponibles"
-            placeholder="Escribí el nombre del artista" autoComplete="off"
-            value={busquedaArtista}
-            onChange={evento => {
-              setBusquedaArtista(evento.target.value);
-              setFormulario(actual => ({ ...actual, artista_id: '' }));
-              setErrores(actual => ({ ...actual, artista_id: undefined }));
-            }} />
-          <p className="body-sm muted" role="status" style={{ marginBottom: 'var(--sm)' }}>
-            {artistasFiltrados.length
-              ? `${artistasFiltrados.length} artista${artistasFiltrados.length === 1 ? '' : 's'} disponible${artistasFiltrados.length === 1 ? '' : 's'}. Seleccioná uno de la lista.`
-              : 'No encontramos artistas con ese nombre. Probá otra búsqueda.'}
-          </p>
-          <CampoFormulario tipo="select" id="artistas-disponibles"
-
-            {...propiedades('artista_id', 'Artista')}>
-            <option value="" disabled>Seleccioná un artista</option>
-            {artistasFiltrados.map(artista => <option key={artista.id} value={artista.id}>{artista.nombre} — acepta encargos</option>)}
-          </CampoFormulario>
+          <BuscadorArtista artistas={artistas} value={formulario.artista_id}
+            error={errores.artista_id} disabled={cargando || Boolean(errorCarga) || enviando}
+            onChange={value => cambiar({ target: { name: 'artista_id', value } })} />
           <div className="fila-campos">
             <CampoFormulario tipo="select" {...propiedades('tipo_pintura', 'Tipo de pintura')}>
               <option value="">Seleccioná una pintura</option>
