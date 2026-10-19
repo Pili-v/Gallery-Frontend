@@ -171,8 +171,21 @@ export default function PerfilArtista() {
             <div className="grilla-obras">
               {items.map((item) => {
                 const tarjeta = armarTarjeta(item);
+                const variante = tarjeta.variante || {};
                 return (
-                  <TarjetaObra key={tarjeta.obra.id} obra={tarjeta.obra} variante={tarjeta.variante} imagen={tarjeta.imagen} />
+                  <TarjetaObra
+                    key={tarjeta.obra.id}
+                    id={tarjeta.obra.id}
+                    nombreObra={tarjeta.obra.nombre_obra}
+                    estilo={tarjeta.obra.estilo}
+                    artistaId={tarjeta.obra.artistaId}
+                    nombreArtistico={tarjeta.obra.nombre_artistico}
+                    nombreTamanio={variante.nombre_tamanio}
+                    precio={variante.precio_variante}
+                    porcentajeDescuento={variante.porcentaje_descuento}
+                    stock={variante.stock_variante}
+                    imagen={tarjeta.imagen}
+                  />
                 );
               })}
             </div>

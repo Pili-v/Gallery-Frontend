@@ -149,7 +149,9 @@ const PanelObras = () => {
                         return (
                             <tbody key={obra.id}>
                                 <FilaObra
-                                    obra={obra}
+                                    id={obra.id}
+                                    nombreObra={obra.nombre_obra}
+                                    enVenta={obra.en_venta}
                                     portada={obra.portada_url ? optimizada(obra.portada_url, 160) : null}
                                     estilos={nombresDeEstilos(obra)}
                                     cantidadVariantes={obra.cantidad_variantes}

@@ -10,7 +10,8 @@
 //   imagenes : lista de direcciones de imagen (ya armadas, en el orden en que se muestran)
 //   alt      : texto alternativo (el nombre de la obra)
 //   atenuada : true para mostrarla en gris (obra sin stock)
-//   marco    : el marco elegido ({ color_marco }) o null; se dibuja pegado alrededor de la imagen
+//   conMarco : true si hay un marco elegido; se dibuja pegado alrededor de la imagen
+//   urlMarco : la foto del marco (si tiene) y colorMarco el color del marco: cada dato del marco en su prop
 //   children : lo que va encima de la imagen, por ejemplo los Badge
 //
 // Usarlo con key={obra.id}: así, al cambiar de obra, vuelve a la primera imagen.
@@ -19,7 +20,7 @@ import { useState } from "react";
 import { colorDeMarco } from "../api/Coloresmarco";
 import { optimizada } from "../api/formato";
 
-export default function VisorImagenes({ imagenes, alt, atenuada = false, marco = null, children }) {
+export default function VisorImagenes({ imagenes, alt, atenuada = false, conMarco = false, urlMarco = null, colorMarco = null, children }) {
   const [actual, setActual] = useState(0);
   const [ampliada, setAmpliada] = useState(false);
   const [toqueX, setToqueX] = useState(null);
@@ -61,16 +62,16 @@ export default function VisorImagenes({ imagenes, alt, atenuada = false, marco =
 
   // El marco se dibuja con CSS alrededor de la imagen (que ya se ajusta a su propia forma).
   // Si el marco tiene foto (url, un PNG con fondo y centro transparentes, en Cloudinary) se usa
-  // como borde; si no, se pinta con el color de color_marco. La foto del marco no se transforma:
+  // como borde; si no, se pinta con el color del marco (colorMarco). La foto del marco no se transforma:
   // tiene que seguir siendo un PNG con transparencia.
   let claseMarco = "";
   let estiloMarco;
-  if (marco && marco.url) {
+  if (conMarco && urlMarco) {
     claseMarco = "con-marco-imagen";
-    estiloMarco = { borderImageSource: 'url("' + marco.url + '")' };
-  } else if (marco) {
+    estiloMarco = { borderImageSource: 'url("' + urlMarco + '")' };
+  } else if (conMarco) {
     claseMarco = "con-marco";
-    estiloMarco = { "--color-marco": colorDeMarco(marco.color_marco) };
+    estiloMarco = { "--color-marco": colorDeMarco(colorMarco) };
   }
 
   const descripcion = alt + (total > 1 ? " — imagen " + (indice + 1) + " de " + total : "");

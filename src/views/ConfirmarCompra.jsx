@@ -213,7 +213,15 @@ const ConfirmarCompra = () => {
                         </div>
 
                         {items.map((item) => (
-                            <LineaItem key={item.id} item={item} imagen={fotoDe(item.obra_id)} />
+                            <LineaItem
+                                key={item.id}
+                                id={item.id}
+                                nombreObra={item.nombre_obra}
+                                nombreTamanio={item.nombre_tamanio}
+                                nombreMarco={item.nombre_marco}
+                                cantidad={item.cantidad}
+                                subtotal={item.subtotal}
+                                imagen={fotoDe(item.obra_id)} />
                         ))}
 
                         <p className="body-sm muted" style={{ marginTop: "var(--md)" }}>

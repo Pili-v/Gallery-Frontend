@@ -110,9 +110,24 @@ export default function ObrasRelacionadas({ titulo, consultas, excluirId, exclui
     <section>
       <h2 className="headline-md" style={{ marginBottom: "var(--lg)" }}>{titulo}</h2>
       <div className="grilla-obras cuatro">
-        {items.map((item) => (
-          <TarjetaObra key={item.obra.id} obra={item.obra} variante={item.variante} imagen={item.imagen} />
-        ))}
+        {items.map((item) => {
+          const variante = item.variante || {};
+          return (
+            <TarjetaObra
+              key={item.obra.id}
+              id={item.obra.id}
+              nombreObra={item.obra.nombre_obra}
+              estilo={item.obra.estilo}
+              artistaId={item.obra.artistaId}
+              nombreArtistico={item.obra.nombre_artistico}
+              nombreTamanio={variante.nombre_tamanio}
+              precio={variante.precio_variante}
+              porcentajeDescuento={variante.porcentaje_descuento}
+              stock={variante.stock_variante}
+              imagen={item.imagen}
+            />
+          );
+        })}
       </div>
     </section>
   );

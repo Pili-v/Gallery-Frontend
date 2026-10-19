@@ -134,7 +134,15 @@ export default function DetalleObra() {
       <div className="contenido dos-columnas">
 
         <div className="detalle-visual">
-          <VisorImagenes key={obra.id} imagenes={fotos} alt={obra.nombre_obra} atenuada={sinStock} marco={marcoSeleccionado}>
+          <VisorImagenes
+            key={obra.id}
+            imagenes={fotos}
+            alt={obra.nombre_obra}
+            atenuada={sinStock}
+            conMarco={!sinMarcos}
+            urlMarco={marcoSeleccionado ? marcoSeleccionado.url : null}
+            colorMarco={marcoSeleccionado ? marcoSeleccionado.color_marco : null}
+          >
             {sinStock && <Badge tipo="sinstock">Sin stock</Badge>}
             {!sinStock && descuento > 0 && <Badge tipo="descuento">−{descuento}%</Badge>}
           </VisorImagenes>

@@ -22,11 +22,11 @@ export default function Encargos() {
   const puedeRecibir = !esAdmin && Boolean(perfilArtista);
   const verRecibidos = puedeRecibir && (parametros.has('recibidos') || !puedePedir);
   return <ListaEncargos key={`${base}-${esAdmin}-${verRecibidos}-${usuario?.id}-${perfilArtista?.id}`}
-    {...{ base, state, navigate, parametros, setParametros, puedePedir, puedeRecibir, verRecibidos, esAdmin }}
+    {...{ base, encargoCreado: state?.encargoCreado, navigate, parametros, setParametros, puedePedir, puedeRecibir, verRecibidos, esAdmin }}
   />;
 }
 
-function ListaEncargos({ base, state, navigate, parametros, setParametros,
+function ListaEncargos({ base, encargoCreado, navigate, parametros, setParametros,
   puedePedir, puedeRecibir, verRecibidos, esAdmin }) {
   const [datos, setDatos] = useState({ items: [], error: '' });
   const [cargando, setCargando] = useState(true);
@@ -91,7 +91,7 @@ function ListaEncargos({ base, state, navigate, parametros, setParametros,
           </div>}
           {puedePedir && !verRecibidos && <Boton onClick={() => navigate(`${base}/nuevo`)}>Pedir un encargo</Boton>}
         </div>
-        {state?.encargoCreado && <p className="aviso encargos-nota" role="status">El encargo Nº {state.encargoCreado} se envió al artista.</p>}
+        {encargoCreado && <p className="aviso encargos-nota" role="status">El encargo Nº {encargoCreado} se envió al artista.</p>}
         {!esAdmin && <nav className="pestanias encargos-pestanias" aria-label="Vista de encargos">
           <button disabled={!puedePedir} type="button" className={`pestania${verRecibidos ? '' : ' activa'}`}
             aria-pressed={!verRecibidos} onClick={() => cambiarVista(false)}>Los que pedí</button>

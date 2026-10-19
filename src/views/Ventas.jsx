@@ -155,6 +155,24 @@ const Ventas = () => {
             .catch((e) => setDetalles((previos) => ({ ...previos, [factura.id]: { error: e.message } })))
     }
 
+    // El detalle de una venta abierta: cada dato de la compra va en su propia prop.
+    const detalleDe = (factura) => {
+        const entrada = detalles[factura.id] || {}
+        const compra = entrada.compra || {}
+
+        return (
+            <DetalleVenta
+                error={entrada.error}
+                cargado={Boolean(entrada.compra)}
+                fechaCompra={compra.fecha_compra}
+                tipoEntrega={compra.tipo_entrega}
+                direccionEntrega={compra.direccion_entrega}
+                items={entrada.items}
+                lineas={lineas}
+            />
+        )
+    }
+
     let vendido = 0
     facturas.forEach((factura) => {
         vendido = vendido + Number(factura.precio_total_factura)
@@ -220,7 +238,7 @@ const Ventas = () => {
                                     {abiertas[f.id] && (
                                         <tr>
                                             <td colSpan={5} style={{ background: "var(--canvas)" }}>
-                                                <DetalleVenta entrada={detalles[f.id] || {}} lineas={lineas} />
+                                                {detalleDe(f)}
                                             </td>
                                         </tr>
                                     )}
