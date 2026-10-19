@@ -28,7 +28,7 @@ import Artistas from "./views/Artistas"
 
 // Quiénes pueden entrar a cada grupo de pantallas.
 const COMPRA = ["CLIENTE", "ARTISTA_CLIENTE", "ADMIN"]
-const ARTISTA = ["ARTISTA", "ARTISTA_CLIENTE", "ADMIN"]
+const ARTISTA = ["ARTISTA", "ARTISTA_CLIENTE"]
 const ADMIN = ["ADMIN"]
 
 // Cada ruta es una URL. React Router cambia de pantalla sin recargar la página.
