@@ -36,6 +36,9 @@ const Ventas = () => {
     const [totalPaginas, setTotalPaginas] = useState(1)
     const [totalFacturas, setTotalFacturas] = useState(0)
 
+    // Lo vendido en total: lo calcula el back con todas las facturas, no solo las de esta página.
+    const [totalVendido, setTotalVendido] = useState(0)
+
     // El backend saca el artista del token, por eso no hace falta mandarle el id.
     useEffect(() => {
         let vigente = true
@@ -47,6 +50,7 @@ const Ventas = () => {
                 setFacturas(propias)
                 setTotalPaginas(respuesta && respuesta.totalPages ? respuesta.totalPages : 1)
                 setTotalFacturas(respuesta && respuesta.totalElements ? respuesta.totalElements : 0)
+                setTotalVendido(respuesta && respuesta.total_vendido ? Number(respuesta.total_vendido) : 0)
 
                 // La factura no dice cuántas obras tiene: hay que pedir sus items.
                 propias.forEach((factura) => {
@@ -155,11 +159,6 @@ const Ventas = () => {
             .catch((e) => setDetalles((previos) => ({ ...previos, [factura.id]: { error: e.message } })))
     }
 
-    let vendido = 0
-    facturas.forEach((factura) => {
-        vendido = vendido + Number(factura.precio_total_factura)
-    })
-
     return (
         <div className="seccion">
             <div className="contenido">
@@ -185,9 +184,8 @@ const Ventas = () => {
                     <>
                         <div className="fila" style={{ margin: "var(--lg) 0" }}>
                             <div className="cartela" style={{ padding: "var(--md) var(--lg)" }}>
-                                {/* La suma sale de las facturas que se están viendo: con varias páginas no es el total. */}
-                                <p className="catalog-number muted">{totalPaginas > 1 ? "Vendido en esta página" : "Vendido"}</p>
-                                <p className="price-lg">{pesos(vendido)}</p>
+                                <p className="catalog-number muted">Vendido</p>
+                                <p className="price-lg">{pesos(totalVendido)}</p>
                             </div>
                             <div className="cartela" style={{ padding: "var(--md) var(--lg)" }}>
                                 <p className="catalog-number muted">Facturas</p>
