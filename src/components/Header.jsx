@@ -13,7 +13,7 @@ const Header = () => {
         CLIENTE: [["Catálogo", "/"], ["Artistas", "/artistas"], ["Encargos", "/encargos"], ["Mis compras", "/mis-compras"], ["Carrito", "/carrito"]],
         ARTISTA: [["Catálogo", "/"], ["Artistas", "/artistas"], ["Mis obras", "/panel/obras"], ["Mis ventas", "/panel/ventas"], ["Encargos", "/encargos"]],
         ARTISTA_CLIENTE: [["Catálogo", "/"], ["Artistas", "/artistas"], ["Mis obras", "/panel/obras"], ["Mis ventas", "/panel/ventas"], ["Encargos", "/encargos"], ["Mis compras", "/mis-compras"], ["Carrito", "/carrito"]],
-        ADMIN: [["Catálogo", "/"], ["Usuarios", "/admin/usuarios"], ["Catálogos", "/admin/catalogos"]]
+        ADMIN: [["Usuarios", "/admin/usuarios"], ["Catálogos", "/admin/catalogos"], ["Encargos", "/encargos"]]
     }
 
     const links = menus[rol] || menus.visitante

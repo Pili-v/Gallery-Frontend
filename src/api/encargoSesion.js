@@ -5,7 +5,8 @@ export function permisosEncargo(encargo, usuario, perfilArtista) {
   const esAdmin = usuario?.rol_usuario === 'ADMIN';
   return {
     puedeVer: Boolean(encargo && (esCliente || esArtista || esAdmin)),
-    puedeEscribir: Boolean(encargo && (esCliente || esArtista || esAdmin)),
-    puedeCambiarEstado: esArtista && ['ARTISTA', 'ARTISTA_CLIENTE', 'ADMIN'].includes(usuario?.rol_usuario),
+    puedeVerMensajes: !esAdmin && (esCliente || esArtista),
+    puedeEscribir: !esAdmin && (esCliente || esArtista),
+    puedeCambiarEstado: !esAdmin && esArtista && ['ARTISTA', 'ARTISTA_CLIENTE'].includes(usuario?.rol_usuario),
   };
 }

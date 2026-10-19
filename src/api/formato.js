@@ -30,3 +30,7 @@ export const fecha = (valor) => {
     if (!valor) return ""
     return new Date(valor).toLocaleDateString("es-AR")
 }
+
+// Comparar nombres sin distinguir tildes, mayusculas ni espacios en los extremos.
+export const normalizarNombre = (texto) =>
+    texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()

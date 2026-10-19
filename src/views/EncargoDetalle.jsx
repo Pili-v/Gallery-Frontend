@@ -28,6 +28,7 @@ function Detalle({ id, recibidos, base }) {
   const [guardando, setGuardando] = useState(false);
   const [referencias, setReferencias] = useState({});
   const usuario = getUsuario();
+  const esAdmin = usuario?.rol_usuario === 'ADMIN';
   const perfilArtista = getPerfilArtista();
 
   useEffect(() => {
@@ -37,6 +38,7 @@ function Detalle({ id, recibidos, base }) {
       .then(respuesta => {
         if (!respuesta) throw new Error('No se pudo cargar el encargo.');
         pedido = respuesta;
+        if (esAdmin) return [];
         return api.get(`/api/encargos/${id}/mensajes`)
           .catch(error => {
             // El backend responde 404 cuando el encargo todavía no tiene mensajes.
@@ -59,7 +61,7 @@ function Detalle({ id, recibidos, base }) {
       .catch(error => { if (activo) setDatos({ encargo: null, error: error.message }); })
       .finally(() => { if (activo) setCargando(false); });
     return () => { activo = false; };
-  }, [id, intento]);
+  }, [id, intento, esAdmin]);
 
   function reintentar() {
     setCargando(true);
@@ -158,9 +160,9 @@ function Detalle({ id, recibidos, base }) {
           <EstadoEncargo estado={encargo.estado_encargo} />
         </div>
         <div className="aviso detalle-aviso">
-          <span className="catalog-number cartela-num">Vista de {esArtista ? 'artista' : 'cliente'}</span>
+          <span className="catalog-number cartela-num">Vista de {esAdmin ? 'administración' : esArtista ? 'artista' : 'cliente'}</span>
           <p className="body-sm detalle-texto">
-            {esArtista ? 'Sos el artista de este encargo: podés actualizar su estado.'
+            {esAdmin ? 'Consulta de solo lectura. Los mensajes son privados de los participantes.' : esArtista ? 'Sos el artista de este encargo: podés actualizar su estado.'
               : 'Podés escribir mensajes; el estado lo cambia el artista del encargo.'}
           </p>
         </div>
@@ -192,14 +194,14 @@ function Detalle({ id, recibidos, base }) {
           ) : (
             <>
               <div className="entre detalle-estado"><span className="muted">Estado del encargo</span><EstadoEncargo estado={encargo.estado_encargo} /></div>
-              <p className="body-sm muted detalle-texto">{permitidos.length === 0
+              <p className="body-sm muted detalle-texto">{esAdmin ? 'Consulta de solo lectura.' : permitidos.length === 0
                 ? 'No hay cambios de estado disponibles desde esta pantalla.'
                 : 'Solo el artista puede cambiar el estado.'}</p>
             </>
           )}
         </section>
 
-        <section className="detalle-mensajes" aria-labelledby="titulo-mensajes">
+        {permisos.puedeVerMensajes && <section className="detalle-mensajes" aria-labelledby="titulo-mensajes">
           <h2 id="titulo-mensajes" className="headline-md">Mensajes</h2>
           <p className="body-lg muted detalle-intro">Para coordinar. La descripción original del pedido se mantiene sin cambios.</p>
           {encargo.mensajes.length === 0 ? (
@@ -231,7 +233,7 @@ function Detalle({ id, recibidos, base }) {
             <p id="mensaje-ayuda" className="body-sm muted">{mensaje.length}/255 caracteres.</p>
           </form>}
           <p className="body-sm detalle-confirmacion" role="status">{aviso}</p>
-        </section>
+        </section>}
       </div>
     </main>
   );
