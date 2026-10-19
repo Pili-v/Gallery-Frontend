@@ -222,7 +222,7 @@ export default function Catalogo() {
     return {
       obra: {
         ...obra,
-        estilo: estilo ? estilo.nombreEstilo : "",
+        estilo: estilo ? estilo.nombre_estilo : "",
         artistaId: obra.artista_id,
         nombre_artistico: artista ? artista.nombre_artistico : "Artista"
       },
@@ -252,7 +252,7 @@ export default function Catalogo() {
 
   // El texto depende de qué filtro dejó la lista vacía: búsqueda, estilo, precio o una combinación.
   const mensajeSinResultados = () => {
-    const nombresEstilos = estilos.filter((e) => estiloIds.includes(e.id)).map((e) => e.nombreEstilo);
+    const nombresEstilos = estilos.filter((e) => estiloIds.includes(e.id)).map((e) => e.nombre_estilo);
     const textoEstilos = (nombresEstilos.length === 1 ? "del estilo " : "de los estilos ") + nombresEstilos.join(" o ");
     const hayPrecio = rango.min !== "" || rango.max !== "";
 

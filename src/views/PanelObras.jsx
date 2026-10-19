@@ -99,7 +99,7 @@ const PanelObras = () => {
         const nombres = []
         obra.estilo_ids.forEach((id) => {
             const estilo = estilos.find((e) => e.id === id)
-            if (estilo) nombres.push(estilo.nombreEstilo)
+            if (estilo) nombres.push(estilo.nombre_estilo)
         })
         return nombres.length > 0 ? nombres.join(", ") : "—"
     }

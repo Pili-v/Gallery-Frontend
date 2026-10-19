@@ -126,7 +126,7 @@ const AdminCatalogos = () => {
     const editarEstilo = (estilo) => {
 
         setEditandoEstilo(estilo.id)
-        setNuevoEstilo(estilo.nombreEstilo)
+        setNuevoEstilo(estilo.nombre_estilo)
         setConfirmando(null)
         setError("")
     }
@@ -149,7 +149,7 @@ const AdminCatalogos = () => {
         setError("")
 
         const datos = {
-            nombreEstilo: nuevoEstilo.trim()
+            nombre_estilo: nuevoEstilo.trim()
         }
 
         const pedido = editandoEstilo
@@ -693,7 +693,7 @@ const AdminCatalogos = () => {
                                         <tr key={estilo.id}>
 
                                             <td>
-                                                {estilo.nombreEstilo}
+                                                {estilo.nombre_estilo}
                                             </td>
 
                                             <td

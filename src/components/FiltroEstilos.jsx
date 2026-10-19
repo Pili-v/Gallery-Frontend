@@ -7,7 +7,7 @@ import "./filtroEstilos.css";
 // muestran los que tengan ALGUNO de los estilos elegidos.
 //
 // Props:
-//   estilos      : lista de estilos de la API ({ id, nombreEstilo })
+//   estilos      : lista de estilos de la API ({ id, nombre_estilo })
 //   seleccionados: ids elegidos (array; vacío = todos)
 //   onCambiar    : recibe el array nuevo de ids. La pantalla es la que vuelve a pedir al back.
 const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
@@ -54,7 +54,7 @@ const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
                                             checked={seleccionados.includes(estilo.id)}
                                             onChange={() => alternar(estilo.id)}
                                         />
-                                        {estilo.nombreEstilo}
+                                        {estilo.nombre_estilo}
                                     </label>
                                 </li>
                             ))}
@@ -74,9 +74,9 @@ const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
                     key={estilo.id}
                     className="chip activo"
                     onClick={() => alternar(estilo.id)}
-                    aria-label={"Quitar el estilo " + estilo.nombreEstilo}
+                    aria-label={"Quitar el estilo " + estilo.nombre_estilo}
                 >
-                    {estilo.nombreEstilo} ✕
+                    {estilo.nombre_estilo} ✕
                 </button>
             ))}
         </div>

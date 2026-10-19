@@ -84,7 +84,7 @@ export default function ObrasRelacionadas({ titulo, consultas, excluirId, exclui
               return {
                 obra: {
                   ...obra,
-                  estilo: estilo ? estilo.nombreEstilo : "",
+                  estilo: estilo ? estilo.nombre_estilo : "",
                   artistaId: obra.artista_id,
                   nombre_artistico: artista ? artista.nombre_artistico : "Artista"
                 },
