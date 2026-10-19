@@ -31,3 +31,9 @@
   .encargos-cabecera > .boton { width: 100%; }
   .encargos-pestanias .pestania { flex: 1; padding-inline: var(--sm); }
 }
+
+.encargos-buscador { width: 50%; }
+.encargos-buscador .campo { margin-bottom: 0; }
+@media (max-width: 600px) {
+  .encargos-buscador { width: 100%; }
+}

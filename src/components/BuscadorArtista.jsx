@@ -1,11 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import './buscadorArtista.css';
+import { normalizarNombre } from '../api/formato';
 
-function normalizarNombre(texto) {
-  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-}
-
-export default function BuscadorArtista({ artistas, value, onChange, error, disabled }) {
+export default function BuscadorArtista({ artistas, value, onChange, onSearch, error, disabled, required = true }) {
   const id = useId();
   const lista = useRef(null);
   const [busqueda, setBusqueda] = useState(null);
@@ -25,6 +22,7 @@ export default function BuscadorArtista({ artistas, value, onChange, error, disa
 
   function elegir(artista) {
     onChange(String(artista.id));
+    onSearch?.(artista.nombre);
     setBusqueda(null);
     setAbierto(false);
     setActivo(-1);
@@ -55,7 +53,7 @@ export default function BuscadorArtista({ artistas, value, onChange, error, disa
         <input id={id} name="artista_id" type="text" role="combobox"
           className={'input' + (error ? ' con-error' : '')}
           placeholder="Escribí el nombre del artista" autoComplete="off"
-          value={texto} disabled={disabled} required aria-required="true"
+          value={texto} disabled={disabled} required={required} aria-required={required}
           aria-autocomplete="list" aria-expanded={abierto}
           aria-controls={id + '-resultados'} aria-invalid={Boolean(error)}
           aria-describedby={error ? id + '-error' : undefined}
@@ -65,6 +63,7 @@ export default function BuscadorArtista({ artistas, value, onChange, error, disa
           onChange={evento => {
             setBusqueda(evento.target.value);
             onChange('');
+            onSearch?.(evento.target.value);
             setAbierto(true);
             setActivo(-1);
             if (lista.current) lista.current.scrollTop = 0;
