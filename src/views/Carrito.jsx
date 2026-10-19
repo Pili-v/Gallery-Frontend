@@ -57,10 +57,13 @@ const Carrito = () => {
     useEffect(() => { cargarCarrito() }, [])
 
     // Cambiar la cantidad de un ítem. Si baja a cero, se quita.
-    const cambiarCantidad = (item, nuevaCantidad) => {
-        if (nuevaCantidad < 1) return quitarItem(item.id)
+    // La fila avisa con el id del ítem; los demás datos (variante y marco) salen de la lista de ítems.
+    const cambiarCantidad = (itemId, nuevaCantidad) => {
+        if (nuevaCantidad < 1) return quitarItem(itemId)
 
-        api.put("/api/items-carrito/" + item.id, {
+        const item = items.find((otro) => otro.id === itemId)
+
+        api.put("/api/items-carrito/" + itemId, {
             carrito_id: carrito.id,
             variante_id: item.variante_id,
             marco_id: item.marco_id,
@@ -121,7 +124,12 @@ const Carrito = () => {
                             {items.map((item) => (
                                 <LineaItem
                                     key={item.id}
-                                    item={item}
+                                    id={item.id}
+                                    nombreObra={item.nombre_obra}
+                                    nombreTamanio={item.nombre_tamanio}
+                                    nombreMarco={item.nombre_marco}
+                                    cantidad={item.cantidad}
+                                    subtotal={item.subtotal}
                                     imagen={fotoDe(item.obra_id)}
                                     editable={true}
                                     onCambiarCantidad={cambiarCantidad}

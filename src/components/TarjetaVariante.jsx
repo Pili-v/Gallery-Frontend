@@ -12,14 +12,16 @@ const hoy = () => {
 // Una variante de la obra en el formulario: su tamaño, precio, stock y descuento.
 // Solo dibuja y avisa los cambios: el estado vive en ObraForm.
 // Los min, max y required son los límites obvios; las reglas de negocio las valida el back.
-const TarjetaVariante = ({ fila, tamanios, usados, onCambiar, onQuitar }) => {
-    const cambiar = (campo) => (e) => onCambiar(fila.clave, campo, e.target.value)
+// Los datos de la variante llegan cada uno en su prop: clave, id (null si todavía no se guardó), idTamanio,
+// precio, stock, porcentajeDescuento y descuentoHasta. Al cambiar un campo avisa con la clave de la variante.
+const TarjetaVariante = ({ clave, id, idTamanio, precio, stock, porcentajeDescuento, descuentoHasta, tamanios, usados, onCambiar, onQuitar }) => {
+    const cambiar = (campo) => (e) => onCambiar(clave, campo, e.target.value)
 
     return (
         <div style={{ border: "1px solid var(--border)", padding: "var(--md)", marginBottom: "var(--md)" }}>
             <div style={{ display: "grid", gap: "0 var(--md)", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
                 <CampoFormulario etiqueta="Tamaño" tipo="select" required
-                    value={fila.id_tamanio} onChange={cambiar("id_tamanio")}>
+                    value={idTamanio} onChange={cambiar("id_tamanio")}>
                     <option value="">Elegí un tamaño</option>
                     {tamanios.map((tamanio) => (
                         <option
@@ -33,21 +35,21 @@ const TarjetaVariante = ({ fila, tamanios, usados, onCambiar, onQuitar }) => {
                 </CampoFormulario>
 
                 <CampoFormulario etiqueta="Precio ($)" tipo="number" required min="0" step="0.01"
-                    value={fila.precio_variante} onChange={cambiar("precio_variante")} />
+                    value={precio} onChange={cambiar("precio_variante")} />
 
                 <CampoFormulario etiqueta="Stock" tipo="number" required min="0" step="1"
-                    value={fila.stock_variante} onChange={cambiar("stock_variante")} />
+                    value={stock} onChange={cambiar("stock_variante")} />
 
                 <CampoFormulario etiqueta="Descuento (%)" tipo="number" min="0" max="100" step="1"
-                    value={fila.porcentaje_descuento} onChange={cambiar("porcentaje_descuento")} />
+                    value={porcentajeDescuento} onChange={cambiar("porcentaje_descuento")} />
 
                 {/* Una variante nueva no puede vencer antes de hoy. En una ya guardada no se exige, para
                     que un descuento vencido no impida guardar otros cambios. El back no lo valida. */}
-                <CampoFormulario etiqueta="Descuento hasta" tipo="date" min={fila.id === null ? hoy() : undefined}
-                    value={fila.descuento_hasta} onChange={cambiar("descuento_hasta")} />
+                <CampoFormulario etiqueta="Descuento hasta" tipo="date" min={id === null ? hoy() : undefined}
+                    value={descuentoHasta} onChange={cambiar("descuento_hasta")} />
             </div>
 
-            <button type="button" onClick={() => onQuitar(fila)} className="body-sm"
+            <button type="button" onClick={() => onQuitar(clave, id)} className="body-sm"
                 style={{ all: "unset", cursor: "pointer", color: "var(--error)" }}>
                 Quitar variante
             </button>

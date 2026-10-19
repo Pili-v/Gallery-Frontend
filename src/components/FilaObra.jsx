@@ -4,18 +4,19 @@ import { Link } from "react-router-dom"
 // Todo llega con la lista de obras: portada es la URL de la miniatura (null si la obra no tiene fotos),
 // estilos el texto ya armado, y cantidadVariantes y variantesSinStock los conteos.
 // Al hacer click en la fila se llama a onAlternar, que abre o cierra el detalle de la obra.
-const FilaObra = ({ obra, portada, estilos, cantidadVariantes, variantesSinStock, abierta, onAlternar }) => {
+// Los datos de la obra llegan cada uno en su prop: id, nombreObra y enVenta.
+const FilaObra = ({ id, nombreObra, enVenta, portada, estilos, cantidadVariantes, variantesSinStock, abierta, onAlternar }) => {
     return (
         <tr onClick={onAlternar} style={{ cursor: "pointer" }}>
             <td>
                 <div className="fila">
                     <span style={{ color: "var(--bordo)" }}>{abierta ? "▾" : "▸"}</span>
                     <div className="linea-mini" style={{ width: 56, flex: "none", display: "grid", placeItems: "center" }}>
-                        {portada && <img src={portada} alt={"Portada de " + obra.nombre_obra} />}
+                        {portada && <img src={portada} alt={"Portada de " + nombreObra} />}
                         {portada === null && <span className="cartela-meta" style={{ fontSize: 10, textAlign: "center" }}>Sin foto</span>}
                     </div>
                     <span className="title-work" style={{ fontSize: 16 }}>
-                        {obra.nombre_obra}
+                        {nombreObra}
                     </span>
                 </div>
             </td>
@@ -26,10 +27,10 @@ const FilaObra = ({ obra, portada, estilos, cantidadVariantes, variantesSinStock
                     <span style={{ color: "var(--error)" }}> · {variantesSinStock} sin stock</span>
                 )}
             </td>
-            <td>{obra.en_venta ? "Sí" : "No"}</td>
+            <td>{enVenta ? "Sí" : "No"}</td>
             <td>
                 <Link
-                    to={"/panel/obras/" + obra.id + "/editar"}
+                    to={"/panel/obras/" + id + "/editar"}
                     style={{ color: "var(--bordo)" }}
                     onClick={(e) => e.stopPropagation()}
                 >

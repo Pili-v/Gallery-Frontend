@@ -211,9 +211,9 @@ const FormularioObra = ({ id }) => {
     }
 
     // Quitar una fila ya guardada la deja pendiente de borrar; una nueva simplemente se descarta.
-    const quitarFila = (fila) => {
-        setFilas(filas.filter((otra) => otra.clave !== fila.clave))
-        if (fila.id !== null) setQuitadas([...quitadas, fila.id])
+    const quitarFila = (clave, id) => {
+        setFilas(filas.filter((otra) => otra.clave !== clave))
+        if (id !== null) setQuitadas([...quitadas, id])
     }
 
     // Las fotos elegidas se achican de a una (prepararImagen rechaza las muy chicas o las que no
@@ -468,7 +468,13 @@ const FormularioObra = ({ id }) => {
                     {filas.map((fila) => (
                         <TarjetaVariante
                             key={fila.clave}
-                            fila={fila}
+                            clave={fila.clave}
+                            id={fila.id}
+                            idTamanio={fila.id_tamanio}
+                            precio={fila.precio_variante}
+                            stock={fila.stock_variante}
+                            porcentajeDescuento={fila.porcentaje_descuento}
+                            descuentoHasta={fila.descuento_hasta}
                             tamanios={tamanios}
                             usados={usados.filter((usado) => usado !== fila.id_tamanio)}
                             onCambiar={cambiarFila}
