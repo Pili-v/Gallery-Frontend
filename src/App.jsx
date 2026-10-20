@@ -20,6 +20,7 @@ import Ventas from "./views/Ventas"
 import Encargos from "./views/Encargos"
 import EncargoNuevo from "./views/EncargoNuevo"
 import EncargoDetalle from "./views/EncargoDetalle"
+import PagoEncargo from "./views/PagoEncargo"
 import AdminUsuarios from "./views/AdminUsuarios"
 import AdminCatalogos from "./views/AdminCatalogos"
 import SinPermiso from "./views/SinPermiso"
@@ -60,6 +61,7 @@ const App = () => {
           <Route path="/checkout/pago" element={<RutaProtegida roles={COMPRA}><Pago /></RutaProtegida>} />
           <Route path="/compra/:id" element={<RutaProtegida roles={COMPRA}><CompraConfirmada /></RutaProtegida>} />
           <Route path="/encargos/nuevo" element={<RutaProtegida roles={COMPRA}><EncargoNuevo /></RutaProtegida>} />
+          <Route path="/encargos/:id/pagar" element={<RutaProtegida roles={COMPRA}><PagoEncargo /></RutaProtegida>} />
 
           {/* Vender */}
           <Route path="/panel/obras" element={<RutaProtegida roles={ARTISTA}><PanelObras /></RutaProtegida>} />

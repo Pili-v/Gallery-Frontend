@@ -1,12 +1,12 @@
 import { pesos } from "../api/formato"
 
-const ResumenTotales = ({ subtotal, marcos, envio, total, boton, onBoton, nota }) => {
+const ResumenTotales = ({ subtotal, etiquetaSubtotal = "Obras", marcos, envio, total, boton, onBoton, nota }) => {
     return (
         <div className="resumen">
             <h3 className="headline-sm" style={{ marginBottom: "var(--sm)" }}>Resumen</h3>
 
             <div className="resumen-fila">
-                <span className="muted">Obras</span><span>{pesos(subtotal)}</span>
+                <span className="muted">{etiquetaSubtotal}</span><span>{pesos(subtotal)}</span>
             </div>
 
             {marcos > 0 && (

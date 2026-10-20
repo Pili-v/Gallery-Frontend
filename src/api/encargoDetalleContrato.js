@@ -9,8 +9,9 @@ export const estadosEncargo = {
 
 export function estadosPermitidos(estado) {
   if (estado === 'PENDIENTE') return ['CANCELADO'];
-  if (estado === 'APROBADO') return ['EN_PROCESO', 'PENDIENTE', 'CANCELADO'];
-  if (estado === 'EN_PROCESO') return ['TERMINADO', 'PENDIENTE', 'CANCELADO'];
+  // Una vez aprobado el precio el encargo ya no se cancela: solo se cancela mientras está pendiente.
+  if (estado === 'APROBADO') return ['EN_PROCESO', 'PENDIENTE'];
+  if (estado === 'EN_PROCESO') return ['TERMINADO', 'PENDIENTE'];
   return [];
 }
 
