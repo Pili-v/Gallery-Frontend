@@ -56,7 +56,7 @@ export default function Artistas() {
 
     Promise.all([
       sin404(api.get("/api/obras")),
-      sin404(api.get("/api/imagenes")),
+      sin404(api.get("/api/imagenes?portada=true")),
       sin404(api.get("/api/estilos")),
       sin404(api.get("/api/artistas"))
     ])

@@ -58,8 +58,11 @@ const ConfirmarCompra = () => {
                 return listaVacia(api.get("/api/carritos/" + miCarrito.id + "/items"))
             })
             .then((susItems) => {
-                setItems(lista(susItems))
-                return listaVacia(api.get("/api/imagenes"))
+                const losItems = lista(susItems)
+                setItems(losItems)
+                // Solo las portadas de las obras que hay en el carrito, en un solo pedido
+                if (losItems.length === 0) return []
+                return listaVacia(api.get("/api/imagenes?portada=true&" + losItems.map((item) => "obraId=" + item.obra_id).join("&")))
             })
             .then((lasImagenes) => setImagenes(lista(lasImagenes)))
             .catch((e) => setError(e.message))

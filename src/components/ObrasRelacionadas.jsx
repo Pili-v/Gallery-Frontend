@@ -55,17 +55,16 @@ export default function ObrasRelacionadas({ titulo, consultas, excluirId, exclui
           const idsArtistas = [...new Set(obras.map((o) => o.artista_id))];
 
           return Promise.all([
-            Promise.all(
-              obras.map((obra) =>
-                Promise.all([
-                  sin404(api.get("/api/variantes?obraId=" + obra.id)),
-                  sin404(api.get("/api/imagenes?obraId=" + obra.id))
-                ]).then(([susVariantes, susImagenes]) => ({
-                  obra,
-                  variantes: lista(susVariantes),
-                  imagenes: lista(susImagenes)
-                }))
-              )
+            // Las portadas de todas las obras en un solo pedido (portada=true); las variantes, de a una obra.
+            Promise.all([
+              sin404(api.get("/api/imagenes?portada=true&" + obras.map((obra) => "obraId=" + obra.id).join("&"))),
+              Promise.all(obras.map((obra) => sin404(api.get("/api/variantes?obraId=" + obra.id))))
+            ]).then(([susPortadas, susVariantes]) =>
+              obras.map((obra, i) => ({
+                obra,
+                variantes: lista(susVariantes[i]),
+                imagenes: lista(susPortadas).filter((p) => p.obra_id === obra.id)
+              }))
             ),
             Promise.all(idsArtistas.map((id) => api.get("/api/artistas/" + id))),
             sin404(api.get("/api/estilos"))
