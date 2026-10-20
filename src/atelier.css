@@ -104,11 +104,13 @@ body {
 /* ---------- Componente: Footer ---------- */
 .footer {
   border-top: 1px solid var(--border);
-  padding: var(--lg) var(--xxl);
-  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--xl) var(--xxl) var(--lg);
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--lg) var(--xl);
   color: var(--ink-muted);
 }
-.footer-links { display: flex; gap: var(--lg); }
+.footer-bloque { display: flex; flex-direction: column; gap: 6px; }
+.footer-final { grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: var(--md); }
+@media (max-width: 720px) { .footer { grid-template-columns: 1fr; padding: var(--lg) 20px; } }
 
 /* ---------- Componente: Confirmacion ---------- */
 .modal {
