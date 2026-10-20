@@ -36,6 +36,13 @@ const MiCuenta = () => {
     const [mensaje, setMensaje] = useState("")
     const [mensajeContrasenia, setMensajeContrasenia] = useState("")
 
+    // Perfil de artista: solo lo tienen los artistas (la cuenta trae perfil_artista); para el resto no se muestra.
+    const [tieneArtista, setTieneArtista] = useState(false)
+    const [artista, setArtista] = useState({ nombre_artistico: "", acepta_encargos: true })
+    const [errorNombreArtistico, setErrorNombreArtistico] = useState("")
+    const [guardandoArtista, setGuardandoArtista] = useState(false)
+    const [mensajeArtista, setMensajeArtista] = useState("")
+
     const limpiarNombre = (texto) => {
 
         const soloLetras = texto.replace(
@@ -80,6 +87,14 @@ const MiCuenta = () => {
                     telefono_usuario:
                         perfil.usuario.telefono_usuario ?? ""
                 })
+
+                if (perfil.perfil_artista) {
+                    setTieneArtista(true)
+                    setArtista({
+                        nombre_artistico: perfil.perfil_artista.nombre_artistico ?? "",
+                        acepta_encargos: perfil.perfil_artista.acepta_encargos
+                    })
+                }
             })
             .catch((e) => {
 
@@ -243,6 +258,61 @@ const MiCuenta = () => {
             })
     }
 
+    // Guarda el nombre artístico y si acepta encargos. Dejar de aceptar solo afecta a los encargos NUEVOS:
+    // los que ya están en curso se pueden seguir gestionando y cerrando (el back valida esto al crearlos).
+    const handleArtista = (e) => {
+
+        e.preventDefault()
+
+        if (guardandoArtista) {
+            return
+        }
+
+        if (artista.nombre_artistico.trim() === "") {
+            setErrorNombreArtistico("El nombre artístico es obligatorio")
+            return
+        }
+
+        setGuardandoArtista(true)
+        setErrorNombreArtistico("")
+        setErrorGeneral("")
+        setMensajeArtista("")
+
+        api.patch(
+            "/api/artistas/me",
+            {
+                nombre_artistico: artista.nombre_artistico.trim(),
+                acepta_encargos: artista.acepta_encargos
+            }
+        )
+            .then(() => {
+
+                return api.get("/api/usuarios/me")
+            })
+            .then((perfil) => {
+
+                guardarSesion(
+                    getToken(),
+                    perfil
+                )
+
+                setMensajeArtista(
+                    "El perfil de artista se guardó correctamente."
+                )
+            })
+            .catch((e) => {
+
+                setErrorGeneral(
+                    e.message ||
+                    "No se pudo guardar el perfil de artista."
+                )
+            })
+            .finally(() => {
+
+                setGuardandoArtista(false)
+            })
+    }
+
     const handleCambioContrasenia = (e) => {
 
         e.preventDefault()
@@ -395,6 +465,75 @@ const MiCuenta = () => {
                     </Boton>
 
                 </form>
+
+                {tieneArtista && (
+                    <form
+                        className="cartela"
+                        style={{
+                            padding: "var(--lg)",
+                            marginTop: "var(--xl)"
+                        }}
+                        onSubmit={handleArtista}
+                    >
+
+                        <h2
+                            className="headline-sm"
+                            style={{ marginBottom: "var(--md)" }}
+                        >
+                            Perfil de artista
+                        </h2>
+
+                        <CampoFormulario
+                            etiqueta="Nombre artístico"
+                            name="nombre_artistico"
+                            value={artista.nombre_artistico}
+                            maxLength={150}
+                            onChange={(e) => setArtista({ ...artista, nombre_artistico: e.target.value })}
+                            error={errorNombreArtistico}
+                        />
+
+                        <label
+                            className="body-sm"
+                            style={{ display: "block", marginBottom: "var(--xs)" }}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={artista.acepta_encargos}
+                                onChange={(e) => setArtista({ ...artista, acepta_encargos: e.target.checked })}
+                            />{" "}
+                            Quiero recibir encargos de obras a medida
+                        </label>
+
+                        <p
+                            className="body-sm muted"
+                            style={{ marginBottom: "var(--md)" }}
+                        >
+                            Si lo desactivás, no vas a figurar como disponible para encargos nuevos. Los encargos
+                            que ya tenés en curso los podés seguir gestionando y cerrando.
+                        </p>
+
+                        {mensajeArtista && (
+                            <p
+                                className="body-sm"
+                                style={{ marginBottom: "var(--md)" }}
+                            >
+                                {mensajeArtista}
+                            </p>
+                        )}
+
+                        <Boton
+                            tipo={guardandoArtista ? "deshabilitado" : "primario"}
+                            bloque
+                            type="submit"
+                        >
+                            {guardandoArtista
+                                ? "Guardando..."
+                                : "Guardar perfil de artista"
+                            }
+                        </Boton>
+
+                    </form>
+                )}
 
                 <form
                     className="cartela"
