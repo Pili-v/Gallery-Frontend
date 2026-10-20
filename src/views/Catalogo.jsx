@@ -102,22 +102,27 @@ export default function Catalogo() {
           setTotalPaginas(respuesta?.totalPages ?? 1);
           setTotalObras(respuesta?.totalElements ?? lasObras.length);
         }
-        // Variante e imágenes solo de las obras de ESTA página
-        return Promise.all(
-          lasObras.map((obra) =>
-            Promise.all([
-              sin404(api.get("/api/variantes?obraId=" + obra.id)),
-              sin404(api.get("/api/imagenes?obraId=" + obra.id))
-            ]).then(([susVariantes, susImagenes]) => {
-              const lasVariantes = lista(susVariantes);
-              return {
-                id: obra.id,
-                variante: lasVariantes.find((v) => v.stock_variante > 0) ?? lasVariantes[0],
-                imagenes: lista(susImagenes)
-              };
-            })
-          )
-        ).then((datos) => ({ lasObras, datos }));
+        // Variante e imágenes solo de las obras de ESTA página: las portadas de toda la página en un
+        // solo pedido (portada=true) y las variantes de a una obra.
+        const pedirPortadas = lasObras.length > 0
+          ? sin404(api.get("/api/imagenes?portada=true&" + lasObras.map((obra) => "obraId=" + obra.id).join("&")))
+          : Promise.resolve([]);
+
+        return Promise.all([
+          pedirPortadas,
+          Promise.all(lasObras.map((obra) => sin404(api.get("/api/variantes?obraId=" + obra.id))))
+        ]).then(([susPortadas, susVariantes]) => {
+          const portadas = lista(susPortadas);
+          const datos = lasObras.map((obra, i) => {
+            const lasVariantes = lista(susVariantes[i]);
+            return {
+              id: obra.id,
+              variante: lasVariantes.find((v) => v.stock_variante > 0) ?? lasVariantes[0],
+              imagenes: portadas.filter((p) => p.obra_id === obra.id)
+            };
+          });
+          return { lasObras, datos };
+        });
       })
       .then(({ lasObras, datos }) => {
         if (!vigente) return;

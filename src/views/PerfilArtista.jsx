@@ -79,17 +79,20 @@ export default function PerfilArtista() {
           setTotalPaginas(respuesta?.totalPages ?? 1);
           setTotalObras(respuesta?.totalElements ?? lasObras.length);
         }
-        return Promise.all(
-          lasObras.map((obra) =>
-            Promise.all([
-              sin404(api.get("/api/variantes?obraId=" + obra.id)),
-              sin404(api.get("/api/imagenes?obraId=" + obra.id))
-            ]).then(([susVariantes, susImagenes]) => ({
-              obra,
-              variante: lista(susVariantes).find((v) => v.stock_variante > 0) ?? lista(susVariantes)[0],
-              imagenes: lista(susImagenes)
-            }))
-          )
+        // Las portadas de toda la página en un solo pedido (portada=true); las variantes, de a una obra.
+        const pedirPortadas = lasObras.length > 0
+          ? sin404(api.get("/api/imagenes?portada=true&" + lasObras.map((obra) => "obraId=" + obra.id).join("&")))
+          : Promise.resolve([]);
+
+        return Promise.all([
+          pedirPortadas,
+          Promise.all(lasObras.map((obra) => sin404(api.get("/api/variantes?obraId=" + obra.id))))
+        ]).then(([susPortadas, susVariantes]) =>
+          lasObras.map((obra, i) => ({
+            obra,
+            variante: lista(susVariantes[i]).find((v) => v.stock_variante > 0) ?? lista(susVariantes[i])[0],
+            imagenes: lista(susPortadas).filter((p) => p.obra_id === obra.id)
+          }))
         );
       })
       .then((armadas) => {
