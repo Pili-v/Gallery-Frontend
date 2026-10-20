@@ -1,19 +1,31 @@
-import { Link } from "react-router-dom"
-import { getRol } from "../api/sesion"
+// El mail de contacto va acá: si se crea uno propio para el proyecto, se cambia solo esta línea.
+const EMAIL_CONTACTO = "contacto@atelierattack.com"
 
+// Pie de la página: quiénes somos, cómo contactarnos y cómo se compra. Es el mismo para todos:
+// no depende de quién esté logueado ni de su rol, y no repite los enlaces de la barra de arriba.
 const Footer = () => {
-    const links = getRol() === "ADMIN"
-        ? [["Usuarios", "/admin/usuarios"], ["Catálogos", "/admin/catalogos"], ["Encargos", "/encargos"]]
-        : [["Catálogo", "/"], ["Artistas", "/artistas"], ["Encargos", "/encargos"]]
     return (
         <footer className="footer">
-            <span className="header-marca" style={{ fontSize: 18 }}>Atelier&nbsp;Attack</span>
-            <div className="footer-links nav-link">
-                {links.map(([nombre, ruta]) => (
-                    <Link key={ruta} to={ruta} style={{ color: "var(--ink-muted)", textDecoration: "none" }}>{nombre}</Link>
-                ))}
+            <div className="footer-bloque">
+                <span className="header-marca" style={{ fontSize: 18 }}>Atelier&nbsp;Attack</span>
+                <span className="body-sm">Obra original, directo del artista.</span>
             </div>
-            <span className="catalog-number muted">2026</span>
+
+            <div className="footer-bloque">
+                <span className="catalog-number">Contacto</span>
+                <a href={"mailto:" + EMAIL_CONTACTO} className="body-sm" style={{ color: "var(--bordo)", textDecoration: "none" }}>
+                    {EMAIL_CONTACTO}
+                </a>
+                <span className="body-sm">Buenos Aires, Argentina</span>
+            </div>
+
+            <div className="footer-bloque">
+                <span className="catalog-number">Comprar</span>
+                <span className="body-sm">Envío a domicilio o retiro en el local</span>
+                <span className="body-sm">Visa · Mastercard · Amex</span>
+            </div>
+
+            <span className="footer-final catalog-number">© 2026 Atelier Attack</span>
         </footer>
     )
 }

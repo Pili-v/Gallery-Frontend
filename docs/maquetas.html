@@ -94,11 +94,13 @@ body {
 /* ---------- Componente: Footer ---------- */
 .footer {
   border-top: 1px solid var(--border);
-  padding: var(--lg) var(--xxl);
-  display: flex; justify-content: space-between; align-items: center;
+  padding: var(--xl) var(--xxl) var(--lg);
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--lg) var(--xl);
   color: var(--ink-muted);
 }
-.footer-links { display: flex; gap: var(--lg); }
+.footer-bloque { display: flex; flex-direction: column; gap: 6px; }
+.footer-final { grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: var(--md); }
+@media (max-width: 720px) { .footer { grid-template-columns: 1fr; padding: var(--lg) 20px; } }
 
 /* ---------- Componente: Boton ---------- */
 .boton {
@@ -564,13 +566,21 @@ function Header(rol = "cliente", activo = "") {
 function Footer() {
   return `
   <footer class="footer">
-    <span class="header-marca" style="font-size:18px">Atelier&nbsp;Attack</span>
-    <div class="footer-links nav-link">
-      <a href="#" style="color:var(--ink-muted);text-decoration:none">Catálogo</a>
-      <a href="#" style="color:var(--ink-muted);text-decoration:none">Artistas</a>
-      <a href="#" style="color:var(--ink-muted);text-decoration:none">Encargos</a>
+    <div class="footer-bloque">
+      <span class="header-marca" style="font-size:18px">Atelier&nbsp;Attack</span>
+      <span class="body-sm">Obra original, directo del artista.</span>
     </div>
-    <span class="catalog-number muted">2026</span>
+    <div class="footer-bloque">
+      <span class="catalog-number">Contacto</span>
+      <a href="#" class="body-sm" style="color:var(--bordo);text-decoration:none">contacto@atelierattack.com</a>
+      <span class="body-sm">Buenos Aires, Argentina</span>
+    </div>
+    <div class="footer-bloque">
+      <span class="catalog-number">Comprar</span>
+      <span class="body-sm">Envío a domicilio o retiro en el local</span>
+      <span class="body-sm">Visa · Mastercard · Amex</span>
+    </div>
+    <span class="footer-final catalog-number">© 2026 Atelier Attack</span>
   </footer>`;
 }
 
