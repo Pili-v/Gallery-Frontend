@@ -175,22 +175,13 @@ const AdminUsuarios = () => {
     }
 
     return (
-        <div className="seccion">
+        <div className="seccion" style={{ paddingTop: "var(--xl)" }}>
             <div className="contenido">
 
-                <h1 className="headline-lg">
+                {/* El espacio sobre el título es el mismo que hay entre el título y lo que sigue. */}
+                <h1 className="headline-lg" style={{ marginBottom: "var(--xl)" }}>
                     Usuarios y permisos
                 </h1>
-
-                <p
-                    className="body-lg muted"
-                    style={{
-                        margin:
-                            "var(--xs) 0 var(--xl)"
-                    }}
-                >
-                    Asignar el rol define qué puede hacer cada cuenta.
-                </p>
 
                 {error && (
                     <div

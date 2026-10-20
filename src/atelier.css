@@ -279,7 +279,7 @@ body {
 
 /* Pestanias: misma pieza que el chip, con otro rol */
 .pestanias { display: flex; gap: var(--sm); border-bottom: 1px solid var(--border); }
-.pestania { padding: 10px var(--md); color: var(--ink-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.pestania { padding: 10px var(--md); color: var(--ink-muted); cursor: pointer; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; font: inherit; }
 .pestania.activa { color: var(--bordo); border-bottom-color: var(--bordo); }
 
 /* Mensajes: propio a la derecha, ajeno a la izquierda */
