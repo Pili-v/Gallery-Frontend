@@ -34,19 +34,29 @@ const MisCompras = () => {
         cargarCompras()
     }, [])
 
-    // Los tres estados de siempre antes de dibujar la tabla.
-    if (cargando) return <Estado tipo="cargando" />
-    if (error) return <Estado tipo="error" mensaje={error} />
-
     return (
         <div className="seccion">
-            <div className="contenido col-media">
+            <div className="contenido">
                 <h1 className="headline-lg">Mis compras</h1>
+                <p className="body-lg muted" style={{ marginTop: "var(--xs)" }}>
+                    Las compras que hiciste.
+                </p>
 
-                {compras.length === 0 ? (
-                    <Estado tipo="vacio" mensaje="Todavía no hiciste ninguna compra." />
+                {/* El título está siempre; solo lo que viene del back espera. */}
+                {cargando ? (
+                    <div style={{ marginTop: "var(--lg)" }}>
+                        <Estado tipo="cargando" />
+                    </div>
+                ) : error ? (
+                    <div style={{ marginTop: "var(--lg)" }}>
+                        <Estado tipo="error" mensaje={error} />
+                    </div>
+                ) : compras.length === 0 ? (
+                    <div style={{ marginTop: "var(--lg)" }}>
+                        <Estado tipo="vacio" mensaje="Todavía no hiciste ninguna compra." />
+                    </div>
                 ) : (
-                    <table className="tabla" style={{ marginTop: "var(--md)" }}>
+                    <table className="tabla" style={{ marginTop: "var(--lg)" }}>
                         <thead>
                             <tr>
                                 <th>Compra</th>
