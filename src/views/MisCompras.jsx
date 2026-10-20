@@ -74,7 +74,9 @@ const MisCompras = () => {
                                     <td>
                                         {compra.tipo_entrega === "ENVIO_DOMICILIO"
                                             ? "Envío a domicilio"
-                                            : "Retiro en el local"}
+                                            : compra.tipo_entrega
+                                                ? "Retiro en el local"
+                                                : "Encargo (sin envío)"}
                                     </td>
                                     <td className="price-md">{pesos(compra.total_compra)}</td>
                                     <td>

@@ -17,7 +17,9 @@ const DetalleVenta = ({ error, cargado, fechaCompra, nombreComprador, tipoEntreg
                 Comprado el {fecha(fechaCompra)} por {nombreComprador} ·{" "}
                 {tipoEntrega === "ENVIO_DOMICILIO"
                     ? "Envío a domicilio: " + direccionEntrega
-                    : "Retiro en el local"}
+                    : tipoEntrega
+                        ? "Retiro en el local"
+                        : "Encargo a medida, sin envío"}
             </p>
             {items.map((item) => (
                 <LineaItem

@@ -2,14 +2,35 @@ import { api, lista } from '../api/cliente';
 import { getUsuario, getPerfilArtista } from '../api/sesion';
 import { permisosEncargo } from '../api/encargoSesion.js';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import AcuerdoPrecio from '../components/AcuerdoPrecio';
 import Boton from '../components/Boton';
+import Confirmacion from '../components/Confirmacion';
 import CampoFormulario from '../components/CampoFormulario';
 import Estado from '../components/Estado';
 import EstadoEncargo from '../components/EstadoEncargo';
 import { pinturas, lienzos } from '../api/encargoContrato.js';
 import { estadosEncargo, estadosPermitidos, prepararMensaje, prepararCambioEstado } from '../api/encargoDetalleContrato.js';
 import './encargoDetalle.css';
+
+// El back manda los mensajes del más nuevo al más viejo (para poder cargar la conversación desde lo último), igual
+// para el cliente y para el artista. Acá se leen de arriba hacia abajo, del más viejo al más nuevo, y los que se
+// envían se agregan al final: por eso se ordenan por fecha (y por id si coinciden) al cargarlos.
+const enOrdenDeLectura = mensajes => [...mensajes].sort((a, b) =>
+  new Date(a.fecha_creacion_mensaje) - new Date(b.fecha_creacion_mensaje) || a.id - b.id);
+
+// Los mensajes del encargo. El backend responde 404 cuando todavía no tiene ninguno: eso es una lista vacía.
+const pedirMensajes = id => api.get(`/api/encargos/${id}/mensajes`)
+  .catch(error => {
+    if (error.status === 404 && error.message === `El encargo con id ${id} todavía no tiene mensajes`) {
+      return [];
+    }
+    throw error;
+  });
+
+// Cada cuánto se vuelve a pedir el encargo mientras la pantalla está abierta (en milisegundos). Con 3 segundos
+// la conversación se siente casi inmediata y son dos pedidos livianos por vez; si el back tarda, no se acumulan.
+const CADA_CUANTO_SE_ACTUALIZA = 3000;
 
 export default function EncargoDetalle() {
   const { id } = useParams();
@@ -39,17 +60,10 @@ function Detalle({ id, recibidos, base }) {
         if (!respuesta) throw new Error('No se pudo cargar el encargo.');
         pedido = respuesta;
         if (esAdmin) return [];
-        return api.get(`/api/encargos/${id}/mensajes`)
-          .catch(error => {
-            // El backend responde 404 cuando el encargo todavía no tiene mensajes.
-            if (error.status === 404 && error.message === `El encargo con id ${id} todavía no tiene mensajes`) {
-              return [];
-            }
-            throw error;
-          });
+        return pedirMensajes(id);
       })
       .then(mensajes => {
-        if (activo) setDatos({ encargo: { ...pedido, mensajes: lista(mensajes) }, error: '' });
+        if (activo) setDatos({ encargo: { ...pedido, mensajes: enOrdenDeLectura(lista(mensajes)) }, error: '' });
         // Los nombres son complementarios: si fallan, mostramos los IDs reales.
         api.get(`/api/artistas/${pedido.artista_id}`)
           .then(artista => { if (activo) setReferencias(actual => ({ ...actual, artista })); }).catch(() => {});
@@ -72,11 +86,48 @@ function Detalle({ id, recibidos, base }) {
   const [errorMensaje, setErrorMensaje] = useState('');
   const [errorEstado, setErrorEstado] = useState('');
   const [aviso, setAviso] = useState('');
+  const navegar = useNavigate();
+  const ubicacion = useLocation();
+  // El acuerdo de precio tiene su propio pedido en curso, falla y confirmación (viene del pago si se acaba de pagar).
+  const [trabajando, setTrabajando] = useState(false);
+  const [errorPrecio, setErrorPrecio] = useState('');
+  const [avisoPrecio, setAvisoPrecio] = useState(ubicacion.state?.pagado ? 'Pago confirmado: el encargo quedó pagado.' : '');
+  const [cancelando, setCancelando] = useState(false);
   const campoMensaje = useRef(null);
   const volver = `${base}${recibidos ? '?recibidos' : ''}`;
   const { encargo, error } = datos;
   const permisos = permisosEncargo(encargo, usuario, perfilArtista);
   const permitido = permisos.puedeVer;
+
+  // El estado, el precio y los mensajes los cambian el cliente y el artista desde sus pantallas: mientras esta
+  // está abierta se vuelven a pedir cada tanto, sin mostrar "cargando" ni tocar lo que se está escribiendo.
+  // Solo con la pestaña a la vista, y en pausa mientras se envía o se guarda algo (así una respuesta vieja no
+  // pisa lo que se acaba de hacer). Si un pedido falla se ignora: el próximo lo reintenta.
+  const ocupado = enviando || guardando || trabajando;
+  const hayEncargo = Boolean(datos.encargo);
+  useEffect(() => {
+    if (!hayEncargo || ocupado) return;
+    let activo = true;
+    let enCurso = false;
+    const intervalo = setInterval(() => {
+      if (enCurso || document.visibilityState !== 'visible') return;
+      enCurso = true;
+      let pedido;
+      api.get(`/api/encargos/${id}`)
+        .then(respuesta => {
+          pedido = respuesta;
+          return pedido && !esAdmin ? pedirMensajes(id) : [];
+        })
+        .then(mensajes => {
+          // Un encargo sin mensajes responde vacío: eso es una lista vacía, no una falla.
+          if (!activo || !pedido) return;
+          setDatos(actual => ({ ...actual, encargo: { ...pedido, mensajes: enOrdenDeLectura(lista(mensajes)) } }));
+        })
+        .catch(() => {})
+        .finally(() => { enCurso = false; });
+    }, CADA_CUANTO_SE_ACTUALIZA);
+    return () => { activo = false; clearInterval(intervalo); };
+  }, [id, esAdmin, hayEncargo, ocupado]);
 
   function enviar(evento) {
     evento.preventDefault();
@@ -116,6 +167,38 @@ function Detalle({ id, recibidos, base }) {
       })
       .catch(error => setErrorEstado(error.message))
       .finally(() => setGuardando(false));
+  }
+
+  function actualizarEncargo(respuesta) {
+    setDatos(actual => ({ ...actual, encargo: { ...respuesta, mensajes: actual.encargo.mensajes } }));
+  }
+
+  // Los tres pasos del acuerdo (proponer precio, aceptarlo y cancelar) se piden igual: uno a la vez.
+  function pedirAcuerdo(pedido, confirmacion) {
+    if (trabajando) return;
+    setTrabajando(true);
+    setErrorPrecio('');
+    setAvisoPrecio('');
+    pedido
+      .then(respuesta => {
+        if (!respuesta) return;
+        actualizarEncargo(respuesta);
+        setAvisoPrecio(confirmacion);
+      })
+      .catch(error => setErrorPrecio(error.message))
+      .finally(() => { setTrabajando(false); setCancelando(false); });
+  }
+
+  function definirPrecio(valor) {
+    pedirAcuerdo(api.patch(`/api/encargos/${encargo.id}/precio`, { precio_acordado: valor }), 'Precio guardado: el cliente ya lo ve.');
+  }
+
+  function aceptarPrecio() {
+    pedirAcuerdo(api.post(`/api/encargos/${encargo.id}/aceptar-precio`), 'Aceptaste el precio: el encargo quedó aprobado y el precio ya no cambia.');
+  }
+
+  function cancelarEncargo() {
+    pedirAcuerdo(api.patch(`/api/encargos/${encargo.id}/estado`, { nuevoEstado: 'CANCELADO' }), 'El encargo fue cancelado.');
   }
 
   if (cargando) return <main className="seccion"><Estado tipo="cargando" /></main>;
@@ -162,8 +245,8 @@ function Detalle({ id, recibidos, base }) {
         <div className="aviso detalle-aviso">
           <span className="catalog-number cartela-num">Vista de {esAdmin ? 'administración' : esArtista ? 'artista' : 'cliente'}</span>
           <p className="body-sm detalle-texto">
-            {esAdmin ? 'Consulta de solo lectura. Los mensajes son privados de los participantes.' : esArtista ? 'Sos el artista de este encargo: podés actualizar su estado.'
-              : 'Podés escribir mensajes; el estado lo cambia el artista del encargo.'}
+            {esAdmin ? 'Consulta de solo lectura. Los mensajes son privados de los participantes.' : esArtista ? 'Sos el artista de este encargo: proponés el precio y actualizás su estado.'
+              : 'Podés escribir mensajes, aceptar el precio que proponga el artista y pagar cuando el encargo esté terminado.'}
           </p>
         </div>
         <hr className="divisor" />
@@ -194,12 +277,33 @@ function Detalle({ id, recibidos, base }) {
           ) : (
             <>
               <div className="entre detalle-estado"><span className="muted">Estado del encargo</span><EstadoEncargo estado={encargo.estado_encargo} /></div>
-              <p className="body-sm muted detalle-texto">{esAdmin ? 'Consulta de solo lectura.' : permitidos.length === 0
-                ? 'No hay cambios de estado disponibles desde esta pantalla.'
-                : 'Solo el artista puede cambiar el estado.'}</p>
+              <p className="body-sm muted detalle-texto">{esAdmin ? 'Consulta de solo lectura.' : permisos.puedeCancelar
+                ? 'El artista avanza el estado del encargo; vos podés cancelarlo mientras esté pendiente: una vez que aceptás el precio ya no se cancela.'
+                : permitidos.length === 0
+                  ? 'No hay cambios de estado disponibles desde esta pantalla.'
+                  : 'Solo el artista puede cambiar el estado.'}</p>
+              {permisos.puedeCancelar && <Boton tipo="secundario" onClick={() => setCancelando(true)}>Cancelar encargo</Boton>}
             </>
           )}
         </section>
+
+        <div style={{ marginTop: 'var(--lg)' }}>
+          <AcuerdoPrecio
+            estado={encargo.estado_encargo}
+            precio={encargo.precio_acordado}
+            esCliente={permisos.esCliente}
+            esArtista={permisos.esArtista}
+            puedeDefinir={permisos.puedeDefinirPrecio}
+            puedeAceptar={permisos.puedeAceptarPrecio}
+            puedePagar={permisos.puedePagar}
+            ocupado={trabajando}
+            error={errorPrecio}
+            aviso={avisoPrecio}
+            onDefinir={definirPrecio}
+            onAceptar={aceptarPrecio}
+            onPagar={() => navegar(`/encargos/${encargo.id}/pagar`)}
+          />
+        </div>
 
         {permisos.puedeVerMensajes && <section className="detalle-mensajes" aria-labelledby="titulo-mensajes">
           <h2 id="titulo-mensajes" className="headline-md">Mensajes</h2>
@@ -234,6 +338,16 @@ function Detalle({ id, recibidos, base }) {
           </form>}
           <p className="body-sm detalle-confirmacion" role="status">{aviso}</p>
         </section>}
+        {cancelando && (
+          <Confirmacion
+            titulo="¿Cancelar el encargo?"
+            mensaje="El encargo se cancela y no se puede retomar. La conversación queda a la vista."
+            textoConfirmar="Cancelar encargo"
+            onConfirmar={cancelarEncargo}
+            onCancelar={() => setCancelando(false)}
+            ocupado={trabajando}
+          />
+        )}
       </div>
     </main>
   );
