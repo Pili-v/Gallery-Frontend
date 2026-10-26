@@ -542,7 +542,7 @@ const FormularioObra = ({ id }) => {
         <div className="seccion">
             <div className="contenido col-media">
                 <h1 className="headline-lg">{editando ? "Editar obra" : "Publicar obra"}</h1>
-                <p className="body-lg muted" style={{ margin: "var(--xs) 0 var(--xl)" }}>
+                <p className="body-lg muted">
                     {editando
                         ? "Cambiá los datos de la obra, sus variantes o sus fotos."
                         : "Primero la obra, después sus variantes y sus fotos."}

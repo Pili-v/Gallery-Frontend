@@ -150,7 +150,7 @@ export default function DetalleObra() {
 
         <div className="detalle-info apilado">
           <div>
-            <h1 className="headline-lg" style={{ marginTop: "var(--xs)" }}>{obra.nombre_obra}</h1>
+            <h1 className="headline-lg" style={{ margin: "var(--xs) 0 0" }}>{obra.nombre_obra}</h1>
 
             <Link to={"/artista/" + obra.artista_id} className="vendedor" style={{ marginTop: "var(--sm)", textDecoration: "none" }}>
               <span className="avatar">{(artista?.nombre_artistico ?? "A")[0]}</span>

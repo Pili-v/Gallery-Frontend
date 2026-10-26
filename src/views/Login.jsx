@@ -107,7 +107,6 @@ const Login = () => {
 
                 <p
                     className="body-lg muted centro"
-                    style={{ margin: "var(--xs) 0 var(--xl)" }}
                 >
                     Entrá para comprar o para publicar tu obra.
                 </p>

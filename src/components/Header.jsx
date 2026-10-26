@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Link, NavLink, useNavigate } from "react-router-dom"
 import { getUsuario, getRol, cerrarSesion } from "../api/sesion"
 
@@ -7,6 +8,9 @@ const Header = () => {
     const usuario = getUsuario()
     const rol = getRol()
     const navegar = useNavigate()
+
+    // En pantallas angostas el menú se esconde detrás de un botón (ver .header-menu-boton en atelier.css).
+    const [abierto, setAbierto] = useState(false)
 
     const menus = {
         visitante: [["Catálogo", "/"], ["Artistas", "/artistas"], ["Ingresar", "/login"]],
@@ -40,7 +44,11 @@ const Header = () => {
                     <Link to="/" className="header-marca" style={{ textDecoration: "none", color: "inherit" }}>
                         Atelier&nbsp;Attack
                     </Link>
-                    <nav className="header-nav">
+                    <button type="button" className="header-menu-boton" aria-expanded={abierto} aria-controls="menu-principal"
+                        onClick={() => setAbierto(!abierto)}>
+                        {abierto ? "Cerrar" : "Menú"}
+                    </button>
+                    <nav id="menu-principal" className={"header-nav" + (abierto ? " abierto" : "")} onClick={() => setAbierto(false)}>
                         {links.map((link, index) => (
                             <NavLink key={index} to={link[1]}
                                 className={({ isActive }) => "nav-link" + (isActive ? " activo" : "")}>

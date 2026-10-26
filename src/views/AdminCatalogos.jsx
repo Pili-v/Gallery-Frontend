@@ -356,11 +356,10 @@ const AdminCatalogos = () => {
     ]
 
     return (
-        <div className="seccion" style={{ paddingTop: "var(--xl)" }}>
+        <div className="seccion">
             <div className="contenido">
 
-                {/* El espacio sobre el título es el mismo que hay entre el título y las pestañas. */}
-                <h1 className="headline-lg" style={{ marginBottom: "var(--xl)" }}>Catálogos</h1>
+                <h1 className="headline-lg titulo-oculto">Catálogos</h1>
 
                 <nav className="pestanias" aria-label="Catálogos" style={{ marginBottom: "var(--lg)" }}>
                     {pestanias.map((item) => (

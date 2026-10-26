@@ -172,7 +172,6 @@ const Registro = () => {
 
                 <p
                     className="body-lg muted centro"
-                    style={{ margin: "var(--xs) 0 var(--xl)" }}
                 >
                     Completá tus datos para registrarte.
                 </p>

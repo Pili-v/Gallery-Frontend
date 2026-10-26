@@ -10,7 +10,6 @@ import Registro from "./views/Registro"
 import MiCuenta from "./views/MiCuenta"
 import QuieroPublicar from "./views/QuieroPublicar"
 import Carrito from "./views/Carrito"
-import ConfirmarCompra from "./views/ConfirmarCompra"
 import Pago from "./views/Pago"
 import CompraConfirmada from "./views/CompraConfirmada"
 import MisCompras from "./views/MisCompras"
@@ -57,7 +56,6 @@ const App = () => {
 
           {/* Comprar */}
           <Route path="/carrito" element={<RutaProtegida roles={COMPRA}><Carrito /></RutaProtegida>} />
-          <Route path="/checkout" element={<RutaProtegida roles={COMPRA}><ConfirmarCompra /></RutaProtegida>} />
           <Route path="/checkout/pago" element={<RutaProtegida roles={COMPRA}><Pago /></RutaProtegida>} />
           <Route path="/compra/:id" element={<RutaProtegida roles={COMPRA}><CompraConfirmada /></RutaProtegida>} />
           <Route path="/encargos/nuevo" element={<RutaProtegida roles={COMPRA}><EncargoNuevo /></RutaProtegida>} />

@@ -281,14 +281,7 @@ export default function Catalogo() {
   if (cargandoObras) {
     resultados = <Estado tipo="cargando" />;
   } else if (aviso && aviso.deFiltro) {
-    resultados = (
-      <div className="aviso apilado">
-        <p className="body-lg">{aviso.mensaje ?? mensajeSinResultados()}</p>
-        <div>
-          <Boton tipo="primario" onClick={quitarFiltros}>Quitar filtros</Boton>
-        </div>
-      </div>
-    );
+    resultados = <Estado tipo="vacio" mensaje={aviso.mensaje ?? mensajeSinResultados()} accion="Quitar filtros" onAccion={quitarFiltros} />;
   } else if (aviso) {
     resultados = (
       <Estado tipo="error" mensaje={aviso.mensaje} accion="Reintentar" onAccion={() => setIntento((n) => n + 1)} />
@@ -372,13 +365,8 @@ export default function Catalogo() {
             <button type="submit" className="boton boton-secundario">Buscar</button>
           </form>
 
-          {/* Estilos (salen de la API): se pueden elegir varios. Los filtros quedan siempre visibles. */}
-          <div style={{ marginBottom: "var(--lg)" }}>
-            <FiltroEstilos estilos={estilos} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
-          </div>
-
-          {/* Precio */}
-          <div className="fila" style={{ marginBottom: "var(--sm)" }}>
+          {/* Precio y estilos (salen de la API; se pueden elegir varios): los filtros quedan siempre visibles. */}
+          <div className="fila" style={{ marginBottom: "var(--sm)", flexWrap: "wrap" }}>
             <span className="cartela-meta">PRECIO</span>
             <input
               className="input"
@@ -400,6 +388,7 @@ export default function Catalogo() {
               onChange={(e) => setPrecioMax(e.target.value)}
             />
             <Boton tipo="secundario" onClick={aplicarFiltroPrecio}>Aplicar</Boton>
+            <FiltroEstilos estilos={estilos} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
             {hayFiltros && <Boton tipo="secundario" onClick={quitarFiltros}>Quitar filtros</Boton>}
           </div>
           {errorPrecio && (

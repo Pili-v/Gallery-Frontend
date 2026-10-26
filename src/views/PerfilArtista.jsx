@@ -139,14 +139,14 @@ export default function PerfilArtista() {
   return (
     <div className="seccion">
       <div className="contenido apilado">
-        <header className="entre" style={{ alignItems: "flex-start" }}>
+        <header className="encabezado" style={{ alignItems: "flex-start" }}>
           <div className="vendedor" style={{ gap: "var(--md)" }}>
             <div className="avatar" style={{ width: 64, height: 64, fontSize: 24 }}>
               {(artista.nombre_artistico ?? "A")[0]}
             </div>
             <div>
               <h1 className="headline-lg">{artista.nombre_artistico}</h1>
-              <p className="body-lg muted" style={{ marginTop: "var(--xs)" }}>
+              <p className="body-lg muted">
                 {artista.acepta_encargos ? "Acepta encargos" : "Por ahora no acepta encargos"}
               </p>
             </div>

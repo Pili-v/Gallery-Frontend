@@ -45,7 +45,7 @@ const PagoEncargo = () => {
             <div className="seccion">
                 <div className="contenido col-media">
                     <h1 className="headline-lg">Pago del encargo</h1>
-                    <div style={{ margin: "var(--lg) 0" }}>
+                    <div style={{ marginBottom: "var(--lg)" }}>
                         <Estado tipo={error ? "error" : "vacio"} mensaje={motivo} />
                     </div>
                     <Boton tipo="secundario" onClick={volver}>Volver al encargo</Boton>
@@ -69,7 +69,6 @@ const PagoEncargo = () => {
             marcos={0}
             envio={0}
             total={precio}
-            nota="El pago es una simulación: no se procesa ni se guarda nada."
             onPagar={pagar}
             textoVolver="Volver al encargo"
             onVolver={volver}

@@ -21,6 +21,9 @@
 
   --xs: 4px;  --sm: 8px;  --md: 16px;
   --lg: 24px; --xl: 40px; --xxl: 64px;
+
+  /* El alto de todo control de formulario de una línea (campo, selector, desplegable y botón de una fila de filtros). */
+  --alto-control: 40px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -72,13 +75,46 @@ body {
 .pagina { background: var(--canvas); min-height: 100vh; display: flex; flex-direction: column; }
 /* Si el contenido es corto, el footer queda pegado abajo; si es largo, lo empuja. */
 .pagina > .footer { margin-top: auto; }
+/* Cada pantalla ocupa al menos todo el alto de la ventana menos el del header (lo mide Layout en --alto-cabecera):
+   el footer queda justo fuera de la vista y aparece apenas se scrollea. */
+.vista { min-height: calc(100vh - var(--alto-cabecera, 96px)); min-height: calc(100dvh - var(--alto-cabecera, 96px)); }
 .contenido { max-width: 1440px; margin: 0 auto; padding: 0 var(--xxl); }
-.seccion { padding: var(--xxl) 0; }
+.seccion { padding: var(--xl) 0 var(--xxl); }
 .seccion-sm { padding: var(--xl) 0; }
 .col-angosta { max-width: 460px; margin: 0 auto; }
 .col-media   { max-width: 760px; margin: 0 auto; }
 
+/* ---------- Encabezado de una pantalla ----------
+   El mismo espacio en todas, sin estilos sueltos en cada vista: 40 px sobre el título (el padding de .seccion) y
+   24 px hasta el contenido. Con subtítulo: 4 px entre el título y el subtítulo, y 24 px hasta el contenido.
+   Si el título comparte renglón con otra cosa (un botón, un sello), va dentro de un .encabezado. */
+.seccion h1.headline-lg { margin: 0 0 var(--lg); }
+.seccion h1.headline-lg:has(+ p) { margin-bottom: var(--xs); }
+.seccion h1.headline-lg + p { margin: 0 0 var(--lg); }
+.encabezado { display: flex; justify-content: space-between; align-items: center; gap: var(--md); flex-wrap: wrap; margin-bottom: var(--lg); }
+.encabezado h1.headline-lg, .encabezado h1.headline-lg:has(+ p) { margin-bottom: 0; }
+.encabezado h1.headline-lg + p { margin: var(--xs) 0 0; }
+.encabezado > :last-child { margin-left: auto; }
+/* Fila de filtros arriba de una lista (campos con etiqueta, botones y un contador): todos alineados por abajo. */
+.filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--md); margin-bottom: var(--lg); }
+.filtros .campo { margin-bottom: 0; min-width: 200px; }
+.filtros > .boton { height: var(--alto-control); padding-top: 0; padding-bottom: 0; } /* la misma altura que un campo */
+/* En las pantallas del menú el título no se ve en escritorio: la barra de arriba ya marca dónde estás. Sigue en el
+   HTML (lo leen los lectores de pantalla) y se muestra en pantallas angostas, donde el menú queda escondido. */
+@media (min-width: 1001px) {
+  .titulo-oculto {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+  .encabezado:not(:has(> :not(.titulo-oculto))) { display: none; }
+  .apilado > .titulo-oculto + * { margin-top: 0; }
+  /* Sin título arriba, el contenido va más pegado a la barra: el mismo espacio que hay entre bloques. */
+  .seccion:has(.titulo-oculto) { padding-top: var(--lg); }
+}
+
 @media (max-width: 720px) { .contenido { padding: 0 20px; } }
+/* Las tablas anchas se deslizan hacia los costados en lugar de ensanchar la página. */
+@media (max-width: 720px) { .tabla { display: block; overflow-x: auto; } }
 
 /* ---------- Componente: Header ---------- */
 .header { border-bottom: 1px solid var(--border); background: var(--canvas); }
@@ -95,6 +131,23 @@ body {
 .header-nav { display: flex; gap: var(--lg); margin-left: auto; align-items: center; }
 .header-nav a { color: var(--ink-muted); text-decoration: none; }
 .header-nav a.activo { color: var(--bordo); }
+/* El botón del menú solo se ve en pantallas angostas. */
+.header-menu-boton {
+  display: none; margin-left: auto; padding: 8px 14px; cursor: pointer;
+  background: transparent; border: 1px solid var(--border); color: var(--ink);
+  font: inherit; font-size: 13px; line-height: 16px; letter-spacing: .04em; font-weight: 500; text-transform: uppercase;
+}
+@media (max-width: 1000px) {
+  .header-franja, .header-barra { padding-left: 20px; padding-right: 20px; }
+  .header-franja { flex-wrap: wrap; gap: 0 var(--md); }
+  .header-franja span:last-child { display: none; }
+  .header-barra { height: auto; min-height: 64px; flex-wrap: wrap; gap: 0 var(--md); }
+  .header-menu-boton { display: block; }
+  .header-nav { display: none; flex-direction: column; align-items: flex-start; gap: 0; width: 100%; margin-left: 0; padding-bottom: var(--sm); }
+  .header-nav.abierto { display: flex; }
+  .header-nav > a:not(.avatar) { width: 100%; padding: 12px 0; border-top: 1px solid var(--border); }
+  .header-nav > .avatar { margin: var(--sm) 0; }
+}
 .avatar {
   width: 32px; height: 32px; border-radius: 50%;
   background: var(--carbon); color: var(--carbon-text);
@@ -109,7 +162,6 @@ body {
   color: var(--ink-muted);
 }
 .footer-bloque { display: flex; flex-direction: column; gap: 6px; }
-.footer-final { grid-column: 1 / -1; border-top: 1px solid var(--border); padding-top: var(--md); }
 @media (max-width: 720px) { .footer { grid-template-columns: 1fr; padding: var(--lg) 20px; } }
 
 /* ---------- Componente: Confirmacion ---------- */
@@ -187,12 +239,52 @@ body {
 /* ---------- Componente: Input y CampoFormulario ---------- */
 .campo { margin-bottom: var(--md); }
 .campo label { display: block; margin-bottom: var(--xs); }
-.input, .select, .textarea {
+.input, .select, .textarea, .desplegable-boton {
   width: 100%; padding: 10px 12px;
   background: var(--surface); border: 1px solid var(--border);
   color: var(--ink); font-family: inherit; font-size: 14px;
 }
-.input:focus, .select:focus, .textarea:focus { outline: none; border-color: var(--bordo); }
+.input, .select, .desplegable-boton { height: var(--alto-control); }
+.input:focus, .select:focus, .textarea:focus, .desplegable-boton:focus-visible { outline: none; border-color: var(--bordo); }
+
+/* ---------- Componente: Desplegable ----------
+   Lo que se abre debajo de un control: el botón que lo abre parece un selector, y el panel y sus opciones son los
+   mismos para todos (filtro de estilos, buscador de artistas...). El contenedor lleva position: relative.
+   .completo hace que el panel tenga el ancho del control (el buscador); sin eso, se ajusta a sus opciones. */
+.desplegable-boton {
+  width: auto; min-width: 200px; display: inline-flex; align-items: center; justify-content: space-between; gap: var(--md);
+  text-align: left; cursor: pointer;
+}
+.desplegable-boton.activo { border-color: var(--bordo); color: var(--bordo); }
+.desplegable-panel {
+  position: absolute; top: 100%; left: 0; z-index: 10; min-width: 100%;
+  margin-top: -1px; background: var(--surface); border: 1px solid var(--border);
+  box-shadow: 0 4px 12px rgb(28 28 25 / 8%);
+}
+.desplegable-panel.completo { right: 0; }
+.desplegable-lista { list-style: none; max-height: calc(6 * 40px); overflow-y: auto; overscroll-behavior: contain; }
+.desplegable-opcion {
+  display: flex; align-items: center; gap: var(--sm); min-height: 40px; padding: 0 var(--md);
+  font-size: 14px; line-height: 20px; cursor: pointer;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.desplegable-opcion:hover, .desplegable-opcion.activa, .desplegable-opcion[aria-selected="true"] { background: var(--canvas); color: var(--bordo); }
+/* La tarjeta de un artista en la lista: a la izquierda quién es (con sus datos y sus estilos en una línea de texto) y a la
+   derecha una muestra de su obra, en una columna de ancho fijo: todas las tarjetas quedan alineadas igual. */
+.tarjeta-artista {
+  display: grid; grid-template-columns: minmax(0, 1fr) 232px; align-items: center; gap: var(--lg);
+  padding: var(--lg); text-decoration: none; color: inherit;
+}
+.tarjeta-artista-estilos { margin-top: var(--xs); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tarjeta-artista-portadas { justify-content: flex-end; gap: var(--sm); }
+@media (max-width: 900px) {
+  .tarjeta-artista { grid-template-columns: minmax(0, 1fr); }
+  .tarjeta-artista-portadas { justify-content: flex-start; }
+}
+.desplegable-pie {
+  display: block; width: 100%; padding: var(--sm) var(--md); background: none; border: 0; border-top: 1px solid var(--border);
+  color: var(--bordo); cursor: pointer; font: inherit; font-size: 14px; text-align: left; text-decoration: underline;
+}
 .textarea { min-height: 96px; resize: vertical; }
 .campo-error { color: var(--error); margin-top: var(--xs); }
 .input.con-error { border-color: var(--error); }
@@ -205,8 +297,16 @@ body {
   padding: var(--md) 0; border-bottom: 1px solid var(--border);
 }
 .linea-mini { width: 72px; aspect-ratio: 4/5; border: 1px solid var(--border); }
+/* En pantallas angostas la cantidad y el importe pasan a una segunda línea, debajo del nombre. */
+@media (max-width: 600px) {
+  .linea-item { grid-template-columns: 72px 1fr auto; row-gap: var(--sm); }
+  .linea-item > .linea-mini { grid-row: 1 / span 2; }
+  .linea-item > :nth-child(3) { grid-column: 2; grid-row: 2; }
+  .linea-item > :nth-child(4) { grid-column: 3; grid-row: 2; min-width: 0 !important; }
+}
 .contador { display: inline-flex; border: 1px solid var(--border); background: var(--surface); }
 .contador button { width: 30px; height: 30px; border: 0; background: none; cursor: pointer; color: var(--ink); font-size: 15px; }
+.contador button:disabled { color: var(--ink-muted); opacity: .4; cursor: not-allowed; }
 .contador span { width: 34px; display: grid; place-items: center; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
 
 /* ---------- Componente: ResumenTotales ---------- */
@@ -541,17 +641,4 @@ body {
 
 /* ---------- Autocompletado de dirección ---------- */
 .autocompletar { position: relative; }
-.autocompletar-lista {
-  position: absolute; left: 0; right: 0; top: 100%; z-index: 20;
-  background: var(--surface); border: 1px solid var(--border);
-  max-height: 220px; overflow-y: auto;
-}
-.autocompletar-lista button {
-  display: block; width: 100%; text-align: left; cursor: pointer;
-  font: inherit; font-size: 13px; color: inherit;
-  padding: 8px var(--md); background: transparent; border: 0;
-  border-bottom: 1px solid var(--border);
-}
-.autocompletar-lista button:last-child { border-bottom: 0; }
-.autocompletar-lista button:hover { background: var(--canvas); }
 .autocompletar-buscando { font-size: 11px; letter-spacing: .06em; opacity: .55; }

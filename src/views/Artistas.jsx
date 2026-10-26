@@ -195,14 +195,7 @@ export default function Artistas() {
         (nombresEstilos.length === 1 ? "del estilo " : "de los estilos ") + nombresEstilos.join(" o ")
       );
     }
-    cuerpo = (
-      <div className="aviso apilado">
-        <p className="body-lg">No hay artistas {partes.join(" ")}.</p>
-        <div>
-          <Boton tipo="primario" onClick={quitarFiltros}>Quitar filtros</Boton>
-        </div>
-      </div>
-    );
+    cuerpo = <Estado tipo="vacio" mensaje={"No hay artistas " + partes.join(" ") + "."} accion="Quitar filtros" onAccion={quitarFiltros} />;
   } else if (vacio || artistas.length === 0) {
     cuerpo = <Estado tipo="vacio" mensaje="Todavía no hay artistas registrados." />;
   } else {
@@ -215,20 +208,10 @@ export default function Artistas() {
             <Link
               key={artista.id}
               to={"/artista/" + artista.id}
-              className="cartela"
-              style={{
-                padding: "var(--lg)",
-                textDecoration: "none",
-                color: "inherit",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: "var(--lg)",
-                flexWrap: "wrap"
-              }}
+              className="cartela tarjeta-artista"
             >
               {/* Quién es */}
-              <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+              <div style={{ minWidth: 0 }}>
                 <div className="vendedor" style={{ gap: "var(--md)" }}>
                   <span className="avatar">{(artista.nombre_artistico ?? "A")[0]}</span>
                   <span className="title-work">{artista.nombre_artistico}</span>
@@ -238,26 +221,17 @@ export default function Artistas() {
                   {" · "}
                   {artista.acepta_encargos ? "Acepta encargos" : "Por ahora no acepta encargos"}
                 </p>
-              </div>
-
-              {/* Qué estilos abarca */}
-              <div className="fila" style={{ flex: "1 1 200px", flexWrap: "wrap", gap: "var(--xs)" }}>
-                {resumen.estilosVisibles.length === 0 ? (
-                  <span className="cartela-meta">Todavía sin obras publicadas</span>
-                ) : (
-                  <>
-                    {resumen.estilosVisibles.map((nombre) => (
-                      <span key={nombre} className="chip">{nombre}</span>
-                    ))}
-                    {resumen.estilosOcultos > 0 && (
-                      <span className="cartela-meta">+{resumen.estilosOcultos}</span>
-                    )}
-                  </>
+                {/* Sus estilos, en una línea de texto: sin cajas, siempre en el mismo lugar de la tarjeta. */}
+                {resumen.estilosVisibles.length > 0 && (
+                  <p className="cartela-meta tarjeta-artista-estilos">
+                    {resumen.estilosVisibles.join(" · ")}
+                    {resumen.estilosOcultos > 0 && " · +" + resumen.estilosOcultos}
+                  </p>
                 )}
               </div>
 
               {/* Muestra de su obra */}
-              <div className="fila" style={{ gap: "var(--sm)" }}>
+              <div className="fila tarjeta-artista-portadas">
                 {resumen.portadas.map((portada) => (
                   <img
                     key={portada.id}
@@ -282,15 +256,15 @@ export default function Artistas() {
   return (
     <div className="seccion">
       <div className="contenido apilado">
-        <div>
+        <div className="titulo-oculto">
           <h1 className="headline-lg">Artistas</h1>
-          <p className="body-lg muted" style={{ marginTop: "var(--xs)" }}>
+          <p className="body-lg muted">
             Quienes pintan y venden su obra en la galería.
           </p>
         </div>
 
         {/* Buscador por nombre artístico (con sugerencias) y filtro por estilos (siempre visibles) */}
-        <form className="fila" style={{ alignItems: "flex-end" }} onSubmit={buscar} role="search">
+        <form className="filtros" onSubmit={buscar} role="search">
           <div style={{ flex: "1 1 280px", maxWidth: 420 }}>
             <BuscadorArtista
               key={reinicio}
@@ -303,10 +277,9 @@ export default function Artistas() {
             />
           </div>
           <button type="submit" className="boton boton-secundario">Buscar</button>
+          <FiltroEstilos estilos={estilos} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
           {hayFiltros && <Boton type="button" tipo="secundario" onClick={quitarFiltros}>Quitar filtros</Boton>}
         </form>
-
-        <FiltroEstilos estilos={estilos} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
 
         {cuerpo}
 

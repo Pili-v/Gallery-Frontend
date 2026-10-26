@@ -28,7 +28,7 @@ const QuieroPublicar = () => {
             <div className="seccion">
                 <div className="contenido col-media">
                     <h1 className="headline-lg">{esAdmin ? "No necesitás un perfil de artista" : "Ya podés publicar tus obras"}</h1>
-                    <p className="body-lg muted" style={{ margin: "var(--xs) 0 var(--lg)" }}>
+                    <p className="body-lg muted">
                         {esAdmin
                             ? "Como administrador ya tenés todos los permisos."
                             : "Tu cuenta ya tiene perfil de artista."}
@@ -67,7 +67,7 @@ const QuieroPublicar = () => {
         <div className="seccion">
             <div className="contenido col-media">
                 <h1 className="headline-lg">¿Querés publicar tus obras?</h1>
-                <p className="body-lg muted" style={{ margin: "var(--xs) 0 var(--lg)" }}>
+                <p className="body-lg muted">
                     Creá tu perfil de artista y vendé tu obra original, directo a quien la compra.
                 </p>
 

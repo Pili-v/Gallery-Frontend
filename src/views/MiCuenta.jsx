@@ -7,6 +7,8 @@ import Estado from "../components/Estado"
 import { api } from "../api/cliente"
 import {
     getToken,
+    getUsuario,
+    getPerfilArtista,
     guardarSesion
 } from "../api/sesion"
 
@@ -230,15 +232,12 @@ const MiCuenta = () => {
             "/api/usuarios/me",
             datos
         )
-            .then(() => {
+            .then((usuarioActualizado) => {
 
-                return api.get("/api/usuarios/me")
-            })
-            .then((perfil) => {
-
+                // El back responde con el usuario ya guardado: alcanza para actualizar la sesión, sin volver a pedir el perfil.
                 guardarSesion(
                     getToken(),
-                    perfil
+                    { usuario: usuarioActualizado, perfil_artista: getPerfilArtista() }
                 )
 
                 setMensaje(
@@ -285,15 +284,12 @@ const MiCuenta = () => {
                 acepta_encargos: artista.acepta_encargos
             }
         )
-            .then(() => {
+            .then((perfilActualizado) => {
 
-                return api.get("/api/usuarios/me")
-            })
-            .then((perfil) => {
-
+                // Igual que arriba: el back devuelve el perfil de artista ya guardado.
                 guardarSesion(
                     getToken(),
-                    perfil
+                    { usuario: getUsuario(), perfil_artista: perfilActualizado }
                 )
 
                 setMensajeArtista(
@@ -373,7 +369,6 @@ const MiCuenta = () => {
 
                 <p
                     className="body-lg muted centro"
-                    style={{ margin: "var(--xs) 0 var(--xl)" }}
                 >
                     Consultá y actualizá tus datos personales.
                 </p>

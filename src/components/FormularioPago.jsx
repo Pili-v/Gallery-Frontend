@@ -150,7 +150,7 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
             <div className="contenido">
 
                 <h1 className="headline-lg">{titulo}</h1>
-                <p className="body-lg muted" style={{ margin: "var(--xs) 0 var(--xl)" }}>
+                <p className="body-lg muted">
                     {subtitulo}
                 </p>
 

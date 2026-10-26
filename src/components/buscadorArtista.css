@@ -1,20 +1,2 @@
 .buscador-artista-control { position: relative; }
-.buscador-artista-desplegable {
-  position: absolute; top: 100%; left: 0; right: 0; z-index: 10;
-  background: var(--surface); border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgb(28 28 25 / 8%);
-}
-.buscador-artista-resultados {
-  list-style: none; max-height: calc(6 * 44px); overflow-y: auto;
-  overscroll-behavior: contain;
-}
-.buscador-artista-opcion {
-  height: 44px; padding: 12px var(--md); cursor: pointer;
-  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
-  font-size: 14px; line-height: 20px;
-}
-.buscador-artista-opcion:hover, .buscador-artista-opcion.activa,
-.buscador-artista-opcion[aria-selected="true"] {
-  background: var(--canvas); color: var(--bordo);
-}
 .buscador-artista-vacio { padding: var(--md); }

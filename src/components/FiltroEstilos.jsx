@@ -34,21 +34,22 @@ const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
             <div className="filtro-estilos-control" onBlur={alSalir} onKeyDown={alTeclear}>
                 <button
                     type="button"
-                    className={"chip " + (seleccionados.length > 0 ? "activo" : "")}
+                    className={"desplegable-boton " + (seleccionados.length > 0 ? "activo" : "")}
                     aria-haspopup="true"
                     aria-expanded={abierto}
                     onClick={() => setAbierto(!abierto)}
                 >
-                    Estilos{seleccionados.length > 0 ? " (" + seleccionados.length + ")" : ""} ▾
+                    <span>Estilos{seleccionados.length > 0 ? " (" + seleccionados.length + ")" : ""}</span>
+                    <span aria-hidden="true">▾</span>
                 </button>
 
                 {abierto && (
                     // El mouseDown no saca el foco del botón: así el panel no se cierra al tocar una casilla.
-                    <div className="filtro-estilos-panel" role="group" aria-label="Elegir estilos" onMouseDown={(e) => e.preventDefault()}>
-                        <ul className="filtro-estilos-lista">
+                    <div className="desplegable-panel" role="group" aria-label="Elegir estilos" onMouseDown={(e) => e.preventDefault()}>
+                        <ul className="desplegable-lista">
                             {estilos.map((estilo) => (
                                 <li key={estilo.id}>
-                                    <label className="filtro-estilos-opcion">
+                                    <label className="desplegable-opcion filtro-estilos-opcion">
                                         <input
                                             type="checkbox"
                                             checked={seleccionados.includes(estilo.id)}
@@ -60,7 +61,7 @@ const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
                             ))}
                         </ul>
                         {seleccionados.length > 0 && (
-                            <button type="button" className="filtro-estilos-limpiar" onClick={() => onCambiar([])}>
+                            <button type="button" className="desplegable-pie" onClick={() => onCambiar([])}>
                                 Limpiar selección
                             </button>
                         )}
