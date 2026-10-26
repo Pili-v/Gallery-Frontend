@@ -1,5 +1,9 @@
 .encargos-cabecera { margin-bottom: var(--lg); flex-wrap: wrap; }
 .encargos-pestanias { margin-bottom: var(--lg); }
+/* Las pestañas y el botón de pedir un encargo comparten renglón; la línea gris va solo bajo las pestañas, justo de su ancho. */
+.encargos-barra { display: flex; align-items: center; gap: var(--md); margin-bottom: var(--lg); }
+.encargos-barra .encargos-pestanias { flex: 0 1 auto; margin-bottom: 0; }
+.encargos-barra > .boton { flex-shrink: 0; margin-left: auto; }
 .encargos-pestanias .pestania {
   background: transparent;
   border: 0;
@@ -8,7 +12,7 @@
 }
 .encargos-pestanias .pestania.activa { border-bottom-color: var(--bordo); }
 .encargos-tabla { overflow-x: auto; }
-.encargos-tabla .tabla { min-width: 680px; }
+.encargos-tabla .tabla { display: table; min-width: 680px; } /* ya tiene su propio contenedor con scroll */
 .encargos-tabla .sello { white-space: nowrap; }
 .encargos-tabla .boton-primario { color: #fff; white-space: nowrap; }
 .encargos-tabla a { color: var(--bordo); text-underline-offset: 3px; }
@@ -27,8 +31,8 @@
   border: 0;
 }
 @media (max-width: 600px) {
-  .encargos-cabecera { align-items: flex-start; }
-  .encargos-cabecera > .boton { width: 100%; }
+  .encargos-barra { flex-wrap: wrap; }
+  .encargos-barra > .boton { width: 100%; }
   .encargos-pestanias .pestania { flex: 1; padding-inline: var(--sm); }
 }
 

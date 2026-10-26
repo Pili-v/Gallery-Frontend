@@ -71,13 +71,13 @@ export default function BuscadorArtista({ artistas, value, onChange, onSearch, e
           }}
           onKeyDown={teclado} />
         {abierto && (
-          <div className="buscador-artista-desplegable">
+          <div className="desplegable-panel completo">
             <ul id={id + '-resultados'} role="listbox" aria-label="Artistas disponibles"
-              className="buscador-artista-resultados" ref={lista}>
+              className="desplegable-lista" ref={lista}>
               {resultados.map((artista, indice) => (
                 <li key={artista.id} id={id + '-opcion-' + indice} role="option"
                   aria-selected={String(artista.id) === value}
-                  className={'buscador-artista-opcion' + (indice === activo ? ' activa' : '')}
+                  className={'desplegable-opcion' + (indice === activo ? ' activa' : '')}
                   title={artista.nombre}
                   onMouseDown={evento => evento.preventDefault()}
                   onClick={() => elegir(artista)}>

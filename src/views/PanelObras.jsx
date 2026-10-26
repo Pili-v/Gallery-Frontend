@@ -181,9 +181,9 @@ const PanelObras = () => {
     return (
         <div className="seccion">
             <div className="contenido">
-                <div className="entre" style={{ marginBottom: "var(--xl)" }}>
+                <div className="encabezado">
                     <div>
-                        <h1 className="headline-lg">Mis obras</h1>
+                        <h1 className="headline-lg titulo-oculto">Mis obras</h1>
                         {!cargando && obras.length > 0 && (
                             <p className="body-lg muted">
                                 {totalPaginas > 1 && totalObras + " obras · en esta página: "}

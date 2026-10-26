@@ -28,9 +28,9 @@ const LineaItem = ({ id, nombreObra, nombreTamanio, nombreMarco, cantidad, subto
             <div>
                 {editable
                     ? <div className="contador">
-                        <button onClick={() => onCambiarCantidad(id, cantidad - 1)}>−</button>
+                        <button disabled={cantidad <= 1} aria-label="Restar una unidad" onClick={() => onCambiarCantidad(id, cantidad - 1)}>−</button>
                         <span>{cantidad}</span>
-                        <button onClick={() => onCambiarCantidad(id, cantidad + 1)}>+</button>
+                        <button aria-label="Sumar una unidad" onClick={() => onCambiarCantidad(id, cantidad + 1)}>+</button>
                     </div>
                     : <span className="cartela-meta">× {cantidad}</span>}
             </div>

@@ -1,21 +1,6 @@
 .filtro-estilos { flex-wrap: wrap; gap: var(--sm); align-items: center; }
 .filtro-estilos-control { position: relative; }
-.filtro-estilos-panel {
-  position: absolute; top: 100%; left: 0; z-index: 10; min-width: 220px;
-  margin-top: var(--xs); padding: var(--sm);
-  background: var(--surface); border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgb(28 28 25 / 8%);
-}
-.filtro-estilos-lista {
-  list-style: none; margin: 0; padding: 0;
-  max-height: calc(6 * 40px); overflow-y: auto; overscroll-behavior: contain;
-}
-.filtro-estilos-opcion {
-  display: flex; align-items: center; gap: var(--sm);
-  min-height: 40px; padding: 0 var(--xs); cursor: pointer; font-size: 14px;
-}
-.filtro-estilos-opcion:hover { background: var(--canvas); color: var(--bordo); }
-.filtro-estilos-limpiar {
-  margin-top: var(--sm); padding: var(--xs); background: none; border: 0;
-  color: var(--bordo); cursor: pointer; font-size: 14px; text-decoration: underline;
-}
+.filtro-estilos-opcion { cursor: pointer; }
+.filtro-estilos-opcion input { accent-color: var(--bordo); }
+/* Los estilos elegidos, al lado del desplegable: del mismo alto que él. */
+.filtro-estilos .chip { display: inline-flex; align-items: center; height: var(--alto-control); padding-top: 0; padding-bottom: 0; }

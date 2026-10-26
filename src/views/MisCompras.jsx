@@ -37,26 +37,26 @@ const MisCompras = () => {
     return (
         <div className="seccion">
             <div className="contenido">
-                <h1 className="headline-lg">Mis compras</h1>
-                <p className="body-lg muted" style={{ marginTop: "var(--xs)" }}>
+                <h1 className="headline-lg titulo-oculto">Mis compras</h1>
+                <p className="body-lg muted titulo-oculto">
                     Las compras que hiciste.
                 </p>
 
                 {/* El título está siempre; solo lo que viene del back espera. */}
                 {cargando ? (
-                    <div style={{ marginTop: "var(--lg)" }}>
+                    <div>
                         <Estado tipo="cargando" />
                     </div>
                 ) : error ? (
-                    <div style={{ marginTop: "var(--lg)" }}>
+                    <div>
                         <Estado tipo="error" mensaje={error} />
                     </div>
                 ) : compras.length === 0 ? (
-                    <div style={{ marginTop: "var(--lg)" }}>
+                    <div>
                         <Estado tipo="vacio" mensaje="Todavía no hiciste ninguna compra." />
                     </div>
                 ) : (
-                    <table className="tabla" style={{ marginTop: "var(--lg)" }}>
+                    <table className="tabla">
                         <thead>
                             <tr>
                                 <th>Compra</th>

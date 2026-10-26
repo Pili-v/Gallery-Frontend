@@ -101,27 +101,27 @@ const Ventas = () => {
     return (
         <div className="seccion">
             <div className="contenido">
-                <h1 className="headline-lg">Mis ventas</h1>
-                <p className="body-lg muted" style={{ marginTop: "var(--xs)" }}>
+                <h1 className="headline-lg titulo-oculto">Mis ventas</h1>
+                <p className="body-lg muted titulo-oculto">
                     Las facturas emitidas a tu nombre.
                 </p>
 
                 {/* El título está siempre; solo lo que viene del back espera. */}
                 {cargando ? (
-                    <div style={{ marginTop: "var(--lg)" }}>
+                    <div>
                         <Estado tipo="cargando" />
                     </div>
                 ) : error ? (
-                    <div style={{ marginTop: "var(--lg)" }}>
+                    <div>
                         <Estado tipo="error" mensaje={error} />
                     </div>
                 ) : facturas.length === 0 ? (
-                    <div style={{ marginTop: "var(--lg)" }}>
+                    <div>
                         <Estado tipo="vacio" mensaje="Todavía no vendiste ninguna obra." />
                     </div>
                 ) : (
                     <>
-                        <div className="fila" style={{ margin: "var(--lg) 0" }}>
+                        <div className="fila" style={{ marginBottom: "var(--lg)" }}>
                             <div className="cartela" style={{ padding: "var(--md) var(--lg)" }}>
                                 <p className="catalog-number muted">Vendido</p>
                                 <p className="price-lg">{pesos(totalVendido)}</p>

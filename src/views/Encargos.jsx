@@ -79,25 +79,22 @@ function ListaEncargos({ base, encargoCreado, navigate, parametros, setParametro
   return (
     <main className="seccion encargos-pagina">
       <div className="contenido">
-        <div className="entre encargos-cabecera">
-          <div>
-            <h1 className="headline-lg">Encargos</h1>
-            <p className="body-lg muted">{esAdmin ? 'Todos los encargos.' : puedeRecibir ? 'Los que pediste y los que te pidieron.' : 'Los que pediste'}</p>
-          </div>
-          {esAdmin && <div className="encargos-buscador">
-            <BuscadorArtista artistas={artistas} value={artistaElegido}
-              onChange={setArtistaElegido} onSearch={setBusquedaArtista}
-              required={false} disabled={cargando || Boolean(datos.error)} />
-          </div>}
-          {puedePedir && !verRecibidos && <Boton onClick={() => navigate(`${base}/nuevo`)}>Pedir un encargo</Boton>}
-        </div>
+        <h1 className="headline-lg titulo-oculto">Encargos</h1>
+        {esAdmin && <div className="encargos-buscador" style={{ marginBottom: 'var(--lg)' }}>
+          <BuscadorArtista artistas={artistas} value={artistaElegido}
+            onChange={setArtistaElegido} onSearch={setBusquedaArtista}
+            required={false} disabled={cargando || Boolean(datos.error)} />
+        </div>}
         {encargoCreado && <p className="aviso encargos-nota" role="status">El encargo Nº {encargoCreado} se envió al artista.</p>}
-        {!esAdmin && <nav className="pestanias encargos-pestanias" aria-label="Vista de encargos">
-          <button disabled={!puedePedir} type="button" className={`pestania${verRecibidos ? '' : ' activa'}`}
-            aria-pressed={!verRecibidos} onClick={() => cambiarVista(false)}>Los que pedí</button>
-          {puedeRecibir && <button type="button" className={`pestania${verRecibidos ? ' activa' : ''}`}
-            aria-pressed={verRecibidos} onClick={() => cambiarVista(true)}>Los que me pidieron</button>}
-        </nav>}
+        {!esAdmin && <div className="encargos-barra">
+          <nav className="pestanias encargos-pestanias" aria-label="Vista de encargos">
+            <button disabled={!puedePedir} type="button" className={`pestania${verRecibidos ? '' : ' activa'}`}
+              aria-pressed={!verRecibidos} onClick={() => cambiarVista(false)}>Los que pedí</button>
+            {puedeRecibir && <button type="button" className={`pestania${verRecibidos ? ' activa' : ''}`}
+              aria-pressed={verRecibidos} onClick={() => cambiarVista(true)}>Los que me pidieron</button>}
+          </nav>
+          {puedePedir && !verRecibidos && <Boton onClick={() => navigate(`${base}/nuevo`)}>Pedir un encargo</Boton>}
+        </div>}
         {cargando ? <Estado tipo="cargando" /> : datos.error ? (
           <div className="apilado">
             <Estado tipo="error" mensaje={datos.error} />
@@ -126,10 +123,10 @@ function ListaEncargos({ base, encargoCreado, navigate, parametros, setParametro
                       <td>{lienzos.find(item => item.valor === encargo.tipo_lienzo)?.nombre}</td>
                       <td>{new Date(encargo.fecha_creacion_encargo).toLocaleDateString('es-AR')}</td>
                       <td><EstadoEncargo estado={encargo.estado_encargo} /></td>
-                      <td><Boton aria-label={`${accion} encargo ${encargo.id}`}
-                        onClick={() => navigate(`${base}/${encargo.id}${verRecibidos ? '?recibidos' : ''}`)}>
+                      <td><a href="#" aria-label={`${accion} encargo ${encargo.id}`}
+                        onClick={evento => { evento.preventDefault(); navigate(`${base}/${encargo.id}${verRecibidos ? '?recibidos' : ''}`); }}>
                         {accion}
-                      </Boton></td>
+                      </a></td>
                     </tr>
                   );
                 })}

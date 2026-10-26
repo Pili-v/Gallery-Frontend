@@ -55,7 +55,7 @@ const CompraConfirmada = () => {
                 <p className="catalog-number cartela-num">
                     Compra Nº {String(compra.id).padStart(6, "0")}
                 </p>
-                <h1 className="headline-lg" style={{ margin: "var(--xs) 0" }}>Compra confirmada</h1>
+                <h1 className="headline-lg" style={{ marginTop: "var(--xs)" }}>Compra confirmada</h1>
                 <p className="body-lg muted">{fecha(compra.fecha_compra)}</p>
 
                 {/* De donde sale el total: las obras y, si eligio envio, el costo de envio. */}

@@ -231,7 +231,7 @@ function Detalle({ id, recibidos, base }) {
     <main className="seccion encargo-detalle">
       <div className="contenido col-media">
         <Link to={volver} className="detalle-volver body-sm">← Volver a encargos</Link>
-        <div className="entre detalle-cabecera">
+        <div className="encabezado detalle-cabecera">
           <div>
             <p className="catalog-number cartela-num">Encargo Nº {String(encargo.id).padStart(3, '0')}</p>
             <h1 className="headline-lg">{pintura} sobre {lienzo.toLowerCase()}, {tamanio.replace(/ cm$/, '')}</h1>

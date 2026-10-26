@@ -9,6 +9,7 @@ const Footer = () => {
             <div className="footer-bloque">
                 <span className="header-marca" style={{ fontSize: 18 }}>Atelier&nbsp;Attack</span>
                 <span className="body-sm">Obra original, directo del artista.</span>
+                <span className="catalog-number" style={{ marginTop: "var(--xs)" }}>© 2026 Atelier Attack</span>
             </div>
 
             <div className="footer-bloque">
@@ -24,8 +25,6 @@ const Footer = () => {
                 <span className="body-sm">Envío a domicilio o retiro en el local</span>
                 <span className="body-sm">Visa · Mastercard · Amex</span>
             </div>
-
-            <span className="footer-final catalog-number">© 2026 Atelier Attack</span>
         </footer>
     )
 }

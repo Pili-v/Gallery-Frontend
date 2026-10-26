@@ -175,11 +175,10 @@ const AdminUsuarios = () => {
     }
 
     return (
-        <div className="seccion" style={{ paddingTop: "var(--xl)" }}>
+        <div className="seccion">
             <div className="contenido">
 
-                {/* El espacio sobre el título es el mismo que hay entre el título y lo que sigue. */}
-                <h1 className="headline-lg" style={{ marginBottom: "var(--xl)" }}>
+                <h1 className="headline-lg titulo-oculto">
                     Usuarios y permisos
                 </h1>
 
