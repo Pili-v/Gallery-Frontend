@@ -26,7 +26,6 @@ const listaVacia = (promesa) =>
     })
 
 const Carrito = () => {
-
     // Estados locales de la pantalla.
     const [carrito, setCarrito] = useState(null)
     const [items, setItems] = useState([])
@@ -59,7 +58,9 @@ const Carrito = () => {
                 setItems(losItems)
                 // Solo las portadas de las obras que hay en el carrito, en un solo pedido
                 if (losItems.length === 0) return []
-                return listaVacia(api.get("/api/imagenes?portada=true&" + losItems.map((item) => "obraId=" + item.obra_id).join("&")))
+                return listaVacia(
+                    api.get("/api/imagenes?portada=true&" + losItems.map((item) => "obraId=" + item.obra_id).join("&"))
+                )
             })
             .then((lasImagenes) => setImagenes(lista(lasImagenes)))
             .catch((e) => setError(e.message))
@@ -93,11 +94,16 @@ const Carrito = () => {
             cantidad: cambio.cantidad
         })
             .then((actualizado) => {
-                if (vigente) setItems((previos) => previos.map((otro) => otro.id === cambio.itemId ? actualizado : otro))
+                if (vigente)
+                    setItems((previos) => previos.map((otro) => (otro.id === cambio.itemId ? actualizado : otro)))
             })
-            .catch((e) => { if (vigente) setError(e.message) })
+            .catch((e) => {
+                if (vigente) setError(e.message)
+            })
 
-        return () => { vigente = false }
+        return () => {
+            vigente = false
+        }
     }, [cambio, carrito])
 
     const quitarItem = (itemId) => {
@@ -128,7 +134,10 @@ const Carrito = () => {
         setError("")
         api.put("/api/carritos/" + carrito.id, { direccion_cliente: direccion })
             .then(() => navegar("/checkout/pago", { state: { tipoEntrega, items } }))
-            .catch((e) => { setError(e.message); setYendo(false) })
+            .catch((e) => {
+                setError(e.message)
+                setYendo(false)
+            })
     }
 
     // La miniatura: el ítem trae el obra_id y la foto sale de la lista de imágenes (su portada).
@@ -143,25 +152,36 @@ const Carrito = () => {
     const marcos = items.reduce((suma, item) => suma + item.precio_marco * item.cantidad, 0)
     const total = items.reduce((suma, item) => suma + item.subtotal, 0) + envio
 
-    if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>
+    if (cargando)
+        return (
+            <div className="seccion">
+                <div className="contenido">
+                    <Estado tipo="cargando" />
+                </div>
+            </div>
+        )
 
     return (
         <div className="seccion">
             <div className="contenido">
+                {error && (
+                    <div style={{ marginBottom: "var(--md)" }}>
+                        <Estado tipo="error" mensaje={error} />
+                    </div>
+                )}
 
-                {error && <div style={{ marginBottom: "var(--md)" }}><Estado tipo="error" mensaje={error} /></div>}
-
-                {items.length === 0
-                    ? <>
+                {items.length === 0 ? (
+                    <>
                         <h1 className="headline-lg titulo-oculto">Tu carrito</h1>
                         <Estado
                             tipo="vacio"
                             mensaje="Todavía no agregaste ninguna obra."
                             accion="Ir al catálogo"
-                            onAccion={() => navegar("/")} />
+                            onAccion={() => navegar("/")}
+                        />
                     </>
-
-                    : <div className="dos-columnas">
+                ) : (
+                    <div className="dos-columnas">
                         {/* El título y el subtítulo van arriba de la lista; el resumen arranca a su misma altura. */}
                         <div>
                             <h1 className="headline-lg titulo-oculto">Tu carrito</h1>
@@ -178,13 +198,23 @@ const Carrito = () => {
                                     imagen={fotoDe(item.obra_id)}
                                     editable={true}
                                     onCambiarCantidad={cambiarCantidad}
-                                    onQuitar={quitarItem} />
+                                    onQuitar={quitarItem}
+                                />
                             ))}
 
                             <div className="fila" style={{ marginTop: "var(--md)" }}>
-                                <Boton tipo="secundario" onClick={vaciarCarrito}>Vaciar carrito</Boton>
-                                <a href="#" className="body-sm" style={{ color: "var(--bordo)" }}
-                                    onClick={(e) => { e.preventDefault(); navegar("/") }}>
+                                <Boton tipo="secundario" onClick={vaciarCarrito}>
+                                    Vaciar carrito
+                                </Boton>
+                                <a
+                                    href="#"
+                                    className="body-sm"
+                                    style={{ color: "var(--bordo)" }}
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        navegar("/")
+                                    }}
+                                >
                                     Seguir mirando obras
                                 </a>
                             </div>
@@ -200,16 +230,24 @@ const Carrito = () => {
                             envio={envio}
                             total={total}
                             boton={yendo ? "Guardando..." : "Ir al pago"}
-                            onBoton={irAlPago}>
+                            onBoton={irAlPago}
+                        >
                             <EntregaCompra
                                 tipoEntrega={tipoEntrega}
                                 direccion={direccion}
                                 error={errorDireccion}
-                                onTipoEntrega={(tipo) => { setTipoEntrega(tipo); setErrorDireccion("") }}
-                                onDireccion={(texto) => { setDireccion(texto); setErrorDireccion("") }} />
+                                onTipoEntrega={(tipo) => {
+                                    setTipoEntrega(tipo)
+                                    setErrorDireccion("")
+                                }}
+                                onDireccion={(texto) => {
+                                    setDireccion(texto)
+                                    setErrorDireccion("")
+                                }}
+                            />
                         </ResumenTotales>
-                    </div>}
-
+                    </div>
+                )}
             </div>
         </div>
     )

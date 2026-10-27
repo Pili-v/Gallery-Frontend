@@ -5,7 +5,6 @@
 // Los ítems y el tipo de entrega llegan desde el carrito (por el estado de la navegación): no se vuelven a pedir.
 // Solo si alguien entra directo por la URL se piden acá.
 
-
 import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { api, lista } from "../api/cliente"
@@ -15,7 +14,6 @@ import FormularioPago from "../components/FormularioPago"
 import Estado from "../components/Estado"
 
 const Pago = () => {
-
     const usuario = getUsuario()
     const navegar = useNavigate()
     const ubicacion = useLocation()
@@ -46,14 +44,21 @@ const Pago = () => {
     }, [])
 
     // Quién compra sale del token, igual que en el backend.
-    const pagar = () => api.post("/api/checkout", { tipo_entrega: tipoEntrega })
-        .then((compra) => navegar("/compra/" + compra.id))
+    const pagar = () =>
+        api.post("/api/checkout", { tipo_entrega: tipoEntrega }).then((compra) => navegar("/compra/" + compra.id))
 
     const subtotal = items.reduce((suma, item) => suma + item.precio_unitario * item.cantidad, 0)
     const marcos = items.reduce((suma, item) => suma + item.precio_marco * item.cantidad, 0)
     const total = items.reduce((suma, item) => suma + item.subtotal, 0) + envio
 
-    if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>
+    if (cargando)
+        return (
+            <div className="seccion">
+                <div className="contenido">
+                    <Estado tipo="cargando" />
+                </div>
+            </div>
+        )
 
     return (
         <FormularioPago
@@ -67,7 +72,8 @@ const Pago = () => {
             textoVolver="Volver"
             onVolver={() => navegar("/carrito")}
             pista={tipoEntrega === "ENVIO_DOMICILIO" ? "Envío a domicilio" : "Retiro por el local"}
-            errorCarga={error} />
+            errorCarga={error}
+        />
     )
 }
 

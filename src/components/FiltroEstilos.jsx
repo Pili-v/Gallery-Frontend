@@ -1,5 +1,5 @@
-import { useState } from "react";
-import "./filtroEstilos.css";
+import { useState } from "react"
+import "./filtroEstilos.css"
 
 // Filtro de estilos de elección múltiple, para el catálogo y la lista de artistas.
 // Un solo botón ("Estilos") abre una lista con casillas; lo elegido queda a la vista como
@@ -45,7 +45,12 @@ const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
 
                 {abierto && (
                     // El mouseDown no saca el foco del botón: así el panel no se cierra al tocar una casilla.
-                    <div className="desplegable-panel" role="group" aria-label="Elegir estilos" onMouseDown={(e) => e.preventDefault()}>
+                    <div
+                        className="desplegable-panel"
+                        role="group"
+                        aria-label="Elegir estilos"
+                        onMouseDown={(e) => e.preventDefault()}
+                    >
                         <ul className="desplegable-lista">
                             {estilos.map((estilo) => (
                                 <li key={estilo.id}>

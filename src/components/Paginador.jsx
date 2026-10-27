@@ -11,8 +11,13 @@ const Paginador = ({ pagina, totalPaginas, onCambiar }) => {
             <Boton tipo={pagina === 0 ? "deshabilitado" : "secundario"} onClick={() => onCambiar(pagina - 1)}>
                 Anterior
             </Boton>
-            <span className="catalog-number muted">Página {pagina + 1} de {totalPaginas}</span>
-            <Boton tipo={pagina + 1 >= totalPaginas ? "deshabilitado" : "secundario"} onClick={() => onCambiar(pagina + 1)}>
+            <span className="catalog-number muted">
+                Página {pagina + 1} de {totalPaginas}
+            </span>
+            <Boton
+                tipo={pagina + 1 >= totalPaginas ? "deshabilitado" : "secundario"}
+                onClick={() => onCambiar(pagina + 1)}
+            >
                 Siguiente
             </Boton>
         </div>

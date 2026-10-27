@@ -1,7 +1,6 @@
 // Los cuatro casos que toda pantalla que pide datos tiene que contemplar.
 // tipo: "cargando" | "vacio" | "error" | "sinPermiso"
 const Estado = ({ tipo, mensaje, accion, onAccion }) => {
-
     if (tipo === "cargando") {
         return (
             <div className="estado" style={{ textAlign: "left" }}>

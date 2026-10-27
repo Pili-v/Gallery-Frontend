@@ -5,7 +5,18 @@ import { pesos } from "../api/formato"
 // La única diferencia entre esas cuatro pantallas es la prop editable.
 // Cada dato llega como su propia prop (no como un objeto item): id, nombreObra, nombreTamanio,
 // nombreMarco, cantidad y subtotal. Los callbacks avisan con el id del ítem.
-const LineaItem = ({ id, nombreObra, nombreTamanio, nombreMarco, cantidad, subtotal, imagen, editable = false, onCambiarCantidad, onQuitar }) => {
+const LineaItem = ({
+    id,
+    nombreObra,
+    nombreTamanio,
+    nombreMarco,
+    cantidad,
+    subtotal,
+    imagen,
+    editable = false,
+    onCambiarCantidad,
+    onQuitar
+}) => {
     return (
         <div className="linea-item">
             <div className="linea-mini">{imagen && <img src={imagen} alt="" />}</div>
@@ -15,24 +26,42 @@ const LineaItem = ({ id, nombreObra, nombreTamanio, nombreMarco, cantidad, subto
                     {nombreObra}
                 </div>
                 <div className="cartela-meta">
-                    {nombreTamanio}{nombreMarco && " · Marco: " + nombreMarco}
+                    {nombreTamanio}
+                    {nombreMarco && " · Marco: " + nombreMarco}
                 </div>
                 {editable && (
-                    <a href="#" className="body-sm" style={{ color: "var(--bordo)" }}
-                        onClick={(e) => { e.preventDefault(); onQuitar(id) }}>
+                    <a
+                        href="#"
+                        className="body-sm"
+                        style={{ color: "var(--bordo)" }}
+                        onClick={(e) => {
+                            e.preventDefault()
+                            onQuitar(id)
+                        }}
+                    >
                         Quitar
                     </a>
                 )}
             </div>
 
             <div>
-                {editable
-                    ? <div className="contador">
-                        <button disabled={cantidad <= 1} aria-label="Restar una unidad" onClick={() => onCambiarCantidad(id, cantidad - 1)}>−</button>
+                {editable ? (
+                    <div className="contador">
+                        <button
+                            disabled={cantidad <= 1}
+                            aria-label="Restar una unidad"
+                            onClick={() => onCambiarCantidad(id, cantidad - 1)}
+                        >
+                            −
+                        </button>
                         <span>{cantidad}</span>
-                        <button aria-label="Sumar una unidad" onClick={() => onCambiarCantidad(id, cantidad + 1)}>+</button>
+                        <button aria-label="Sumar una unidad" onClick={() => onCambiarCantidad(id, cantidad + 1)}>
+                            +
+                        </button>
                     </div>
-                    : <span className="cartela-meta">× {cantidad}</span>}
+                ) : (
+                    <span className="cartela-meta">× {cantidad}</span>
+                )}
             </div>
 
             <div className="price-md" style={{ minWidth: 100, textAlign: "right" }}>

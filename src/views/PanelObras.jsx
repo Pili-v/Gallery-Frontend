@@ -162,9 +162,13 @@ const PanelObras = () => {
                                 {abiertas[obra.id] && (
                                     <tr>
                                         <td colSpan={5} style={{ background: "var(--canvas)" }}>
-                                            {entrada && entrada.variantes && <DetalleObra variantes={entrada.variantes} />}
+                                            {entrada && entrada.variantes && (
+                                                <DetalleObra variantes={entrada.variantes} />
+                                            )}
                                             {entrada && entrada.error && <DetalleObra variantes={null} />}
-                                            {(!entrada || (!entrada.variantes && !entrada.error)) && <Estado tipo="cargando" />}
+                                            {(!entrada || (!entrada.variantes && !entrada.error)) && (
+                                                <Estado tipo="cargando" />
+                                            )}
                                         </td>
                                     </tr>
                                 )}

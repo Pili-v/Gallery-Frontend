@@ -46,7 +46,7 @@ const Ventas = () => {
                 setTotalVendido(respuesta && respuesta.total_vendido ? Number(respuesta.total_vendido) : 0)
             })
             .catch((e) => {
-                 // Sin ventas el back responde 204 y lista() deja []; un 404 tampoco se muestra como falla.
+                // Sin ventas el back responde 204 y lista() deja []; un 404 tampoco se muestra como falla.
                 if (vigente && e.status !== 404) setError(e.message)
             })
             .finally(() => {
@@ -102,9 +102,7 @@ const Ventas = () => {
         <div className="seccion">
             <div className="contenido">
                 <h1 className="headline-lg titulo-oculto">Mis ventas</h1>
-                <p className="body-lg muted titulo-oculto">
-                    Las facturas emitidas a tu nombre.
-                </p>
+                <p className="body-lg muted titulo-oculto">Las facturas emitidas a tu nombre.</p>
 
                 {/* El título está siempre; solo lo que viene del back espera. */}
                 {cargando ? (

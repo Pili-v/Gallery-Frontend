@@ -8,7 +8,6 @@ import { api } from "../api/cliente"
 import { guardarSesion } from "../api/sesion"
 
 const Login = () => {
-
     const navigate = useNavigate()
 
     const [datos, setDatos] = useState({
@@ -21,7 +20,6 @@ const Login = () => {
     const [errorGeneral, setErrorGeneral] = useState("")
 
     const handleChange = (e) => {
-
         const { name, value } = e.target
 
         setDatos({
@@ -38,7 +36,6 @@ const Login = () => {
     }
 
     const validar = () => {
-
         const nuevosErrores = {}
 
         if (!datos.email_usuario.trim()) {
@@ -55,7 +52,6 @@ const Login = () => {
     }
 
     const handleSubmit = (e) => {
-
         e.preventDefault()
 
         if (!validar()) {
@@ -65,12 +61,8 @@ const Login = () => {
         setCargando(true)
         setErrorGeneral("")
 
-        api.post(
-            "/api/v1/auth/authenticate",
-            datos
-        )
+        api.post("/api/v1/auth/authenticate", datos)
             .then((respuesta) => {
-
                 const token = respuesta.access_token
 
                 localStorage.setItem("token", token)
@@ -78,7 +70,6 @@ const Login = () => {
                 return api.get("/api/usuarios/me")
             })
             .then((perfil) => {
-
                 const token = localStorage.getItem("token")
 
                 guardarSesion(token, perfil)
@@ -86,13 +77,9 @@ const Login = () => {
                 navigate("/")
             })
             .catch((e) => {
-
-                setErrorGeneral(
-                    e.message || "No se pudo iniciar sesión."
-                )
+                setErrorGeneral(e.message || "No se pudo iniciar sesión.")
             })
             .finally(() => {
-
                 setCargando(false)
             })
     }
@@ -100,23 +87,11 @@ const Login = () => {
     return (
         <div className="seccion">
             <div className="contenido col-angosta">
+                <h1 className="headline-lg centro">Ingresar</h1>
 
-                <h1 className="headline-lg centro">
-                    Ingresar
-                </h1>
+                <p className="body-lg muted centro">Entrá para comprar o para publicar tu obra.</p>
 
-                <p
-                    className="body-lg muted centro"
-                >
-                    Entrá para comprar o para publicar tu obra.
-                </p>
-
-                <form
-                    className="cartela"
-                    style={{ padding: "var(--lg)" }}
-                    onSubmit={handleSubmit}
-                >
-
+                <form className="cartela" style={{ padding: "var(--lg)" }} onSubmit={handleSubmit}>
                     <CampoFormulario
                         etiqueta="Email"
                         tipo="email"
@@ -136,38 +111,22 @@ const Login = () => {
                     />
 
                     {errorGeneral && (
-                        <p
-                            className="campo-error body-sm"
-                            style={{ marginBottom: "var(--md)" }}
-                        >
+                        <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>
                             {errorGeneral}
                         </p>
                     )}
 
-                    <Boton
-                        tipo={cargando ? "deshabilitado" : "primario"}
-                        bloque
-                        type="submit"
-                    >
+                    <Boton tipo={cargando ? "deshabilitado" : "primario"} bloque type="submit">
                         {cargando ? "Ingresando..." : "Ingresar"}
                     </Boton>
-
                 </form>
 
-                <p
-                    className="body-sm centro muted"
-                    style={{ marginTop: "var(--md)" }}
-                >
+                <p className="body-sm centro muted" style={{ marginTop: "var(--md)" }}>
                     ¿No tenés cuenta?{" "}
-
-                    <Link
-                        to="/registro"
-                        style={{ color: "var(--bordo)" }}
-                    >
+                    <Link to="/registro" style={{ color: "var(--bordo)" }}>
                         Crear una
                     </Link>
                 </p>
-
             </div>
         </div>
     )

@@ -27,7 +27,9 @@ const QuieroPublicar = () => {
         return (
             <div className="seccion">
                 <div className="contenido col-media">
-                    <h1 className="headline-lg">{esAdmin ? "No necesitás un perfil de artista" : "Ya podés publicar tus obras"}</h1>
+                    <h1 className="headline-lg">
+                        {esAdmin ? "No necesitás un perfil de artista" : "Ya podés publicar tus obras"}
+                    </h1>
                     <p className="body-lg muted">
                         {esAdmin
                             ? "Como administrador ya tenés todos los permisos."
@@ -72,8 +74,12 @@ const QuieroPublicar = () => {
                 </p>
 
                 <div className="cartela" style={{ padding: "var(--lg)", marginBottom: "var(--lg)" }}>
-                    <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>Qué vas a poder hacer</p>
-                    <p className="body-sm">Publicar tus obras con fotos y variantes: tamaños, precios, stock y descuentos.</p>
+                    <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>
+                        Qué vas a poder hacer
+                    </p>
+                    <p className="body-sm">
+                        Publicar tus obras con fotos y variantes: tamaños, precios, stock y descuentos.
+                    </p>
                     <p className="body-sm">Ver tus ventas y las facturas que se emiten a tu nombre.</p>
                     <p className="body-sm">Recibir encargos de quienes quieran una obra a medida.</p>
                     <p className="body-sm muted" style={{ marginTop: "var(--sm)" }}>
@@ -82,7 +88,9 @@ const QuieroPublicar = () => {
                 </div>
 
                 <form className="cartela" style={{ padding: "var(--lg)" }} onSubmit={crearPerfil}>
-                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>Tu perfil de artista</p>
+                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>
+                        Tu perfil de artista
+                    </p>
 
                     <CampoFormulario
                         etiqueta="Nombre artístico"

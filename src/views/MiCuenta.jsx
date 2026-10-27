@@ -5,15 +5,9 @@ import Boton from "../components/Boton"
 import Estado from "../components/Estado"
 
 import { api } from "../api/cliente"
-import {
-    getToken,
-    getUsuario,
-    getPerfilArtista,
-    guardarSesion
-} from "../api/sesion"
+import { getToken, getUsuario, getPerfilArtista, guardarSesion } from "../api/sesion"
 
 const MiCuenta = () => {
-
     const [datos, setDatos] = useState({
         nombre_usuario: "",
         nombre_persona: "",
@@ -46,48 +40,33 @@ const MiCuenta = () => {
     const [mensajeArtista, setMensajeArtista] = useState("")
 
     const limpiarNombre = (texto) => {
-
-        const soloLetras = texto.replace(
-            /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g,
-            ""
-        )
+        const soloLetras = texto.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g, "")
 
         return soloLetras
             .split(" ")
             .map((palabra) => {
-
                 if (!palabra) {
                     return ""
                 }
 
-                return (
-                    palabra.charAt(0).toUpperCase() +
-                    palabra.slice(1).toLowerCase()
-                )
+                return palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase()
             })
             .join(" ")
     }
 
     useEffect(() => {
-
         api.get("/api/usuarios/me")
             .then((perfil) => {
-
                 setDatos({
-                    nombre_usuario:
-                        perfil.usuario.nombre_usuario ?? "",
+                    nombre_usuario: perfil.usuario.nombre_usuario ?? "",
 
-                    nombre_persona:
-                        perfil.usuario.nombre_persona ?? "",
+                    nombre_persona: perfil.usuario.nombre_persona ?? "",
 
-                    apellido_persona:
-                        perfil.usuario.apellido_persona ?? "",
+                    apellido_persona: perfil.usuario.apellido_persona ?? "",
 
-                    email_usuario:
-                        perfil.usuario.email_usuario ?? "",
+                    email_usuario: perfil.usuario.email_usuario ?? "",
 
-                    telefono_usuario:
-                        perfil.usuario.telefono_usuario ?? ""
+                    telefono_usuario: perfil.usuario.telefono_usuario ?? ""
                 })
 
                 if (perfil.perfil_artista) {
@@ -99,36 +78,24 @@ const MiCuenta = () => {
                 }
             })
             .catch((e) => {
-
-                setErrorGeneral(
-                    e.message || "No se pudo cargar la cuenta."
-                )
+                setErrorGeneral(e.message || "No se pudo cargar la cuenta.")
             })
             .finally(() => {
-
                 setCargando(false)
             })
-
     }, [])
 
     const handleChange = (e) => {
-
         const { name, value } = e.target
 
         let nuevoValor = value
 
-        if (
-            name === "nombre_persona" ||
-            name === "apellido_persona"
-        ) {
+        if (name === "nombre_persona" || name === "apellido_persona") {
             nuevoValor = limpiarNombre(value)
         }
 
         if (name === "telefono_usuario") {
-
-            nuevoValor = value
-                .replace(/\D/g, "")
-                .slice(0, 10)
+            nuevoValor = value.replace(/\D/g, "").slice(0, 10)
         }
 
         setDatos({
@@ -146,7 +113,6 @@ const MiCuenta = () => {
     }
 
     const handleContrasenia = (e) => {
-
         const { name, value } = e.target
 
         setContrasenias({
@@ -164,32 +130,26 @@ const MiCuenta = () => {
     }
 
     const validar = () => {
-
         const nuevosErrores = {}
 
         if (!datos.nombre_usuario.trim()) {
-            nuevosErrores.nombre_usuario =
-                "Ingresá un nombre de usuario."
+            nuevosErrores.nombre_usuario = "Ingresá un nombre de usuario."
         }
 
         if (!datos.nombre_persona.trim()) {
-            nuevosErrores.nombre_persona =
-                "Ingresá tu nombre."
+            nuevosErrores.nombre_persona = "Ingresá tu nombre."
         }
 
         if (!datos.apellido_persona.trim()) {
-            nuevosErrores.apellido_persona =
-                "Ingresá tu apellido."
+            nuevosErrores.apellido_persona = "Ingresá tu apellido."
         }
 
         if (!datos.email_usuario.trim()) {
-            nuevosErrores.email_usuario =
-                "Ingresá tu email."
+            nuevosErrores.email_usuario = "Ingresá tu email."
         }
 
         if (!datos.telefono_usuario.trim()) {
-            nuevosErrores.telefono_usuario =
-                "Ingresá tu teléfono."
+            nuevosErrores.telefono_usuario = "Ingresá tu teléfono."
         }
 
         setErrores(nuevosErrores)
@@ -198,17 +158,14 @@ const MiCuenta = () => {
     }
 
     const validarContrasenia = () => {
-
         const nuevosErrores = {}
 
         if (!contrasenias.contrasenia_actual.trim()) {
-            nuevosErrores.contrasenia_actual =
-                "Ingresá tu contraseña actual."
+            nuevosErrores.contrasenia_actual = "Ingresá tu contraseña actual."
         }
 
         if (!contrasenias.contrasenia_nueva.trim()) {
-            nuevosErrores.contrasenia_nueva =
-                "Ingresá la nueva contraseña."
+            nuevosErrores.contrasenia_nueva = "Ingresá la nueva contraseña."
         }
 
         setErroresContrasenia(nuevosErrores)
@@ -217,7 +174,6 @@ const MiCuenta = () => {
     }
 
     const handleSubmit = (e) => {
-
         e.preventDefault()
 
         if (!validar()) {
@@ -228,31 +184,17 @@ const MiCuenta = () => {
         setErrorGeneral("")
         setMensaje("")
 
-        api.patch(
-            "/api/usuarios/me",
-            datos
-        )
+        api.patch("/api/usuarios/me", datos)
             .then((usuarioActualizado) => {
-
                 // El back responde con el usuario ya guardado: alcanza para actualizar la sesión, sin volver a pedir el perfil.
-                guardarSesion(
-                    getToken(),
-                    { usuario: usuarioActualizado, perfil_artista: getPerfilArtista() }
-                )
+                guardarSesion(getToken(), { usuario: usuarioActualizado, perfil_artista: getPerfilArtista() })
 
-                setMensaje(
-                    "Los cambios se guardaron correctamente."
-                )
+                setMensaje("Los cambios se guardaron correctamente.")
             })
             .catch((e) => {
-
-                setErrorGeneral(
-                    e.message ||
-                    "No se pudieron guardar los cambios."
-                )
+                setErrorGeneral(e.message || "No se pudieron guardar los cambios.")
             })
             .finally(() => {
-
                 setGuardando(false)
             })
     }
@@ -260,7 +202,6 @@ const MiCuenta = () => {
     // Guarda el nombre artístico y si acepta encargos. Dejar de aceptar solo afecta a los encargos NUEVOS:
     // los que ya están en curso se pueden seguir gestionando y cerrando (el back valida esto al crearlos).
     const handleArtista = (e) => {
-
         e.preventDefault()
 
         if (guardandoArtista) {
@@ -277,40 +218,25 @@ const MiCuenta = () => {
         setErrorGeneral("")
         setMensajeArtista("")
 
-        api.patch(
-            "/api/artistas/me",
-            {
-                nombre_artistico: artista.nombre_artistico.trim(),
-                acepta_encargos: artista.acepta_encargos
-            }
-        )
+        api.patch("/api/artistas/me", {
+            nombre_artistico: artista.nombre_artistico.trim(),
+            acepta_encargos: artista.acepta_encargos
+        })
             .then((perfilActualizado) => {
-
                 // Igual que arriba: el back devuelve el perfil de artista ya guardado.
-                guardarSesion(
-                    getToken(),
-                    { usuario: getUsuario(), perfil_artista: perfilActualizado }
-                )
+                guardarSesion(getToken(), { usuario: getUsuario(), perfil_artista: perfilActualizado })
 
-                setMensajeArtista(
-                    "El perfil de artista se guardó correctamente."
-                )
+                setMensajeArtista("El perfil de artista se guardó correctamente.")
             })
             .catch((e) => {
-
-                setErrorGeneral(
-                    e.message ||
-                    "No se pudo guardar el perfil de artista."
-                )
+                setErrorGeneral(e.message || "No se pudo guardar el perfil de artista.")
             })
             .finally(() => {
-
                 setGuardandoArtista(false)
             })
     }
 
     const handleCambioContrasenia = (e) => {
-
         e.preventDefault()
 
         if (!validarContrasenia()) {
@@ -321,30 +247,19 @@ const MiCuenta = () => {
         setErrorGeneral("")
         setMensajeContrasenia("")
 
-        api.patch(
-            "/api/usuarios/me/contrasenia",
-            contrasenias
-        )
+        api.patch("/api/usuarios/me/contrasenia", contrasenias)
             .then(() => {
-
                 setContrasenias({
                     contrasenia_actual: "",
                     contrasenia_nueva: ""
                 })
 
-                setMensajeContrasenia(
-                    "La contraseña se cambió correctamente."
-                )
+                setMensajeContrasenia("La contraseña se cambió correctamente.")
             })
             .catch((e) => {
-
-                setErrorGeneral(
-                    e.message ||
-                    "No se pudo cambiar la contraseña."
-                )
+                setErrorGeneral(e.message || "No se pudo cambiar la contraseña.")
             })
             .finally(() => {
-
                 setCambiandoContrasenia(false)
             })
     }
@@ -362,37 +277,21 @@ const MiCuenta = () => {
     return (
         <div className="seccion">
             <div className="contenido col-media">
+                <h1 className="headline-lg centro">Mi cuenta</h1>
 
-                <h1 className="headline-lg centro">
-                    Mi cuenta
-                </h1>
+                <p className="body-lg muted centro">Consultá y actualizá tus datos personales.</p>
 
-                <p
-                    className="body-lg muted centro"
-                >
-                    Consultá y actualizá tus datos personales.
-                </p>
-
-                {errorGeneral && (
-                    <Estado
-                        tipo="error"
-                        mensaje={errorGeneral}
-                    />
-                )}
+                {errorGeneral && <Estado tipo="error" mensaje={errorGeneral} />}
 
                 <form
                     className="cartela"
                     style={{
                         padding: "var(--lg)",
-                        marginTop: errorGeneral
-                            ? "var(--md)"
-                            : 0
+                        marginTop: errorGeneral ? "var(--md)" : 0
                     }}
                     onSubmit={handleSubmit}
                 >
-
                     <div className="fila-campos">
-
                         <CampoFormulario
                             etiqueta="Nombre"
                             name="nombre_persona"
@@ -408,7 +307,6 @@ const MiCuenta = () => {
                             onChange={handleChange}
                             error={errores.apellido_persona}
                         />
-
                     </div>
 
                     <CampoFormulario
@@ -440,25 +338,14 @@ const MiCuenta = () => {
                     />
 
                     {mensaje && (
-                        <p
-                            className="body-sm"
-                            style={{ marginBottom: "var(--md)" }}
-                        >
+                        <p className="body-sm" style={{ marginBottom: "var(--md)" }}>
                             {mensaje}
                         </p>
                     )}
 
-                    <Boton
-                        tipo={guardando ? "deshabilitado" : "primario"}
-                        bloque
-                        type="submit"
-                    >
-                        {guardando
-                            ? "Guardando..."
-                            : "Guardar cambios"
-                        }
+                    <Boton tipo={guardando ? "deshabilitado" : "primario"} bloque type="submit">
+                        {guardando ? "Guardando..." : "Guardar cambios"}
                     </Boton>
-
                 </form>
 
                 {tieneArtista && (
@@ -470,11 +357,7 @@ const MiCuenta = () => {
                         }}
                         onSubmit={handleArtista}
                     >
-
-                        <h2
-                            className="headline-sm"
-                            style={{ marginBottom: "var(--md)" }}
-                        >
+                        <h2 className="headline-sm" style={{ marginBottom: "var(--md)" }}>
                             Perfil de artista
                         </h2>
 
@@ -487,10 +370,7 @@ const MiCuenta = () => {
                             error={errorNombreArtistico}
                         />
 
-                        <label
-                            className="body-sm"
-                            style={{ display: "block", marginBottom: "var(--xs)" }}
-                        >
+                        <label className="body-sm" style={{ display: "block", marginBottom: "var(--xs)" }}>
                             <input
                                 type="checkbox"
                                 checked={artista.acepta_encargos}
@@ -499,34 +379,20 @@ const MiCuenta = () => {
                             Quiero recibir encargos de obras a medida
                         </label>
 
-                        <p
-                            className="body-sm muted"
-                            style={{ marginBottom: "var(--md)" }}
-                        >
-                            Si lo desactivás, no vas a figurar como disponible para encargos nuevos. Los encargos
-                            que ya tenés en curso los podés seguir gestionando y cerrando.
+                        <p className="body-sm muted" style={{ marginBottom: "var(--md)" }}>
+                            Si lo desactivás, no vas a figurar como disponible para encargos nuevos. Los encargos que ya
+                            tenés en curso los podés seguir gestionando y cerrando.
                         </p>
 
                         {mensajeArtista && (
-                            <p
-                                className="body-sm"
-                                style={{ marginBottom: "var(--md)" }}
-                            >
+                            <p className="body-sm" style={{ marginBottom: "var(--md)" }}>
                                 {mensajeArtista}
                             </p>
                         )}
 
-                        <Boton
-                            tipo={guardandoArtista ? "deshabilitado" : "primario"}
-                            bloque
-                            type="submit"
-                        >
-                            {guardandoArtista
-                                ? "Guardando..."
-                                : "Guardar perfil de artista"
-                            }
+                        <Boton tipo={guardandoArtista ? "deshabilitado" : "primario"} bloque type="submit">
+                            {guardandoArtista ? "Guardando..." : "Guardar perfil de artista"}
                         </Boton>
-
                     </form>
                 )}
 
@@ -538,11 +404,7 @@ const MiCuenta = () => {
                     }}
                     onSubmit={handleCambioContrasenia}
                 >
-
-                    <h2
-                        className="headline-sm"
-                        style={{ marginBottom: "var(--md)" }}
-                    >
+                    <h2 className="headline-sm" style={{ marginBottom: "var(--md)" }}>
                         Cambiar contraseña
                     </h2>
 
@@ -565,31 +427,15 @@ const MiCuenta = () => {
                     />
 
                     {mensajeContrasenia && (
-                        <p
-                            className="body-sm"
-                            style={{ marginBottom: "var(--md)" }}
-                        >
+                        <p className="body-sm" style={{ marginBottom: "var(--md)" }}>
                             {mensajeContrasenia}
                         </p>
                     )}
 
-                    <Boton
-                        tipo={
-                            cambiandoContrasenia
-                                ? "deshabilitado"
-                                : "secundario"
-                        }
-                        bloque
-                        type="submit"
-                    >
-                        {cambiandoContrasenia
-                            ? "Cambiando..."
-                            : "Cambiar contraseña"
-                        }
+                    <Boton tipo={cambiandoContrasenia ? "deshabilitado" : "secundario"} bloque type="submit">
+                        {cambiandoContrasenia ? "Cambiando..." : "Cambiar contraseña"}
                     </Boton>
-
                 </form>
-
             </div>
         </div>
     )

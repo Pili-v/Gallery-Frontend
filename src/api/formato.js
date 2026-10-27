@@ -33,4 +33,8 @@ export const fecha = (valor) => {
 
 // Comparar nombres sin distinguir tildes, mayusculas ni espacios en los extremos.
 export const normalizarNombre = (texto) =>
-    texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+    texto
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim()

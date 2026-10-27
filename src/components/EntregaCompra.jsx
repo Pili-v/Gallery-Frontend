@@ -10,7 +10,6 @@ import CampoFormulario from "./CampoFormulario"
 //   error: el aviso de la dirección (por ejemplo, si falta para el envío).
 //   onTipoEntrega(tipo), onDireccion(texto): los avisos de cada cambio.
 const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDireccion }) => {
-
     const [provincias, setProvincias] = useState([])
     const [sugerencias, setSugerencias] = useState([])
     const [buscando, setBuscando] = useState(false)
@@ -58,17 +57,21 @@ const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDirecci
 
     return (
         <div>
-            <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>Cómo la recibís</p>
+            <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>
+                Cómo la recibís
+            </p>
 
             <div className="fila">
                 <span
                     className={"chip" + (tipoEntrega === ENVIO_DOMICILIO ? " activo" : "")}
-                    onClick={() => onTipoEntrega(ENVIO_DOMICILIO)}>
+                    onClick={() => onTipoEntrega(ENVIO_DOMICILIO)}
+                >
                     Envío a domicilio
                 </span>
                 <span
                     className={"chip" + (tipoEntrega === RETIRO_LOCAL ? " activo" : "")}
-                    onClick={() => onTipoEntrega(RETIRO_LOCAL)}>
+                    onClick={() => onTipoEntrega(RETIRO_LOCAL)}
+                >
                     Retiro por el local
                 </span>
             </div>
@@ -80,18 +83,19 @@ const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDirecci
                         etiqueta="Dirección de entrega"
                         value={direccion}
                         error={error}
-                        onChange={escribirDireccion} />
+                        onChange={escribirDireccion}
+                    />
 
                     <p className="body-sm muted" style={{ marginTop: "var(--xs)" }}>
                         Si no aparece, agregá la provincia después de una coma: “Florida 500, CABA”.
                     </p>
 
-                    {zona.provincia && (
-                        <p className="body-sm muted">Buscando solo en {nombreCorto(zona.provincia)}.</p>
-                    )}
+                    {zona.provincia && <p className="body-sm muted">Buscando solo en {nombreCorto(zona.provincia)}.</p>}
 
                     {zona.desconocida && (
-                        <p className="body-sm muted">“{zona.desconocida}” no es una provincia: busco en todo el país.</p>
+                        <p className="body-sm muted">
+                            “{zona.desconocida}” no es una provincia: busco en todo el país.
+                        </p>
                     )}
 
                     {buscando && <div className="autocompletar-buscando">Buscando…</div>}
@@ -103,7 +107,8 @@ const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDirecci
                                     <li
                                         key={textoDeDireccion(sugerida)}
                                         className="desplegable-opcion"
-                                        onClick={() => elegirSugerencia(sugerida)}>
+                                        onClick={() => elegirSugerencia(sugerida)}
+                                    >
                                         {textoDeDireccion(sugerida)}
                                     </li>
                                 ))}

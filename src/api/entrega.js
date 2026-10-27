@@ -6,4 +6,4 @@ export const RETIRO_LOCAL = "RETIRO_LOCAL"
 
 const COSTO_ENVIO_DOMICILIO = 1500
 
-export const costoDeEnvio = (tipoEntrega) => tipoEntrega === ENVIO_DOMICILIO ? COSTO_ENVIO_DOMICILIO : 0
+export const costoDeEnvio = (tipoEntrega) => (tipoEntrega === ENVIO_DOMICILIO ? COSTO_ENVIO_DOMICILIO : 0)

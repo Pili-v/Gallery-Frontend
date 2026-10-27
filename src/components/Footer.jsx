@@ -7,14 +7,22 @@ const Footer = () => {
     return (
         <footer className="footer">
             <div className="footer-bloque">
-                <span className="header-marca" style={{ fontSize: 18 }}>Atelier&nbsp;Attack</span>
+                <span className="header-marca" style={{ fontSize: 18 }}>
+                    Atelier&nbsp;Attack
+                </span>
                 <span className="body-sm">Obra original, directo del artista.</span>
-                <span className="catalog-number" style={{ marginTop: "var(--xs)" }}>© 2026 Atelier Attack</span>
+                <span className="catalog-number" style={{ marginTop: "var(--xs)" }}>
+                    © 2026 Atelier Attack
+                </span>
             </div>
 
             <div className="footer-bloque">
                 <span className="catalog-number">Contacto</span>
-                <a href={"mailto:" + EMAIL_CONTACTO} className="body-sm" style={{ color: "var(--bordo)", textDecoration: "none" }}>
+                <a
+                    href={"mailto:" + EMAIL_CONTACTO}
+                    className="body-sm"
+                    style={{ color: "var(--bordo)", textDecoration: "none" }}
+                >
                     {EMAIL_CONTACTO}
                 </a>
                 <span className="body-sm">Buenos Aires, Argentina</span>

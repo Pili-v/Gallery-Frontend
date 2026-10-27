@@ -15,9 +15,10 @@ export const SESION_VENCIDA = "sesion-vencida"
 // por ejemplo, un 404 es algo que no existe. Una lista vacía llega como 204 sin cuerpo
 // (api.get devuelve null y lista(null) es []).
 const crearError = (respuesta) => {
-    return respuesta.text()
+    return respuesta
+        .text()
         .catch(() => "")
-        .then(texto => {
+        .then((texto) => {
             let mensaje = texto
 
             try {
@@ -58,13 +59,11 @@ const pedir = (ruta, opciones = {}) => {
         .catch(() => {
             throw new Error("No se pudo conectar con el servidor.")
         })
-        .then(respuesta => {
+        .then((respuesta) => {
             if (respuesta.status === 401) {
                 if (ruta === "/api/v1/auth/authenticate") {
-                    return respuesta.text().then(mensaje => {
-                        throw new Error(
-                            mensaje || "Mail o contraseña incorrectos"
-                        )
+                    return respuesta.text().then((mensaje) => {
+                        throw new Error(mensaje || "Mail o contraseña incorrectos")
                     })
                 }
 
@@ -72,18 +71,20 @@ const pedir = (ruta, opciones = {}) => {
                 // actual (para volver acá después de ingresar) y la pantalla se queda como está.
                 // Sin token no hay sesión que vencer: es una ruta que pedía iniciar sesión.
                 if (token) {
-                    window.dispatchEvent(new CustomEvent(SESION_VENCIDA, {
-                        detail: window.location.pathname + window.location.search
-                    }))
+                    window.dispatchEvent(
+                        new CustomEvent(SESION_VENCIDA, {
+                            detail: window.location.pathname + window.location.search
+                        })
+                    )
                 }
 
-                return crearError(respuesta).then(error => {
+                return crearError(respuesta).then((error) => {
                     throw error
                 })
             }
 
             if (!respuesta.ok) {
-                return crearError(respuesta).then(error => {
+                return crearError(respuesta).then((error) => {
                     throw error
                 })
             }
@@ -101,7 +102,6 @@ export const api = {
     patch: (ruta, datos) => pedir(ruta, { method: "PATCH", body: JSON.stringify(datos) }),
     delete: (ruta) => pedir(ruta, { method: "DELETE" })
 }
-
 
 // El backend ahora pagina las listas: en vez de [ {...} ] devuelve { content: [ {...} ] }.
 // Esta funcion deja siempre un array, le llegue la forma nueva o la vieja.

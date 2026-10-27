@@ -13,7 +13,6 @@ import Estado from "../components/Estado"
 import Boton from "../components/Boton"
 
 const PagoEncargo = () => {
-
     const { id } = useParams()
     const navegar = useNavigate()
     const usuario = getUsuario()
@@ -31,12 +30,20 @@ const PagoEncargo = () => {
 
     const volver = () => navegar("/encargos/" + id)
 
-    if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>
+    if (cargando)
+        return (
+            <div className="seccion">
+                <div className="contenido">
+                    <Estado tipo="cargando" />
+                </div>
+            </div>
+        )
 
     // Por qué no se puede pagar, para decírselo en lugar de mostrar un pago que el back va a rechazar.
     let motivo = ""
     if (error) motivo = error
-    else if (!encargo || !usuario || encargo.usuario_id !== usuario.id) motivo = "Solo quien hizo el encargo puede pagarlo."
+    else if (!encargo || !usuario || encargo.usuario_id !== usuario.id)
+        motivo = "Solo quien hizo el encargo puede pagarlo."
     else if (encargo.estado_encargo === "PAGADO") motivo = "Este encargo ya está pagado."
     else if (encargo.estado_encargo !== "TERMINADO") motivo = "El encargo se paga cuando el artista lo termina."
 
@@ -48,7 +55,9 @@ const PagoEncargo = () => {
                     <div style={{ marginBottom: "var(--lg)" }}>
                         <Estado tipo={error ? "error" : "vacio"} mensaje={motivo} />
                     </div>
-                    <Boton tipo="secundario" onClick={volver}>Volver al encargo</Boton>
+                    <Boton tipo="secundario" onClick={volver}>
+                        Volver al encargo
+                    </Boton>
                 </div>
             </div>
         )
@@ -57,8 +66,8 @@ const PagoEncargo = () => {
     const precio = Number(encargo.precio_acordado)
 
     // Quién paga sale del token, igual que en el backend; de la tarjeta no viaja nada.
-    const pagar = () => api.post("/api/encargos/" + id + "/pagar")
-        .then(() => navegar("/encargos/" + id, { state: { pagado: true } }))
+    const pagar = () =>
+        api.post("/api/encargos/" + id + "/pagar").then(() => navegar("/encargos/" + id, { state: { pagado: true } }))
 
     return (
         <FormularioPago
@@ -72,7 +81,8 @@ const PagoEncargo = () => {
             onPagar={pagar}
             textoVolver="Volver al encargo"
             onVolver={volver}
-            pista="Encargo a medida" />
+            pista="Encargo a medida"
+        />
     )
 }
 

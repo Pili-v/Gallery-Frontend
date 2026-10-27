@@ -30,7 +30,8 @@ const DetalleObra = ({ variantes }) => {
                         </td>
                         <td>
                             {variante.porcentaje_descuento
-                                ? variante.porcentaje_descuento + "%" +
+                                ? variante.porcentaje_descuento +
+                                  "%" +
                                   (variante.descuento_hasta ? " hasta el " + fecha(variante.descuento_hasta) : "")
                                 : "—"}
                         </td>

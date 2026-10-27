@@ -4,7 +4,8 @@ const Boton = ({ tipo = "primario", bloque = false, children, ...props }) => {
         <button
             className={"boton boton-" + tipo + (bloque ? " boton-bloque" : "")}
             disabled={tipo === "deshabilitado"}
-            {...props}>
+            {...props}
+        >
             {children}
         </button>
     )

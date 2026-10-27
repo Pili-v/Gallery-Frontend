@@ -75,8 +75,21 @@ const numeroValido = (numero, marca) => {
 //            Si falla, se muestra el mensaje acá; si sale bien, quien la usa navega a otra pantalla.
 //   textoVolver, onVolver, pista: el botón para volver y el texto que va al lado.
 //   errorCarga: un error de lo que cargó la pantalla que lo usa, para mostrarlo junto al pago.
-const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos, envio, total, nota, onPagar, textoVolver, onVolver, pista, errorCarga }) => {
-
+const FormularioPago = ({
+    titulo,
+    subtitulo,
+    subtotal,
+    etiquetaSubtotal,
+    marcos,
+    envio,
+    total,
+    nota,
+    onPagar,
+    textoVolver,
+    onVolver,
+    pista,
+    errorCarga
+}) => {
     const [marca, setMarca] = useState("Visa")
     const [tarjeta, setTarjeta] = useState({ numero: "", titular: "", vencimiento: "", codigo: "" })
     const [girada, setGirada] = useState(false)
@@ -148,11 +161,8 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
     return (
         <div className="seccion">
             <div className="contenido">
-
                 <h1 className="headline-lg">{titulo}</h1>
-                <p className="body-lg muted">
-                    {subtitulo}
-                </p>
+                <p className="body-lg muted">{subtitulo}</p>
 
                 <div className="dos-columnas">
                     <div>
@@ -161,7 +171,6 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
                             que es donde va el código en una tarjeta de verdad. */}
                         <div className="tarjeta-escena">
                             <div className={"tarjeta-3d" + (girada ? " girada" : "")} onClick={tocarTarjeta}>
-
                                 <div className={"tarjeta-cara " + MARCAS[marca].clase}>
                                     <div className="tarjeta-arriba">
                                         <div className="tarjeta-chip"></div>
@@ -172,7 +181,8 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
                                                     key={nombre}
                                                     type="button"
                                                     className={nombre === marca ? "elegida" : ""}
-                                                    onClick={() => elegirMarca(nombre)}>
+                                                    onClick={() => elegirMarca(nombre)}
+                                                >
                                                     {nombre}
                                                 </button>
                                             ))}
@@ -188,7 +198,8 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
                                             onChange={cambiarCampo}
                                             autoComplete="off"
                                             inputMode="numeric"
-                                            placeholder={mascaraDe(marca)} />
+                                            placeholder={mascaraDe(marca)}
+                                        />
                                     </label>
 
                                     <div className="tarjeta-abajo">
@@ -200,7 +211,8 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
                                                 value={tarjeta.titular}
                                                 onChange={cambiarCampo}
                                                 autoComplete="off"
-                                                placeholder="NOMBRE APELLIDO" />
+                                                placeholder="NOMBRE APELLIDO"
+                                            />
                                         </label>
 
                                         <label className="tarjeta-campo tarjeta-vence">
@@ -212,12 +224,18 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
                                                 onChange={cambiarCampo}
                                                 autoComplete="off"
                                                 inputMode="numeric"
-                                                placeholder="MM/AA" />
+                                                placeholder="MM/AA"
+                                            />
                                         </label>
 
-                                        {marca === "Mastercard"
-                                            ? <span className="tarjeta-circulos"><i></i><i></i></span>
-                                            : <span className="tarjeta-logo">{marca}</span>}
+                                        {marca === "Mastercard" ? (
+                                            <span className="tarjeta-circulos">
+                                                <i></i>
+                                                <i></i>
+                                            </span>
+                                        ) : (
+                                            <span className="tarjeta-logo">{marca}</span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -233,29 +251,39 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
                                             onChange={cambiarCampo}
                                             autoComplete="off"
                                             inputMode="numeric"
-                                            placeholder={"•".repeat(MARCAS[marca].largoCodigo)} />
+                                            placeholder={"•".repeat(MARCAS[marca].largoCodigo)}
+                                        />
                                     </label>
                                 </div>
-
                             </div>
                         </div>
 
                         <p className="tarjeta-pista muted" style={{ marginBottom: "var(--lg)" }}>
-                            {girada ? "Tocá la tarjeta para volver al frente." : "Tocá la tarjeta para cargar el código."}
+                            {girada
+                                ? "Tocá la tarjeta para volver al frente."
+                                : "Tocá la tarjeta para cargar el código."}
                         </p>
 
                         {errores.length > 0 && (
                             <div className="tarjeta-errores">
                                 {errores.map((texto) => (
-                                    <div key={texto} className="campo-error body-sm">{texto}</div>
+                                    <div key={texto} className="campo-error body-sm">
+                                        {texto}
+                                    </div>
                                 ))}
                             </div>
                         )}
 
-                        {(error || errorCarga) && <div style={{ marginBottom: "var(--md)" }}><Estado tipo="error" mensaje={error || errorCarga} /></div>}
+                        {(error || errorCarga) && (
+                            <div style={{ marginBottom: "var(--md)" }}>
+                                <Estado tipo="error" mensaje={error || errorCarga} />
+                            </div>
+                        )}
 
                         <div className="fila">
-                            <Boton tipo="secundario" onClick={onVolver}>{textoVolver}</Boton>
+                            <Boton tipo="secundario" onClick={onVolver}>
+                                {textoVolver}
+                            </Boton>
                             <span className="cartela-meta">{pista}</span>
                         </div>
                     </div>
@@ -268,10 +296,9 @@ const FormularioPago = ({ titulo, subtitulo, subtotal, etiquetaSubtotal, marcos,
                         total={total}
                         boton={pagando ? "Confirmando..." : "Pagar y confirmar"}
                         onBoton={pagando ? undefined : pagar}
-                        nota={nota} />
+                        nota={nota}
+                    />
                 </div>
-
-
             </div>
         </div>
     )
