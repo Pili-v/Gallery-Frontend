@@ -1,6 +1,6 @@
-import { estadosEncargo } from "../api/encargoDetalleContrato.js"
+import { estiloDeEstado } from "../api/encargoDetalleContrato.js"
 
-export default function EstadoEncargo({ estado }) {
-    const sello = estadosEncargo[estado]
-    return <span className={`sello sello-${sello?.clase ?? "pendiente"}`}>{sello?.texto ?? "Sin estado"}</span>
+// El sello de un estado. El texto lo manda el back (nombre_estado); acá solo se elige el estilo.
+export default function EstadoEncargo({ estado, nombre }) {
+    return <span className={`sello sello-${estiloDeEstado[estado] || "pendiente"}`}>{nombre || "Sin estado"}</span>
 }

@@ -2,7 +2,6 @@ import { api, lista } from "../api/cliente"
 import { getUsuario, getPerfilArtista } from "../api/sesion"
 import { useEffect, useState } from "react"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
-import { pinturas, lienzos } from "../api/encargoContrato.js"
 import Estado from "../components/Estado"
 import EstadoEncargo from "../components/EstadoEncargo"
 import Boton from "../components/Boton"
@@ -65,13 +64,8 @@ function ListaEncargos({
             : verRecibidos
               ? "/api/artistas/me/encargos"
               : "/api/usuarios/me/encargos"
-        // Para ADMIN los nombres son necesarios para filtrar por artista.
-        const pedidoArtistas = verRecibidos
-            ? Promise.resolve([])
-            : api.get("/api/artistas").catch((error) => {
-                  if (esAdmin) throw error
-                  return []
-              })
+        // Solo ADMIN necesita la lista de artistas (para filtrar): los nombres de cada encargo ya vienen en la respuesta.
+        const pedidoArtistas = esAdmin ? api.get("/api/artistas") : Promise.resolve([])
         Promise.all([api.get(ruta), pedidoArtistas])
             .then(([respuesta, perfiles]) => {
                 if (!activo) return
@@ -79,9 +73,7 @@ function ListaEncargos({
                 setArtistas(lista(perfiles).map((item) => ({ ...item, nombre: item.nombre_artistico })))
             })
             .catch((error) => {
-                const mensajeVacio = verRecibidos ? "Todavía no recibiste encargos" : "Todavía no hiciste encargos"
-                const sinEncargos = !esAdmin && error.status === 404 && error.message === mensajeVacio
-                if (activo) setDatos({ items: [], error: sinEncargos ? "" : error.message })
+                if (activo) setDatos({ items: [], error: error.message })
             })
             .finally(() => {
                 if (activo) setCargando(false)
@@ -211,10 +203,7 @@ function ListaEncargos({
                             </thead>
                             <tbody>
                                 {encargos.map((encargo) => {
-                                    const persona = verRecibidos
-                                        ? `Cliente Nº ${encargo.usuario_id}`
-                                        : (artistas.find((item) => item.id === encargo.artista_id)?.nombre_artistico ??
-                                          `Artista Nº ${encargo.artista_id}`)
+                                    const persona = verRecibidos ? encargo.nombre_cliente : encargo.nombre_artista
                                     const accion =
                                         verRecibidos && ["PENDIENTE", "EN_PROCESO"].includes(encargo.estado_encargo)
                                             ? "Responder"
@@ -222,18 +211,17 @@ function ListaEncargos({
                                     return (
                                         <tr key={encargo.id}>
                                             <td>{String(encargo.id).padStart(3, "0")}</td>
-                                            <td>{persona ?? "Participante"}</td>
-                                            <td>
-                                                {pinturas.find((item) => item.valor === encargo.tipo_pintura)?.nombre}
-                                            </td>
-                                            <td>
-                                                {lienzos.find((item) => item.valor === encargo.tipo_lienzo)?.nombre}
-                                            </td>
+                                            <td>{persona}</td>
+                                            <td>{encargo.nombre_tipo_pintura}</td>
+                                            <td>{encargo.nombre_tipo_lienzo}</td>
                                             <td>
                                                 {new Date(encargo.fecha_creacion_encargo).toLocaleDateString("es-AR")}
                                             </td>
                                             <td>
-                                                <EstadoEncargo estado={encargo.estado_encargo} />
+                                                <EstadoEncargo
+                                                    estado={encargo.estado_encargo}
+                                                    nombre={encargo.nombre_estado}
+                                                />
                                             </td>
                                             <td>
                                                 <a
