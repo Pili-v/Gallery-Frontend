@@ -4,7 +4,11 @@
 import { useEffect, useState } from "react"
 import { api, lista } from "../api/cliente"
 import { pesos, fecha } from "../api/formato"
+import { PERIODOS, desdeDelPeriodo, parametrosDeFiltros } from "../api/filtros"
 
+import Boton from "../components/Boton"
+import CampoFormulario from "../components/CampoFormulario"
+import Indicador from "../components/Indicador"
 import Estado from "../components/Estado"
 import DetalleVenta from "../components/DetalleVenta"
 import Paginador from "../components/Paginador"
@@ -30,14 +34,24 @@ const Ventas = () => {
     const [totalPaginas, setTotalPaginas] = useState(1)
     const [totalFacturas, setTotalFacturas] = useState(0)
 
-    // Lo vendido en total: lo calcula el back con todas las facturas, no solo las de esta página.
+    // Lo vendido en total: lo calcula el back con todas las facturas que cumplen los filtros, no solo las de esta página.
     const [totalVendido, setTotalVendido] = useState(0)
+
+    // Los filtros (cómo se entregó y de cuándo es la venta): los aplica el back y valen para la lista y para el total.
+    const [filtroDeEntrega, setFiltroDeEntrega] = useState("todas")
+    const [filtroDePeriodo, setFiltroDePeriodo] = useState("0")
+    const hayFiltros = filtroDeEntrega !== "todas" || filtroDePeriodo !== "0"
 
     // El backend saca el artista del token, por eso no hace falta mandarle el id.
     useEffect(() => {
         let vigente = true
 
-        api.get("/api/artistas/me/facturas?page=" + pagina + "&size=" + POR_PAGINA)
+        const filtros = {
+            entrega: filtroDeEntrega === "todas" ? "" : filtroDeEntrega,
+            desde: desdeDelPeriodo(filtroDePeriodo)
+        }
+
+        api.get("/api/artistas/me/facturas?page=" + pagina + "&size=" + POR_PAGINA + parametrosDeFiltros(filtros))
             .then((respuesta) => {
                 if (!vigente) return
                 setFacturas(lista(respuesta))
@@ -53,16 +67,31 @@ const Ventas = () => {
                 if (vigente) setCargando(false)
             })
 
-        // Si se cambia de página antes de que llegue la respuesta, la vieja se descarta.
+        // Si se cambia de página o de filtro antes de que llegue la respuesta, la vieja se descarta.
         return () => {
             vigente = false
         }
-    }, [pagina])
+    }, [pagina, filtroDeEntrega, filtroDePeriodo])
 
     const cambiarPagina = (nueva) => {
         setCargando(true)
         setPagina(nueva)
     }
+
+    // Con otro filtro vuelve a la primera página: la que se estaba viendo puede no existir con menos resultados.
+    const cambiarFiltro = (poner, valor) => {
+        poner(valor)
+        setPagina(0)
+    }
+
+    const quitarFiltros = () => {
+        setFiltroDeEntrega("todas")
+        setFiltroDePeriodo("0")
+        setPagina(0)
+    }
+
+    // Sin ventas y sin filtros no hay nada que filtrar: solo se avisa. Con filtros se mantienen a la vista.
+    const sinNada = !cargando && !error && facturas.length === 0 && !hayFiltros
 
     // Abre o cierra una venta. El detalle (comprador, entrega y obras con su nombre y portada) viene
     // en un solo pedido y solo se pide la primera vez: al volver a abrirla se usa lo guardado.
@@ -104,6 +133,47 @@ const Ventas = () => {
                 <h1 className="headline-lg titulo-oculto">Mis ventas</h1>
                 <p className="body-lg muted titulo-oculto">Las facturas emitidas a tu nombre.</p>
 
+                {!sinNada && !error && (
+                    <div className="filtros">
+                        <CampoFormulario
+                            tipo="select"
+                            etiqueta="Entrega"
+                            value={filtroDeEntrega}
+                            onChange={(evento) => cambiarFiltro(setFiltroDeEntrega, evento.target.value)}
+                        >
+                            <option value="todas">Todas</option>
+                            <option value="envio">Envío a domicilio</option>
+                            <option value="retiro">Retiro en el local</option>
+                            <option value="encargo">Encargo (sin envío)</option>
+                        </CampoFormulario>
+
+                        <CampoFormulario
+                            tipo="select"
+                            etiqueta="Período"
+                            value={filtroDePeriodo}
+                            onChange={(evento) => cambiarFiltro(setFiltroDePeriodo, evento.target.value)}
+                        >
+                            {PERIODOS.map((periodoPosible) => (
+                                <option key={periodoPosible.valor} value={periodoPosible.valor}>
+                                    {periodoPosible.texto}
+                                </option>
+                            ))}
+                        </CampoFormulario>
+
+                        {hayFiltros && (
+                            <Boton type="button" tipo="secundario" onClick={quitarFiltros}>
+                                Quitar filtros
+                            </Boton>
+                        )}
+
+                        {/* Lo vendido y la cantidad de facturas, a la derecha, a la altura de los filtros (valen para lo filtrado). */}
+                        <div className="filtros-totales">
+                            <Indicador titulo="Vendido" valor={pesos(totalVendido)} />
+                            <Indicador titulo="Facturas" valor={totalFacturas} />
+                        </div>
+                    </div>
+                )}
+
                 {/* El título está siempre; solo lo que viene del back espera. */}
                 {cargando ? (
                     <div>
@@ -114,22 +184,20 @@ const Ventas = () => {
                         <Estado tipo="error" mensaje={error} />
                     </div>
                 ) : facturas.length === 0 ? (
-                    <div>
-                        <Estado tipo="vacio" mensaje="Todavía no vendiste ninguna obra." />
-                    </div>
+                    hayFiltros ? (
+                        <Estado
+                            tipo="vacio"
+                            mensaje="No hay ventas con esos filtros."
+                            accion="Quitar filtros"
+                            onAccion={quitarFiltros}
+                        />
+                    ) : (
+                        <div>
+                            <Estado tipo="vacio" mensaje="Todavía no vendiste ninguna obra." />
+                        </div>
+                    )
                 ) : (
                     <>
-                        <div className="fila" style={{ marginBottom: "var(--lg)" }}>
-                            <div className="cartela" style={{ padding: "var(--md) var(--lg)" }}>
-                                <p className="catalog-number muted">Vendido</p>
-                                <p className="price-lg">{pesos(totalVendido)}</p>
-                            </div>
-                            <div className="cartela" style={{ padding: "var(--md) var(--lg)" }}>
-                                <p className="catalog-number muted">Facturas</p>
-                                <p className="price-lg">{totalFacturas}</p>
-                            </div>
-                        </div>
-
                         <table className="tabla">
                             <thead>
                                 <tr>

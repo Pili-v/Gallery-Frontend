@@ -7,9 +7,13 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
 import { optimizada } from "../api/formato"
+import { parametrosDeFiltros } from "../api/filtros"
 
 import Boton from "../components/Boton"
+import CampoFormulario from "../components/CampoFormulario"
 import Estado from "../components/Estado"
+import FiltroEstilos from "../components/FiltroEstilos"
+import Indicador from "../components/Indicador"
 import FilaObra from "../components/FilaObra"
 import DetalleObra from "../components/DetalleObra"
 import Paginador from "../components/Paginador"
@@ -29,6 +33,16 @@ const PanelObras = () => {
     const [totalPaginas, setTotalPaginas] = useState(1)
     const [totalObras, setTotalObras] = useState(0)
 
+    // Los filtros: los aplica el back y la lista vuelve paginada. "texto" es lo que se está escribiendo y "busqueda"
+    // lo que se buscó (se aplica al apretar Buscar o Enter); los demás se aplican apenas se eligen.
+    const [textoEscrito, setTextoEscrito] = useState("")
+    const [nombreBuscado, setNombreBuscado] = useState("")
+    const [estadoDeVenta, setEstadoDeVenta] = useState("todas")
+    const [estadoDeStock, setEstadoDeStock] = useState("todas")
+    const [estiloIds, setEstiloIds] = useState([])
+    const hayFiltros =
+        nombreBuscado !== "" || estadoDeVenta !== "todas" || estadoDeStock !== "todas" || estiloIds.length > 0
+
     // Qué obras están abiertas, por id de obra. Puede haber varias a la vez.
     const [abiertas, setAbiertas] = useState({})
 
@@ -47,7 +61,14 @@ const PanelObras = () => {
     useEffect(() => {
         let vigente = true
 
-        api.get("/api/artistas/me/obras?page=" + pagina + "&size=" + POR_PAGINA)
+        const filtros = {
+            nombreObra: nombreBuscado,
+            enVenta: estadoDeVenta === "si" ? "true" : estadoDeVenta === "no" ? "false" : "",
+            sinStock: estadoDeStock === "sin" ? "true" : "",
+            estiloId: estiloIds
+        }
+
+        api.get("/api/artistas/me/obras?page=" + pagina + "&size=" + POR_PAGINA + parametrosDeFiltros(filtros))
             .then((respuesta) => {
                 if (!vigente) return
                 setObras(lista(respuesta))
@@ -62,16 +83,41 @@ const PanelObras = () => {
                 if (vigente) setCargando(false)
             })
 
-        // Si se cambia de página antes de que llegue la respuesta, la vieja se descarta.
+        // Si se cambia de página o de filtro antes de que llegue la respuesta, la vieja se descarta.
         return () => {
             vigente = false
         }
-    }, [pagina])
+    }, [pagina, nombreBuscado, estadoDeVenta, estadoDeStock, estiloIds])
 
     const cambiarPagina = (nueva) => {
         setCargando(true)
         setPagina(nueva)
     }
+
+    // Con otro filtro vuelve a la primera página: la que se estaba viendo puede no existir con menos resultados.
+    const cambiarFiltro = (actualizarFiltro, valorNuevo) => {
+        actualizarFiltro(valorNuevo)
+        setCargando(true)
+        setPagina(0)
+    }
+
+    const buscar = (evento) => {
+        evento.preventDefault()
+        cambiarFiltro(setNombreBuscado, textoEscrito.trim())
+    }
+
+    const quitarFiltros = () => {
+        setTextoEscrito("")
+        setNombreBuscado("")
+        setEstadoDeVenta("todas")
+        setEstadoDeStock("todas")
+        setEstiloIds([])
+        setCargando(true)
+        setPagina(0)
+    }
+
+    // Sin obras y sin filtros no hay nada que filtrar: solo se invita a publicar. Con filtros se mantienen a la vista.
+    const sinNada = !cargando && !error && obras.length === 0 && !hayFiltros
 
     // Abre o cierra una obra. Las variantes se piden la primera vez que se abre.
     const alternar = (obra) => {
@@ -104,15 +150,6 @@ const PanelObras = () => {
         return nombres.length > 0 ? nombres.join(", ") : "—"
     }
 
-    // Los contadores de arriba salen de las obras que se están viendo. Con una sola página son
-    // los totales; con varias, solo los de esta página.
-    let publicadas = 0
-    let conFaltantes = 0
-    obras.forEach((obra) => {
-        if (obra.en_venta) publicadas = publicadas + 1
-        if (obra.variantes_sin_stock > 0) conFaltantes = conFaltantes + 1
-    })
-
     // El título y el botón están siempre; solo lo que viene del back espera.
     let cuerpo
 
@@ -120,6 +157,15 @@ const PanelObras = () => {
         cuerpo = <Estado tipo="cargando" />
     } else if (error) {
         cuerpo = <Estado tipo="error" mensaje={error} />
+    } else if (obras.length === 0 && hayFiltros) {
+        cuerpo = (
+            <Estado
+                tipo="vacio"
+                mensaje="No hay obras con esos filtros."
+                accion="Quitar filtros"
+                onAccion={quitarFiltros}
+            />
+        )
     } else if (obras.length === 0) {
         cuerpo = (
             <Estado
@@ -186,17 +232,63 @@ const PanelObras = () => {
         <div className="seccion">
             <div className="contenido">
                 <div className="encabezado">
-                    <div>
-                        <h1 className="headline-lg titulo-oculto">Mis obras</h1>
-                        {!cargando && obras.length > 0 && (
-                            <p className="body-lg muted">
-                                {totalPaginas > 1 && totalObras + " obras · en esta página: "}
-                                {publicadas} publicadas · {conFaltantes} con variantes sin stock
-                            </p>
-                        )}
-                    </div>
+                    <h1 className="headline-lg titulo-oculto">Mis obras</h1>
                     <Boton onClick={() => navegar("/panel/obras/nueva")}>Publicar obra</Boton>
                 </div>
+
+                {!sinNada && !error && (
+                    <form className="filtros" onSubmit={buscar} role="search">
+                        <div style={{ flex: "1 1 240px", maxWidth: 360 }}>
+                            <CampoFormulario
+                                etiqueta="Buscar obra"
+                                placeholder="Nombre de la obra"
+                                value={textoEscrito}
+                                onChange={(evento) => setTextoEscrito(evento.target.value)}
+                            />
+                        </div>
+                        <button type="submit" className="boton boton-secundario">
+                            Buscar
+                        </button>
+
+                        <CampoFormulario
+                            tipo="select"
+                            etiqueta="En venta"
+                            value={estadoDeVenta}
+                            onChange={(evento) => cambiarFiltro(setEstadoDeVenta, evento.target.value)}
+                        >
+                            <option value="todas">Todas</option>
+                            <option value="si">En venta</option>
+                            <option value="no">No en venta</option>
+                        </CampoFormulario>
+
+                        <CampoFormulario
+                            tipo="select"
+                            etiqueta="Stock"
+                            value={estadoDeStock}
+                            onChange={(evento) => cambiarFiltro(setEstadoDeStock, evento.target.value)}
+                        >
+                            <option value="todas">Todas</option>
+                            <option value="sin">Con variantes sin stock</option>
+                        </CampoFormulario>
+
+                        <FiltroEstilos
+                            estilos={estilos}
+                            seleccionados={estiloIds}
+                            onCambiar={(ids) => cambiarFiltro(setEstiloIds, ids)}
+                        />
+
+                        {hayFiltros && (
+                            <Boton type="button" tipo="secundario" onClick={quitarFiltros}>
+                                Quitar filtros
+                            </Boton>
+                        )}
+
+                        {/* El total de obras (las que cumplen los filtros), a la derecha, como en Mis ventas y Mis compras. */}
+                        <div className="filtros-totales">
+                            <Indicador titulo="Obras" valor={totalObras} />
+                        </div>
+                    </form>
+                )}
 
                 {cuerpo}
             </div>

@@ -99,6 +99,9 @@ body {
 .filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--md); margin-bottom: var(--lg); }
 .filtros .campo { margin-bottom: 0; min-width: 200px; }
 .filtros > .boton { height: var(--alto-control); padding-top: 0; padding-bottom: 0; } /* la misma altura que un campo */
+/* Totales a la derecha de la fila de filtros: tarjetas compactas, del alto de un filtro con su etiqueta. */
+.filtros-totales { display: flex; gap: var(--md); margin-left: auto; align-self: stretch; }
+.filtros-totales .cartela { display: flex; flex-direction: column; justify-content: center; padding: 0 var(--md); }
 /* En las pantallas del menú el título no se ve en escritorio: la barra de arriba ya marca dónde estás. Sigue en el
    HTML (lo leen los lectores de pantalla) y se muestra en pantallas angostas, donde el menú queda escondido. */
 @media (min-width: 1001px) {
