@@ -5,7 +5,7 @@ import Boton from "../components/Boton"
 import CampoFormulario from "../components/CampoFormulario"
 import BuscadorArtista from "../components/BuscadorArtista"
 import Estado from "../components/Estado"
-import { pinturas, lienzos, prepararEncargo } from "../api/encargoContrato.js"
+import { prepararEncargo } from "../api/encargoContrato.js"
 import "./encargoNuevo.css"
 
 const inicial = {
@@ -26,6 +26,8 @@ export default function EncargoNuevo() {
     const [artistas, setArtistas] = useState([])
     const [tamanios, setTamanios] = useState([])
     const [marcos, setMarcos] = useState([])
+    const [pinturas, setPinturas] = useState([])
+    const [lienzos, setLienzos] = useState([])
     const [cargando, setCargando] = useState(true)
     const [errorCarga, setErrorCarga] = useState("")
     const [enviando, setEnviando] = useState(false)
@@ -57,6 +59,14 @@ export default function EncargoNuevo() {
             .then((respuesta) => {
                 if (activo)
                     setMarcos(convertirLista(respuesta).map((item) => ({ id: item.id, nombre: item.nombre_marco })))
+                return api.get("/api/encargos/opciones")
+            })
+            .then((respuesta) => {
+                // Los tipos de pintura y de lienzo los define el back (son sus enums): acá solo se muestran.
+                if (activo) {
+                    setPinturas(respuesta.tipos_pintura)
+                    setLienzos(respuesta.tipos_lienzo)
+                }
             })
             .catch((error) => {
                 if (activo) setErrorCarga(`No se pudieron cargar las opciones del pedido: ${error.message}`)
@@ -83,7 +93,7 @@ export default function EncargoNuevo() {
     function enviar(evento) {
         evento.preventDefault()
         if (enviando || cargando || errorCarga) return
-        const resultado = prepararEncargo(formulario)
+        const resultado = prepararEncargo(formulario, pinturas, lienzos)
         setErrores(resultado.errores)
         if (!resultado.datos) {
             evento.currentTarget.elements.namedItem(Object.keys(resultado.errores)[0])?.focus()
@@ -135,12 +145,14 @@ export default function EncargoNuevo() {
                         </Boton>
                     </div>
                 )}
-                {!cargando && !errorCarga && (!artistas.length || !tamanios.length || !marcos.length) && (
-                    <Estado
-                        tipo="vacio"
-                        mensaje="Faltan artistas disponibles, tamaños o marcos para poder pedir un encargo."
-                    />
-                )}
+                {!cargando &&
+                    !errorCarga &&
+                    (!artistas.length || !tamanios.length || !marcos.length || !pinturas.length || !lienzos.length) && (
+                        <Estado
+                            tipo="vacio"
+                            mensaje="Faltan artistas disponibles, tamaños o marcos para poder pedir un encargo."
+                        />
+                    )}
                 <form className="cartela encargo-formulario" onSubmit={enviar} noValidate>
                     <p className="body-sm muted encargo-obligatorios">Todos los campos son obligatorios.</p>
                     <BuscadorArtista
@@ -213,7 +225,9 @@ export default function EncargoNuevo() {
                             Boolean(errorCarga) ||
                             !artistas.length ||
                             !tamanios.length ||
-                            !marcos.length
+                            !marcos.length ||
+                            !pinturas.length ||
+                            !lienzos.length
                         }
                     >
                         {enviando ? "Enviando..." : "Enviar el pedido"}

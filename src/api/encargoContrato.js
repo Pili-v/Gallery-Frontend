@@ -1,18 +1,6 @@
-export const pinturas = [
-    { valor: "OLEO", nombre: "Óleo" },
-    { valor: "ACRILICO", nombre: "Acrílico" },
-    { valor: "ACUARELA", nombre: "Acuarela" },
-    { valor: "GRAFITI", nombre: "Grafiti" }
-]
-export const lienzos = [
-    { valor: "LIENZO", nombre: "Lienzo" },
-    { valor: "PAPEL", nombre: "Papel" },
-    { valor: "MADERA", nombre: "Madera" },
-    { valor: "TELA", nombre: "Tela" }
-]
-
 // Contrato de POST /api/encargos. Las etiquetas traducidas nunca viajan a la API.
-export function prepararEncargo(formulario) {
+// Los tipos de pintura y de lienzo válidos los manda el back (GET /api/encargos/opciones): acá no se repiten.
+export function prepararEncargo(formulario, pinturas, lienzos) {
     const errores = {}
     const datos = {}
     for (const campo of ["artista_id", "tamanio_id", "marco_id"]) {

@@ -1,18 +1,11 @@
-export const estadosEncargo = {
-    PENDIENTE: { clase: "pendiente", texto: "Pendiente" },
-    APROBADO: { clase: "proceso", texto: "Aprobado" },
-    PAGADO: { clase: "terminado", texto: "Pagado" },
-    EN_PROCESO: { clase: "proceso", texto: "En proceso" },
-    TERMINADO: { clase: "terminado", texto: "Terminado" },
-    CANCELADO: { clase: "cancelado", texto: "Cancelado" }
-}
-
-export function estadosPermitidos(estado) {
-    if (estado === "PENDIENTE") return ["CANCELADO"]
-    // Una vez aprobado el precio el encargo ya no se cancela: solo se cancela mientras está pendiente.
-    if (estado === "APROBADO") return ["EN_PROCESO", "PENDIENTE"]
-    if (estado === "EN_PROCESO") return ["TERMINADO", "PENDIENTE"]
-    return []
+// Cómo se dibuja cada estado (solo el estilo: el texto y los cambios posibles los manda el back en cada encargo).
+export const estiloDeEstado = {
+    PENDIENTE: "pendiente",
+    APROBADO: "proceso",
+    PAGADO: "terminado",
+    EN_PROCESO: "proceso",
+    TERMINADO: "terminado",
+    CANCELADO: "cancelado"
 }
 
 // POST /api/mensajes: el emisor lo determina la sesión, no viaja en el body.
@@ -26,9 +19,10 @@ export function prepararMensaje(encargoId, texto) {
     return { encargo_id: id, contenido }
 }
 
-// PATCH /api/encargos/{id}/estado: respeta CambiarEstadoRequest.
-export function prepararCambioEstado(estadoActual, nuevoEstado) {
-    if (!estadosPermitidos(estadoActual).includes(nuevoEstado)) {
+// PATCH /api/encargos/{id}/estado: respeta CambiarEstadoRequest. Los estados posibles salen del encargo
+// (estados_siguientes), que los calcula el back; si se elige otro, el back igual lo rechaza.
+export function prepararCambioEstado(estadosSiguientes, nuevoEstado) {
+    if (!estadosSiguientes.some((estado) => estado.valor === nuevoEstado)) {
         throw new Error("Ese cambio de estado no está permitido.")
     }
     return { nuevoEstado }

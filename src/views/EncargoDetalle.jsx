@@ -9,13 +9,7 @@ import Confirmacion from "../components/Confirmacion"
 import CampoFormulario from "../components/CampoFormulario"
 import Estado from "../components/Estado"
 import EstadoEncargo from "../components/EstadoEncargo"
-import { pinturas, lienzos } from "../api/encargoContrato.js"
-import {
-    estadosEncargo,
-    estadosPermitidos,
-    prepararMensaje,
-    prepararCambioEstado
-} from "../api/encargoDetalleContrato.js"
+import { prepararMensaje, prepararCambioEstado } from "../api/encargoDetalleContrato.js"
 import "./encargoDetalle.css"
 
 // El back manda los mensajes del más nuevo al más viejo (para poder cargar la conversación desde lo último), igual
@@ -24,14 +18,8 @@ import "./encargoDetalle.css"
 const enOrdenDeLectura = (mensajes) =>
     [...mensajes].sort((a, b) => new Date(a.fecha_creacion_mensaje) - new Date(b.fecha_creacion_mensaje) || a.id - b.id)
 
-// Los mensajes del encargo. El backend responde 404 cuando todavía no tiene ninguno: eso es una lista vacía.
-const pedirMensajes = (id) =>
-    api.get(`/api/encargos/${id}/mensajes`).catch((error) => {
-        if (error.status === 404 && error.message === `El encargo con id ${id} todavía no tiene mensajes`) {
-            return []
-        }
-        throw error
-    })
+// Los mensajes del encargo. Si todavía no tiene ninguno el back responde 204 (sin cuerpo): lista(null) es [].
+const pedirMensajes = (id) => api.get(`/api/encargos/${id}/mensajes`)
 
 // Cada cuánto se vuelve a pedir el encargo mientras la pantalla está abierta (en milisegundos). Con 3 segundos
 // la conversación se siente casi inmediata y son dos pedidos livianos por vez; si el back tarda, no se acumulan.
@@ -52,7 +40,6 @@ function Detalle({ id, recibidos, base }) {
     const [intento, setIntento] = useState(0)
     const [enviando, setEnviando] = useState(false)
     const [guardando, setGuardando] = useState(false)
-    const [referencias, setReferencias] = useState({})
     const usuario = getUsuario()
     const esAdmin = usuario?.rol_usuario === "ADMIN"
     const perfilArtista = getPerfilArtista()
@@ -69,22 +56,6 @@ function Detalle({ id, recibidos, base }) {
             })
             .then((mensajes) => {
                 if (activo) setDatos({ encargo: { ...pedido, mensajes: enOrdenDeLectura(lista(mensajes)) }, error: "" })
-                // Los nombres son complementarios: si fallan, mostramos los IDs reales.
-                api.get(`/api/artistas/${pedido.artista_id}`)
-                    .then((artista) => {
-                        if (activo) setReferencias((actual) => ({ ...actual, artista }))
-                    })
-                    .catch(() => {})
-                api.get(`/api/tamanios-lienzo/${pedido.tamanio_id}`)
-                    .then((tamanio) => {
-                        if (activo) setReferencias((actual) => ({ ...actual, tamanio }))
-                    })
-                    .catch(() => {})
-                api.get(`/api/marcos/${pedido.marco_id}`)
-                    .then((marco) => {
-                        if (activo) setReferencias((actual) => ({ ...actual, marco }))
-                    })
-                    .catch(() => {})
             })
             .catch((error) => {
                 if (activo) setDatos({ encargo: null, error: error.message })
@@ -195,7 +166,7 @@ function Detalle({ id, recibidos, base }) {
         setAviso("")
         let cuerpo
         try {
-            cuerpo = prepararCambioEstado(encargo.estado_encargo, nuevoEstado)
+            cuerpo = prepararCambioEstado(encargo.estados_siguientes, nuevoEstado)
         } catch (error) {
             setErrorEstado(error.message)
             return
@@ -292,16 +263,14 @@ function Detalle({ id, recibidos, base }) {
     }
 
     const esArtista = permisos.puedeCambiarEstado
-    const artista = {
-        usuario_id: referencias.artista?.usuario_id,
-        nombre: referencias.artista?.nombre_artistico ?? `Artista Nº ${encargo.artista_id}`
-    }
-    const cliente = { nombre: `Cliente Nº ${encargo.usuario_id}` }
-    const pintura = pinturas.find((item) => item.valor === encargo.tipo_pintura)?.nombre ?? encargo.tipo_pintura
-    const lienzo = lienzos.find((item) => item.valor === encargo.tipo_lienzo)?.nombre ?? encargo.tipo_lienzo
-    const tamanio = referencias.tamanio?.nombre_tamanio ?? `Tamaño Nº ${encargo.tamanio_id}`
-    const marco = referencias.marco?.nombre_marco ?? `Nº ${encargo.marco_id}`
-    const permitidos = estadosPermitidos(encargo.estado_encargo)
+    // Los nombres, los textos y los cambios de estado posibles ya vienen resueltos en el encargo.
+    const artista = { usuario_id: encargo.artista_usuario_id, nombre: encargo.nombre_artista }
+    const cliente = { nombre: encargo.nombre_cliente }
+    const pintura = encargo.nombre_tipo_pintura
+    const lienzo = encargo.nombre_tipo_lienzo
+    const tamanio = encargo.nombre_tamanio
+    const marco = encargo.nombre_marco
+    const estadosSiguientes = encargo.estados_siguientes
 
     return (
         <main className="seccion encargo-detalle">
@@ -325,7 +294,7 @@ function Detalle({ id, recibidos, base }) {
                             </time>
                         </p>
                     </div>
-                    <EstadoEncargo estado={encargo.estado_encargo} />
+                    <EstadoEncargo estado={encargo.estado_encargo} nombre={encargo.nombre_estado} />
                 </div>
                 <div className="aviso detalle-aviso">
                     <span className="catalog-number cartela-num">
@@ -349,10 +318,10 @@ function Detalle({ id, recibidos, base }) {
                         <span className="chip">{pintura}</span>
                         <span className="chip">{lienzo}</span>
                         <span className="chip">{tamanio}</span>
-                        <span className="chip">Marco {marco}</span>
+                        <span className="chip">{marco}</span>
                     </div>
                     <hr className="divisor" />
-                    {esArtista && permitidos.length > 0 ? (
+                    {esArtista && estadosSiguientes.length > 0 ? (
                         <form onSubmit={guardarEstado}>
                             <div className="entre detalle-estado">
                                 <label htmlFor="estado-encargo" className="muted">
@@ -371,12 +340,10 @@ function Detalle({ id, recibidos, base }) {
                                             setAviso("")
                                         }}
                                     >
-                                        <option value="">
-                                            {estadosEncargo[encargo.estado_encargo].texto} (actual)
-                                        </option>
-                                        {permitidos.map((estado) => (
-                                            <option key={estado} value={estado}>
-                                                {estadosEncargo[estado].texto}
+                                        <option value="">{encargo.nombre_estado} (actual)</option>
+                                        {estadosSiguientes.map((estado) => (
+                                            <option key={estado.valor} value={estado.valor}>
+                                                {estado.nombre}
                                             </option>
                                         ))}
                                     </select>
@@ -398,14 +365,14 @@ function Detalle({ id, recibidos, base }) {
                         <>
                             <div className="entre detalle-estado">
                                 <span className="muted">Estado del encargo</span>
-                                <EstadoEncargo estado={encargo.estado_encargo} />
+                                <EstadoEncargo estado={encargo.estado_encargo} nombre={encargo.nombre_estado} />
                             </div>
                             <p className="body-sm muted detalle-texto">
                                 {esAdmin
                                     ? "Consulta de solo lectura."
                                     : permisos.puedeCancelar
                                       ? "El artista avanza el estado del encargo; vos podés cancelarlo mientras esté pendiente: una vez que aceptás el precio ya no se cancela."
-                                      : permitidos.length === 0
+                                      : estadosSiguientes.length === 0
                                         ? "No hay cambios de estado disponibles desde esta pantalla."
                                         : "Solo el artista puede cambiar el estado."}
                             </p>
