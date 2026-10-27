@@ -15,7 +15,7 @@ import Paginador from "../components/Paginador"
 import FiltroEstilos from "../components/FiltroEstilos"
 import BuscadorArtista from "../components/BuscadorArtista"
 
-const POR_PAGINA = 3
+const POR_PAGINA = 10
 const MAX_PORTADAS = 3
 const MAX_ESTILOS = 4
 
