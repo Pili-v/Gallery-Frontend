@@ -3,22 +3,17 @@ import { useNavigate } from "react-router-dom"
 import Boton from "../components/Boton"
 
 const NoEncontrada = () => {
-
     const navigate = useNavigate()
 
     return (
         <div className="seccion">
-
             <div
                 className="contenido col-angosta centro"
                 style={{
                     padding: "var(--xxl) 0"
                 }}
             >
-
-                <p className="catalog-number cartela-num">
-                    Error 404
-                </p>
+                <p className="catalog-number cartela-num">Error 404</p>
 
                 <h1
                     className="headline-lg"
@@ -29,10 +24,7 @@ const NoEncontrada = () => {
                     Página no encontrada
                 </h1>
 
-                <p className="body-lg muted">
-                    La página que estás buscando no existe
-                    o fue movida.
-                </p>
+                <p className="body-lg muted">La página que estás buscando no existe o fue movida.</p>
 
                 <Boton
                     tipo="primario"
@@ -43,9 +35,7 @@ const NoEncontrada = () => {
                 >
                     Volver al catálogo
                 </Boton>
-
             </div>
-
         </div>
     )
 }

@@ -20,15 +20,24 @@ const Confirmacion = ({ titulo, mensaje, textoConfirmar, onConfirmar, onCancelar
         <dialog
             ref={dialogo}
             className="modal"
-            onCancel={(e) => { e.preventDefault(); if (onCancelar && !ocupado) onCancelar() }}
-            onClick={(e) => { if (onCancelar && e.target === e.currentTarget && !ocupado) onCancelar() }}
+            onCancel={(e) => {
+                e.preventDefault()
+                if (onCancelar && !ocupado) onCancelar()
+            }}
+            onClick={(e) => {
+                if (onCancelar && e.target === e.currentTarget && !ocupado) onCancelar()
+            }}
         >
             <h2 className="headline-sm">{titulo}</h2>
-            <p className="body-lg muted" style={{ marginTop: "var(--sm)" }}>{mensaje}</p>
+            <p className="body-lg muted" style={{ marginTop: "var(--sm)" }}>
+                {mensaje}
+            </p>
 
             <div className="modal-acciones">
                 {onCancelar && (
-                    <Boton tipo="secundario" type="button" onClick={onCancelar} disabled={ocupado}>Cancelar</Boton>
+                    <Boton tipo="secundario" type="button" onClick={onCancelar} disabled={ocupado}>
+                        Cancelar
+                    </Boton>
                 )}
                 <Boton tipo={ocupado ? "deshabilitado" : "primario"} type="button" onClick={onConfirmar}>
                     {textoConfirmar}

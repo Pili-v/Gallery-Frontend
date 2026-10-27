@@ -33,52 +33,162 @@ const ADMIN = ["ADMIN"]
 
 // Cada ruta es una URL. React Router cambia de pantalla sin recargar la página.
 const App = () => {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
+    return (
+        <BrowserRouter>
+            <Routes>
+                <Route element={<Layout />}>
+                    {/* Se puede mirar sin estar logueado */}
+                    <Route path="/" element={<Catalogo />} />
+                    <Route path="/demo/encargos/*" element={<Navigate to="/encargos" replace />} />
+                    <Route path="/obra/:id" element={<DetalleObra />} />
+                    <Route path="/artistas" element={<Artistas />} />
+                    <Route path="/artista/:id" element={<PerfilArtista />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/registro" element={<Registro />} />
 
-          {/* Se puede mirar sin estar logueado */}
-          <Route path="/" element={<Catalogo />} />
-          <Route path="/demo/encargos/*" element={<Navigate to="/encargos" replace />} />
-          <Route path="/obra/:id" element={<DetalleObra />} />
-          <Route path="/artistas" element={<Artistas />} />
-          <Route path="/artista/:id" element={<PerfilArtista />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/registro" element={<Registro />} />
+                    {/* Hay que estar logueado, sin importar el rol */}
+                    <Route
+                        path="/mi-cuenta"
+                        element={
+                            <RutaProtegida>
+                                <MiCuenta />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/quiero-publicar"
+                        element={
+                            <RutaProtegida>
+                                <QuieroPublicar />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/mis-compras"
+                        element={
+                            <RutaProtegida>
+                                <MisCompras />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/encargos"
+                        element={
+                            <RutaProtegida>
+                                <Encargos />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/encargos/:id"
+                        element={
+                            <RutaProtegida>
+                                <EncargoDetalle />
+                            </RutaProtegida>
+                        }
+                    />
 
-          {/* Hay que estar logueado, sin importar el rol */}
-          <Route path="/mi-cuenta" element={<RutaProtegida><MiCuenta /></RutaProtegida>} />
-          <Route path="/quiero-publicar" element={<RutaProtegida><QuieroPublicar /></RutaProtegida>} />
-          <Route path="/mis-compras" element={<RutaProtegida><MisCompras /></RutaProtegida>} />
-          <Route path="/encargos" element={<RutaProtegida><Encargos /></RutaProtegida>} />
-          <Route path="/encargos/:id" element={<RutaProtegida><EncargoDetalle /></RutaProtegida>} />
+                    {/* Comprar */}
+                    <Route
+                        path="/carrito"
+                        element={
+                            <RutaProtegida roles={COMPRA}>
+                                <Carrito />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/checkout/pago"
+                        element={
+                            <RutaProtegida roles={COMPRA}>
+                                <Pago />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/compra/:id"
+                        element={
+                            <RutaProtegida roles={COMPRA}>
+                                <CompraConfirmada />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/encargos/nuevo"
+                        element={
+                            <RutaProtegida roles={COMPRA}>
+                                <EncargoNuevo />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/encargos/:id/pagar"
+                        element={
+                            <RutaProtegida roles={COMPRA}>
+                                <PagoEncargo />
+                            </RutaProtegida>
+                        }
+                    />
 
-          {/* Comprar */}
-          <Route path="/carrito" element={<RutaProtegida roles={COMPRA}><Carrito /></RutaProtegida>} />
-          <Route path="/checkout/pago" element={<RutaProtegida roles={COMPRA}><Pago /></RutaProtegida>} />
-          <Route path="/compra/:id" element={<RutaProtegida roles={COMPRA}><CompraConfirmada /></RutaProtegida>} />
-          <Route path="/encargos/nuevo" element={<RutaProtegida roles={COMPRA}><EncargoNuevo /></RutaProtegida>} />
-          <Route path="/encargos/:id/pagar" element={<RutaProtegida roles={COMPRA}><PagoEncargo /></RutaProtegida>} />
+                    {/* Vender */}
+                    <Route
+                        path="/panel/obras"
+                        element={
+                            <RutaProtegida roles={ARTISTA}>
+                                <PanelObras />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/panel/obras/nueva"
+                        element={
+                            <RutaProtegida roles={ARTISTA}>
+                                <ObraForm />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/panel/obras/:id/editar"
+                        element={
+                            <RutaProtegida roles={ARTISTA}>
+                                <ObraForm />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/panel/ventas"
+                        element={
+                            <RutaProtegida roles={ARTISTA}>
+                                <Ventas />
+                            </RutaProtegida>
+                        }
+                    />
 
-          {/* Vender */}
-          <Route path="/panel/obras" element={<RutaProtegida roles={ARTISTA}><PanelObras /></RutaProtegida>} />
-          <Route path="/panel/obras/nueva" element={<RutaProtegida roles={ARTISTA}><ObraForm /></RutaProtegida>} />
-          <Route path="/panel/obras/:id/editar" element={<RutaProtegida roles={ARTISTA}><ObraForm /></RutaProtegida>} />
-          <Route path="/panel/ventas" element={<RutaProtegida roles={ARTISTA}><Ventas /></RutaProtegida>} />
+                    {/* Administrar */}
+                    <Route
+                        path="/admin/usuarios"
+                        element={
+                            <RutaProtegida roles={ADMIN}>
+                                <AdminUsuarios />
+                            </RutaProtegida>
+                        }
+                    />
+                    <Route
+                        path="/admin/catalogos"
+                        element={
+                            <RutaProtegida roles={ADMIN}>
+                                <AdminCatalogos />
+                            </RutaProtegida>
+                        }
+                    />
 
-          {/* Administrar */}
-          <Route path="/admin/usuarios" element={<RutaProtegida roles={ADMIN}><AdminUsuarios /></RutaProtegida>} />
-          <Route path="/admin/catalogos" element={<RutaProtegida roles={ADMIN}><AdminCatalogos /></RutaProtegida>} />
-
-          {/* Transversales */}
-          <Route path="/403" element={<SinPermiso />} />
-          <Route path="*" element={<NoEncontrada />} />
-
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  )
+                    {/* Transversales */}
+                    <Route path="/403" element={<SinPermiso />} />
+                    <Route path="*" element={<NoEncontrada />} />
+                </Route>
+            </Routes>
+        </BrowserRouter>
+    )
 }
 
 export default App

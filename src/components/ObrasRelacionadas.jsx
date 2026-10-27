@@ -12,122 +12,131 @@
 //
 // Usarlo con key={obra.id}: así, al pasar a otra obra, la sección se arma de nuevo.
 
-import { useState, useEffect } from "react";
-import { api, lista } from "../api/cliente";
-import { optimizada } from "../api/formato";
-import TarjetaObra from "./TarjetaObra";
+import { useState, useEffect } from "react"
+import { api, lista } from "../api/cliente"
+import { optimizada } from "../api/formato"
+import TarjetaObra from "./TarjetaObra"
 
 // Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
 // respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
 const sin404 = (promesa) =>
-  promesa.catch((e) => {
-    if (e.status === 404) return [];
-    throw e;
-  });
+    promesa.catch((e) => {
+        if (e.status === 404) return []
+        throw e
+    })
 
 export default function ObrasRelacionadas({ titulo, consultas, excluirId, excluirArtistaId = null, maximo = 4 }) {
-  const [items, setItems] = useState([]);
-  const clave = consultas.join("|");
+    const [items, setItems] = useState([])
+    const clave = consultas.join("|")
 
-  useEffect(() => {
-    let vigente = true;
-    setItems([]);
+    useEffect(() => {
+        let vigente = true
+        setItems([])
 
-    if (consultas.length > 0) {
-      // Se piden de más porque después se descartan la obra actual y las del mismo artista.
-      const tamanio = maximo * 3 + 1;
+        if (consultas.length > 0) {
+            // Se piden de más porque después se descartan la obra actual y las del mismo artista.
+            const tamanio = maximo * 3 + 1
 
-      Promise.all(consultas.map((c) => sin404(api.get("/api/obras?" + c + "&page=0&size=" + tamanio))))
-        .then((respuestas) => {
-          // Sin repetidas (una obra puede aparecer en dos estilos) y sin la que se está viendo
-          const vistas = new Set();
-          const elegidas = [];
-          respuestas.forEach((respuesta) => {
-            lista(respuesta).forEach((obra) => {
-              if (obra.id === excluirId || obra.artista_id === excluirArtistaId || vistas.has(obra.id)) return;
-              vistas.add(obra.id);
-              elegidas.push(obra);
-            });
-          });
-          const obras = elegidas.slice(0, maximo);
-          if (obras.length === 0) return null;
+            Promise.all(consultas.map((c) => sin404(api.get("/api/obras?" + c + "&page=0&size=" + tamanio))))
+                .then((respuestas) => {
+                    // Sin repetidas (una obra puede aparecer en dos estilos) y sin la que se está viendo
+                    const vistas = new Set()
+                    const elegidas = []
+                    respuestas.forEach((respuesta) => {
+                        lista(respuesta).forEach((obra) => {
+                            if (obra.id === excluirId || obra.artista_id === excluirArtistaId || vistas.has(obra.id))
+                                return
+                            vistas.add(obra.id)
+                            elegidas.push(obra)
+                        })
+                    })
+                    const obras = elegidas.slice(0, maximo)
+                    if (obras.length === 0) return null
 
-          const idsArtistas = [...new Set(obras.map((o) => o.artista_id))];
+                    const idsArtistas = [...new Set(obras.map((o) => o.artista_id))]
 
-          return Promise.all([
-            // Las portadas de todas las obras en un solo pedido (portada=true); las variantes, de a una obra.
-            Promise.all([
-              sin404(api.get("/api/imagenes?portada=true&" + obras.map((obra) => "obraId=" + obra.id).join("&"))),
-              Promise.all(obras.map((obra) => sin404(api.get("/api/variantes?obraId=" + obra.id))))
-            ]).then(([susPortadas, susVariantes]) =>
-              obras.map((obra, i) => ({
-                obra,
-                variantes: lista(susVariantes[i]),
-                imagenes: lista(susPortadas).filter((p) => p.obra_id === obra.id)
-              }))
-            ),
-            Promise.all(idsArtistas.map((id) => api.get("/api/artistas/" + id))),
-            sin404(api.get("/api/estilos"))
-          ]);
-        })
-        .then((resultado) => {
-          if (!vigente || !resultado) return;
-          const [conDatos, artistas, estilos] = resultado;
+                    return Promise.all([
+                        // Las portadas de todas las obras en un solo pedido (portada=true); las variantes, de a una obra.
+                        Promise.all([
+                            sin404(
+                                api.get(
+                                    "/api/imagenes?portada=true&" + obras.map((obra) => "obraId=" + obra.id).join("&")
+                                )
+                            ),
+                            Promise.all(obras.map((obra) => sin404(api.get("/api/variantes?obraId=" + obra.id))))
+                        ]).then(([susPortadas, susVariantes]) =>
+                            obras.map((obra, i) => ({
+                                obra,
+                                variantes: lista(susVariantes[i]),
+                                imagenes: lista(susPortadas).filter((p) => p.obra_id === obra.id)
+                            }))
+                        ),
+                        Promise.all(idsArtistas.map((id) => api.get("/api/artistas/" + id))),
+                        sin404(api.get("/api/estilos"))
+                    ])
+                })
+                .then((resultado) => {
+                    if (!vigente || !resultado) return
+                    const [conDatos, artistas, estilos] = resultado
 
-          setItems(
-            conDatos.map(({ obra, variantes, imagenes }) => {
-              const portada = [...imagenes].sort((x, y) => (x.orden_imagen ?? 0) - (y.orden_imagen ?? 0))[0];
-              const artista = artistas.find((a) => a.id === obra.artista_id);
-              const estilo = lista(estilos).find((e) => (obra.estilo_ids ?? []).includes(e.id));
+                    setItems(
+                        conDatos.map(({ obra, variantes, imagenes }) => {
+                            const portada = [...imagenes].sort(
+                                (x, y) => (x.orden_imagen ?? 0) - (y.orden_imagen ?? 0)
+                            )[0]
+                            const artista = artistas.find((a) => a.id === obra.artista_id)
+                            const estilo = lista(estilos).find((e) => (obra.estilo_ids ?? []).includes(e.id))
 
-              return {
-                obra: {
-                  ...obra,
-                  estilo: estilo ? estilo.nombre_estilo : "",
-                  artistaId: obra.artista_id,
-                  nombre_artistico: artista ? artista.nombre_artistico : "Artista"
-                },
-                variante: variantes.find((v) => v.stock_variante > 0) ?? variantes[0],
-                imagen: portada ? optimizada(portada.url, 600) : null
-              };
-            })
-          );
-        })
-        .catch(() => {
-          // Es un complemento: si falla, la sección no se muestra.
-        });
-    }
+                            return {
+                                obra: {
+                                    ...obra,
+                                    estilo: estilo ? estilo.nombre_estilo : "",
+                                    artistaId: obra.artista_id,
+                                    nombre_artistico: artista ? artista.nombre_artistico : "Artista"
+                                },
+                                variante: variantes.find((v) => v.stock_variante > 0) ?? variantes[0],
+                                imagen: portada ? optimizada(portada.url, 600) : null
+                            }
+                        })
+                    )
+                })
+                .catch(() => {
+                    // Es un complemento: si falla, la sección no se muestra.
+                })
+        }
 
-    return () => {
-      vigente = false;
-    };
-  }, [clave, excluirId, excluirArtistaId, maximo]);
+        return () => {
+            vigente = false
+        }
+    }, [clave, excluirId, excluirArtistaId, maximo])
 
-  if (items.length === 0) return null;
+    if (items.length === 0) return null
 
-  return (
-    <section>
-      <h2 className="headline-md" style={{ marginBottom: "var(--lg)" }}>{titulo}</h2>
-      <div className="grilla-obras cuatro">
-        {items.map((item) => {
-          const variante = item.variante || {};
-          return (
-            <TarjetaObra
-              key={item.obra.id}
-              id={item.obra.id}
-              nombreObra={item.obra.nombre_obra}
-              estilo={item.obra.estilo}
-              artistaId={item.obra.artistaId}
-              nombreArtistico={item.obra.nombre_artistico}
-              nombreTamanio={variante.nombre_tamanio}
-              precio={variante.precio_variante}
-              porcentajeDescuento={variante.porcentaje_descuento}
-              stock={variante.stock_variante}
-              imagen={item.imagen}
-            />
-          );
-        })}
-      </div>
-    </section>
-  );
+    return (
+        <section>
+            <h2 className="headline-md" style={{ marginBottom: "var(--lg)" }}>
+                {titulo}
+            </h2>
+            <div className="grilla-obras cuatro">
+                {items.map((item) => {
+                    const variante = item.variante || {}
+                    return (
+                        <TarjetaObra
+                            key={item.obra.id}
+                            id={item.obra.id}
+                            nombreObra={item.obra.nombre_obra}
+                            estilo={item.obra.estilo}
+                            artistaId={item.obra.artistaId}
+                            nombreArtistico={item.obra.nombre_artistico}
+                            nombreTamanio={variante.nombre_tamanio}
+                            precio={variante.precio_variante}
+                            porcentajeDescuento={variante.porcentaje_descuento}
+                            stock={variante.stock_variante}
+                            imagen={item.imagen}
+                        />
+                    )
+                })}
+            </div>
+        </section>
+    )
 }

@@ -10,7 +10,6 @@ import SesionVencida from "./SesionVencida"
 // así el footer queda justo debajo de lo que se ve y aparece apenas se scrollea, aunque la pantalla sea corta.
 // El alto del header cambia (por ejemplo, cuando se abre el menú en un celular): se mide y se vuelve a medir.
 const Layout = () => {
-
     const pagina = useRef(null)
     const cabecera = useRef(null)
 

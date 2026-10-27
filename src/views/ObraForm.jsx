@@ -184,7 +184,15 @@ const FormularioObra = ({ id }) => {
         api.get("/api/imagenes?obraId=" + id)
             .then((respuesta) => {
                 const guardadas = lista(respuesta).sort((a, b) => a.orden_imagen - b.orden_imagen)
-                setFotos(guardadas.map((foto) => ({ clave: "foto" + foto.id, id: foto.id, url: foto.url, vista: null, archivo: null })))
+                setFotos(
+                    guardadas.map((foto) => ({
+                        clave: "foto" + foto.id,
+                        id: foto.id,
+                        url: foto.url,
+                        vista: null,
+                        archivo: null
+                    }))
+                )
                 setGuardado((previo) => ({ ...previo, fotos: guardadas.map((foto) => foto.id) }))
             })
             .catch((e) => {
@@ -236,7 +244,13 @@ const FormularioObra = ({ id }) => {
             prepararImagen(elegidas[i])
                 .then((archivo) => {
                     contador = contador + 1
-                    listas.push({ clave: "fotonueva" + contador, id: null, url: null, vista: URL.createObjectURL(archivo), archivo: archivo })
+                    listas.push({
+                        clave: "fotonueva" + contador,
+                        id: null,
+                        url: null,
+                        vista: URL.createObjectURL(archivo),
+                        archivo: archivo
+                    })
                 })
                 .catch((e) => motivos.push(elegidas[i].name + ": " + e.message))
                 .then(() => preparar(i + 1))
@@ -248,11 +262,13 @@ const FormularioObra = ({ id }) => {
         setErrorFotos("")
         prepararImagen(archivo)
             .then((preparada) => {
-                setFotos((previas) => previas.map((foto) => {
-                    if (foto.clave !== clave) return foto
-                    if (foto.vista) URL.revokeObjectURL(foto.vista)
-                    return { ...foto, archivo: preparada, vista: URL.createObjectURL(preparada) }
-                }))
+                setFotos((previas) =>
+                    previas.map((foto) => {
+                        if (foto.clave !== clave) return foto
+                        if (foto.vista) URL.revokeObjectURL(foto.vista)
+                        return { ...foto, archivo: preparada, vista: URL.createObjectURL(preparada) }
+                    })
+                )
             })
             .catch((e) => setErrorFotos(archivo.name + ": " + e.message))
     }
@@ -302,8 +318,10 @@ const FormularioObra = ({ id }) => {
 
         if (tarea.tipo === "crearObra") pedido = api.post("/api/obras", tarea.cuerpo)
         else if (tarea.tipo === "editarObra") pedido = api.put("/api/obras/" + idActual, tarea.cuerpo)
-        else if (tarea.tipo === "crearVariante") pedido = api.post("/api/variantes", { ...tarea.cuerpo, obra_id: idActual })
-        else if (tarea.tipo === "editarVariante") pedido = api.put("/api/variantes/" + tarea.id, { ...tarea.cuerpo, obra_id: idActual })
+        else if (tarea.tipo === "crearVariante")
+            pedido = api.post("/api/variantes", { ...tarea.cuerpo, obra_id: idActual })
+        else if (tarea.tipo === "editarVariante")
+            pedido = api.put("/api/variantes/" + tarea.id, { ...tarea.cuerpo, obra_id: idActual })
         else if (tarea.tipo === "borrarVariante") pedido = api.delete("/api/variantes/" + tarea.id)
         else if (tarea.tipo === "borrarFoto") pedido = api.delete("/api/imagenes/" + tarea.id)
         else {
@@ -312,9 +330,10 @@ const FormularioObra = ({ id }) => {
             formulario.append("obra_id", idActual)
             if (tarea.archivo) formulario.append("archivo", tarea.archivo)
             if (tarea.orden) formulario.append("orden_imagen", tarea.orden)
-            pedido = tarea.tipo === "subirFoto"
-                ? subirArchivo("/api/imagenes", formulario, "POST")
-                : subirArchivo("/api/imagenes/" + tarea.id, formulario, "PUT")
+            pedido =
+                tarea.tipo === "subirFoto"
+                    ? subirArchivo("/api/imagenes", formulario, "POST")
+                    : subirArchivo("/api/imagenes/" + tarea.id, formulario, "PUT")
         }
 
         pedido
@@ -329,26 +348,39 @@ const FormularioObra = ({ id }) => {
                     setGuardado((previo) => ({ ...previo, obra: JSON.stringify(tarea.cuerpo) }))
                 }
                 if (tarea.tipo === "crearVariante") {
-                    setFilas((previas) => previas.map((fila) => (fila.clave === tarea.clave ? { ...fila, id: respuesta.id } : fila)))
-                    setGuardado((previo) => ({ ...previo, variantes: { ...previo.variantes, [respuesta.id]: JSON.stringify(tarea.cuerpo) } }))
+                    setFilas((previas) =>
+                        previas.map((fila) => (fila.clave === tarea.clave ? { ...fila, id: respuesta.id } : fila))
+                    )
+                    setGuardado((previo) => ({
+                        ...previo,
+                        variantes: { ...previo.variantes, [respuesta.id]: JSON.stringify(tarea.cuerpo) }
+                    }))
                 }
                 if (tarea.tipo === "editarVariante") {
-                    setGuardado((previo) => ({ ...previo, variantes: { ...previo.variantes, [tarea.id]: JSON.stringify(tarea.cuerpo) } }))
+                    setGuardado((previo) => ({
+                        ...previo,
+                        variantes: { ...previo.variantes, [tarea.id]: JSON.stringify(tarea.cuerpo) }
+                    }))
                 }
                 if (tarea.tipo === "borrarVariante") {
                     setQuitadas((previas) => previas.filter((quitada) => quitada !== tarea.id))
                 }
                 if (tarea.tipo === "borrarFoto") {
                     setQuitadasFotos((previas) => previas.filter((quitada) => quitada !== tarea.id))
-                    setGuardado((previo) => ({ ...previo, fotos: previo.fotos.filter((idFoto) => idFoto !== tarea.id) }))
+                    setGuardado((previo) => ({
+                        ...previo,
+                        fotos: previo.fotos.filter((idFoto) => idFoto !== tarea.id)
+                    }))
                 }
                 if (tarea.tipo === "subirFoto") {
                     // Ya está en Cloudinary: deja de ser "nueva" y pasa a tener id y url.
-                    setFotos((previas) => previas.map((foto) => {
-                        if (foto.clave !== tarea.clave) return foto
-                        if (foto.vista) URL.revokeObjectURL(foto.vista)
-                        return { ...foto, id: respuesta.id, url: respuesta.url, vista: null, archivo: null }
-                    }))
+                    setFotos((previas) =>
+                        previas.map((foto) => {
+                            if (foto.clave !== tarea.clave) return foto
+                            if (foto.vista) URL.revokeObjectURL(foto.vista)
+                            return { ...foto, id: respuesta.id, url: respuesta.url, vista: null, archivo: null }
+                        })
+                    )
                     setGuardado((previo) => {
                         const ids = [...previo.fotos]
                         ids.splice(tarea.orden - 1, 0, respuesta.id)
@@ -356,11 +388,13 @@ const FormularioObra = ({ id }) => {
                     })
                 }
                 if (tarea.tipo === "reemplazarFoto") {
-                    setFotos((previas) => previas.map((foto) => {
-                        if (foto.clave !== tarea.clave) return foto
-                        if (foto.vista) URL.revokeObjectURL(foto.vista)
-                        return { ...foto, url: respuesta.url, vista: null, archivo: null }
-                    }))
+                    setFotos((previas) =>
+                        previas.map((foto) => {
+                            if (foto.clave !== tarea.clave) return foto
+                            if (foto.vista) URL.revokeObjectURL(foto.vista)
+                            return { ...foto, url: respuesta.url, vista: null, archivo: null }
+                        })
+                    )
                 }
                 if (tarea.tipo === "moverFoto") {
                     setGuardado((previo) => {
@@ -388,12 +422,14 @@ const FormularioObra = ({ id }) => {
         const cuerpoDeLaObra = cuerpoObra(datos)
 
         if (idObra === null) tareas.push({ tipo: "crearObra", cuerpo: cuerpoDeLaObra })
-        else if (JSON.stringify(cuerpoDeLaObra) !== guardado.obra) tareas.push({ tipo: "editarObra", cuerpo: cuerpoDeLaObra })
+        else if (JSON.stringify(cuerpoDeLaObra) !== guardado.obra)
+            tareas.push({ tipo: "editarObra", cuerpo: cuerpoDeLaObra })
 
         filas.forEach((fila) => {
             const cuerpo = cuerpoVariante(fila)
             if (fila.id === null) tareas.push({ tipo: "crearVariante", clave: fila.clave, cuerpo: cuerpo })
-            else if (JSON.stringify(cuerpo) !== guardado.variantes[fila.id]) tareas.push({ tipo: "editarVariante", id: fila.id, cuerpo: cuerpo })
+            else if (JSON.stringify(cuerpo) !== guardado.variantes[fila.id])
+                tareas.push({ tipo: "editarVariante", id: fila.id, cuerpo: cuerpo })
         })
 
         quitadas.forEach((idVariante) => tareas.push({ tipo: "borrarVariante", id: idVariante }))
@@ -443,27 +479,47 @@ const FormularioObra = ({ id }) => {
         cuerpo = (
             <form onSubmit={guardar}>
                 <div className="cartela" style={{ padding: "var(--lg)" }}>
-                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>1 · La obra</p>
+                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>
+                        1 · La obra
+                    </p>
 
-                    <CampoFormulario etiqueta="Nombre" name="nombre_obra" required
-                        value={datos.nombre_obra} onChange={cambiarDato} />
-                    <CampoFormulario etiqueta="Descripción" name="descripcion_obra" textarea
-                        value={datos.descripcion_obra} onChange={cambiarDato} />
+                    <CampoFormulario
+                        etiqueta="Nombre"
+                        name="nombre_obra"
+                        required
+                        value={datos.nombre_obra}
+                        onChange={cambiarDato}
+                    />
+                    <CampoFormulario
+                        etiqueta="Descripción"
+                        name="descripcion_obra"
+                        textarea
+                        value={datos.descripcion_obra}
+                        onChange={cambiarDato}
+                    />
 
                     <label className="catalog-number muted">Estilos</label>
                     <SelectorEstilos estilos={estilos} elegidos={datos.estilo_ids} onAlternar={alternarEstilo} />
 
                     <label className="body-sm">
-                        <input type="checkbox" checked={datos.en_venta}
-                            onChange={(e) => setDatos({ ...datos, en_venta: e.target.checked })} /> En venta
+                        <input
+                            type="checkbox"
+                            checked={datos.en_venta}
+                            onChange={(e) => setDatos({ ...datos, en_venta: e.target.checked })}
+                        />{" "}
+                        En venta
                     </label>
                 </div>
 
                 <div className="cartela" style={{ padding: "var(--lg)", marginTop: "var(--md)" }}>
-                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>2 · Variantes</p>
+                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>
+                        2 · Variantes
+                    </p>
 
                     {filas.length === 0 && (
-                        <p className="body-sm muted">Todavía no hay variantes: sin ellas la obra no se puede comprar.</p>
+                        <p className="body-sm muted">
+                            Todavía no hay variantes: sin ellas la obra no se puede comprar.
+                        </p>
                     )}
                     {filas.map((fila) => (
                         <TarjetaVariante
@@ -482,14 +538,20 @@ const FormularioObra = ({ id }) => {
                         />
                     ))}
 
-                    <Boton tipo="secundario" type="button" style={{ marginTop: "var(--md)" }}
-                        onClick={() => setFilas([...filas, nuevaFila()])}>
+                    <Boton
+                        tipo="secundario"
+                        type="button"
+                        style={{ marginTop: "var(--md)" }}
+                        onClick={() => setFilas([...filas, nuevaFila()])}
+                    >
                         Agregar variante
                     </Boton>
                 </div>
 
                 <div className="cartela" style={{ padding: "var(--lg)", marginTop: "var(--md)" }}>
-                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>3 · Fotos</p>
+                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>
+                        3 · Fotos
+                    </p>
 
                     <SeccionFotos
                         fotos={fotos}
@@ -518,8 +580,13 @@ const FormularioObra = ({ id }) => {
                         Cancelar
                     </Boton>
                     {idObra !== null && (
-                        <button type="button" disabled={guardando} onClick={() => setConfirmandoEliminar(true)} className="body-sm"
-                            style={{ all: "unset", cursor: "pointer", color: "var(--error)", marginLeft: "auto" }}>
+                        <button
+                            type="button"
+                            disabled={guardando}
+                            onClick={() => setConfirmandoEliminar(true)}
+                            className="body-sm"
+                            style={{ all: "unset", cursor: "pointer", color: "var(--error)", marginLeft: "auto" }}
+                        >
                             Eliminar obra
                         </button>
                     )}

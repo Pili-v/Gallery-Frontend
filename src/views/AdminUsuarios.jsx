@@ -7,17 +7,11 @@ import { fecha } from "../api/formato"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
 
-const ROLES = [
-    "CLIENTE",
-    "ARTISTA",
-    "ARTISTA_CLIENTE",
-    "ADMIN"
-]
+const ROLES = ["CLIENTE", "ARTISTA", "ARTISTA_CLIENTE", "ADMIN"]
 
 const USUARIOS_POR_PAGINA = 10
 
 const AdminUsuarios = () => {
-
     const [usuarios, setUsuarios] = useState([])
     const [roles, setRoles] = useState({})
     const [cargando, setCargando] = useState(true)
@@ -30,13 +24,11 @@ const AdminUsuarios = () => {
     const usuarioActual = getUsuario()
 
     const cargarUsuarios = () => {
-
         setCargando(true)
         setError("")
 
         api.get("/api/usuarios")
             .then((respuesta) => {
-
                 const usuariosRecibidos = lista(respuesta)
 
                 setUsuarios(usuariosRecibidos)
@@ -44,18 +36,15 @@ const AdminUsuarios = () => {
                 const rolesIniciales = {}
 
                 usuariosRecibidos.forEach((usuario) => {
-                    rolesIniciales[usuario.id] =
-                        usuario.rol_usuario
+                    rolesIniciales[usuario.id] = usuario.rol_usuario
                 })
 
                 setRoles(rolesIniciales)
             })
             .catch((e) => {
-
                 setError(e.message)
             })
             .finally(() => {
-
                 setCargando(false)
             })
     }
@@ -65,7 +54,6 @@ const AdminUsuarios = () => {
     }, [])
 
     const handleRol = (usuarioId, nuevoRol) => {
-
         setRoles({
             ...roles,
             [usuarioId]: nuevoRol
@@ -73,54 +61,34 @@ const AdminUsuarios = () => {
     }
 
     const guardarRol = (usuarioId) => {
-
         setGuardando(usuarioId)
         setError("")
 
         const rol = roles[usuarioId]
 
-        api.patch(
-            "/api/usuarios/" +
-            usuarioId +
-            "/rol?rol=" +
-            encodeURIComponent(rol)
-        )
+        api.patch("/api/usuarios/" + usuarioId + "/rol?rol=" + encodeURIComponent(rol))
             .then((usuarioActualizado) => {
-
-                setUsuarios(
-                    usuarios.map((usuario) =>
-                        usuario.id === usuarioId
-                            ? usuarioActualizado
-                            : usuario
-                    )
-                )
+                setUsuarios(usuarios.map((usuario) => (usuario.id === usuarioId ? usuarioActualizado : usuario)))
             })
             .catch((e) => {
-
                 setError(e.message)
             })
             .finally(() => {
-
                 setGuardando(null)
             })
     }
 
     const handleBusqueda = (e) => {
-
         setBusqueda(e.target.value)
         setPaginaActual(1)
     }
 
     const usuariosFiltrados = usuarios.filter((usuario) => {
-
         if (!busqueda) {
             return true
         }
 
-        const nombreCompleto =
-            usuario.nombre_persona +
-            " " +
-            usuario.apellido_persona
+        const nombreCompleto = usuario.nombre_persona + " " + usuario.apellido_persona
 
         return (
             nombreCompleto.includes(busqueda) ||
@@ -129,38 +97,21 @@ const AdminUsuarios = () => {
         )
     })
 
-    const totalPaginas = Math.max(
-        1,
-        Math.ceil(
-            usuariosFiltrados.length /
-            USUARIOS_POR_PAGINA
-        )
-    )
+    const totalPaginas = Math.max(1, Math.ceil(usuariosFiltrados.length / USUARIOS_POR_PAGINA))
 
-    const inicio =
-        (paginaActual - 1) * USUARIOS_POR_PAGINA
+    const inicio = (paginaActual - 1) * USUARIOS_POR_PAGINA
 
-    const usuariosPagina =
-        usuariosFiltrados.slice(
-            inicio,
-            inicio + USUARIOS_POR_PAGINA
-        )
+    const usuariosPagina = usuariosFiltrados.slice(inicio, inicio + USUARIOS_POR_PAGINA)
 
     const paginaAnterior = () => {
-
         if (paginaActual > 1) {
-            setPaginaActual(
-                paginaActual - 1
-            )
+            setPaginaActual(paginaActual - 1)
         }
     }
 
     const paginaSiguiente = () => {
-
         if (paginaActual < totalPaginas) {
-            setPaginaActual(
-                paginaActual + 1
-            )
+            setPaginaActual(paginaActual + 1)
         }
     }
 
@@ -177,10 +128,7 @@ const AdminUsuarios = () => {
     return (
         <div className="seccion">
             <div className="contenido">
-
-                <h1 className="headline-lg titulo-oculto">
-                    Usuarios y permisos
-                </h1>
+                <h1 className="headline-lg titulo-oculto">Usuarios y permisos</h1>
 
                 {error && (
                     <div
@@ -188,10 +136,7 @@ const AdminUsuarios = () => {
                             marginBottom: "var(--md)"
                         }}
                     >
-                        <Estado
-                            tipo="error"
-                            mensaje={error}
-                        />
+                        <Estado tipo="error" mensaje={error} />
                     </div>
                 )}
 
@@ -210,17 +155,10 @@ const AdminUsuarios = () => {
                 </div>
 
                 {usuariosFiltrados.length === 0 ? (
-
-                    <Estado
-                        tipo="vacio"
-                        mensaje="No se encontraron usuarios."
-                    />
-
+                    <Estado tipo="vacio" mensaje="No se encontraron usuarios." />
                 ) : (
-
                     <>
                         <table className="tabla">
-
                             <thead>
                                 <tr>
                                     <th>Usuario</th>
@@ -232,109 +170,53 @@ const AdminUsuarios = () => {
                             </thead>
 
                             <tbody>
-
                                 {usuariosPagina.map((usuario) => {
-
-                                    const esUsuarioActual =
-                                        usuarioActual?.id ===
-                                        usuario.id
+                                    const esUsuarioActual = usuarioActual?.id === usuario.id
 
                                     return (
                                         <tr key={usuario.id}>
-
                                             <td>
-                                                {usuario.nombre_persona}{" "}
-                                                {usuario.apellido_persona}
+                                                {usuario.nombre_persona} {usuario.apellido_persona}
                                             </td>
 
-                                            <td>
-                                                {usuario.email_usuario}
-                                            </td>
+                                            <td>{usuario.email_usuario}</td>
+
+                                            <td>{fecha(usuario.fecha_creacion)}</td>
 
                                             <td>
-                                                {fecha(
-                                                    usuario.fecha_creacion
-                                                )}
-                                            </td>
-
-                                            <td>
-
                                                 <select
                                                     className="select"
                                                     style={{
                                                         width: "auto"
                                                     }}
-                                                    value={
-                                                        roles[
-                                                            usuario.id
-                                                        ]
-                                                    }
-                                                    onChange={(e) =>
-                                                        handleRol(
-                                                            usuario.id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                    disabled={
-                                                        esUsuarioActual
-                                                    }
+                                                    value={roles[usuario.id]}
+                                                    onChange={(e) => handleRol(usuario.id, e.target.value)}
+                                                    disabled={esUsuarioActual}
                                                 >
-
                                                     {ROLES.map((rol) => (
-                                                        <option
-                                                            key={rol}
-                                                            value={rol}
-                                                        >
+                                                        <option key={rol} value={rol}>
                                                             {rol}
                                                         </option>
                                                     ))}
-
                                                 </select>
-
                                             </td>
 
                                             <td>
-
                                                 {esUsuarioActual ? (
-
-                                                    <Boton
-                                                        tipo="deshabilitado"
-                                                    >
-                                                        Sos vos
-                                                    </Boton>
-
+                                                    <Boton tipo="deshabilitado">Sos vos</Boton>
                                                 ) : (
-
                                                     <Boton
-                                                        tipo={
-                                                            guardando ===
-                                                            usuario.id
-                                                                ? "deshabilitado"
-                                                                : "secundario"
-                                                        }
-                                                        onClick={() =>
-                                                            guardarRol(
-                                                                usuario.id
-                                                            )
-                                                        }
+                                                        tipo={guardando === usuario.id ? "deshabilitado" : "secundario"}
+                                                        onClick={() => guardarRol(usuario.id)}
                                                     >
-                                                        {guardando ===
-                                                        usuario.id
-                                                            ? "Guardando..."
-                                                            : "Guardar"
-                                                        }
+                                                        {guardando === usuario.id ? "Guardando..." : "Guardar"}
                                                     </Boton>
-
                                                 )}
-
                                             </td>
-
                                         </tr>
                                     )
                                 })}
-
                             </tbody>
-
                         </table>
 
                         <div
@@ -346,15 +228,7 @@ const AdminUsuarios = () => {
                                 marginTop: "var(--lg)"
                             }}
                         >
-
-                            <Boton
-                                tipo={
-                                    paginaActual === 1
-                                        ? "deshabilitado"
-                                        : "secundario"
-                                }
-                                onClick={paginaAnterior}
-                            >
+                            <Boton tipo={paginaActual === 1 ? "deshabilitado" : "secundario"} onClick={paginaAnterior}>
                                 Anterior
                             </Boton>
 
@@ -363,16 +237,11 @@ const AdminUsuarios = () => {
                             </span>
 
                             <Boton
-                                tipo={
-                                    paginaActual === totalPaginas
-                                        ? "deshabilitado"
-                                        : "secundario"
-                                }
+                                tipo={paginaActual === totalPaginas ? "deshabilitado" : "secundario"}
                                 onClick={paginaSiguiente}
                             >
                                 Siguiente
                             </Boton>
-
                         </div>
                     </>
                 )}
@@ -383,10 +252,8 @@ const AdminUsuarios = () => {
                         marginTop: "var(--md)"
                     }}
                 >
-                    El cambio de rol tiene efecto en la siguiente petición:
-                    no hace falta volver a entrar.
+                    El cambio de rol tiene efecto en la siguiente petición: no hace falta volver a entrar.
                 </p>
-
             </div>
         </div>
     )

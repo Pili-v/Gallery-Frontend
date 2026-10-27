@@ -10,13 +10,17 @@ const GEOREF = "https://apis.datos.gob.ar/georef/api"
 
 // Lo unico que no se puede pedir a ninguna API: como escribe la gente.
 const ALIAS = {
-    "caba": "ciudad autonoma de buenos aires",
+    caba: "ciudad autonoma de buenos aires",
     "capital federal": "ciudad autonoma de buenos aires",
     "bs as": "buenos aires"
 }
 
 const sinAcentos = (texto) =>
-    texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    texto
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim()
 
 // Las 24 provincias salen de la misma API que despues valida la direccion,
 // asi no hay una lista escrita a mano que se pueda desactualizar.
@@ -54,22 +58,23 @@ export const textoDeDireccion = (sugerida) => {
 }
 
 // Como se muestra el nombre de una provincia en pantalla.
-export const nombreCorto = (provincia) =>
-    provincia === "Ciudad Autónoma de Buenos Aires" ? "CABA" : provincia
+export const nombreCorto = (provincia) => (provincia === "Ciudad Autónoma de Buenos Aires" ? "CABA" : provincia)
 
 // Busca direcciones. Con provincia acota a esa; sin provincia, todo el pais.
 // Georef devuelve la misma calle una vez por tramo: se deja una sola.
 export const buscarDirecciones = (calle, provincia) => {
-    const url = GEOREF + "/direcciones?max=8&direccion=" + encodeURIComponent(calle)
-        + (provincia ? "&provincia=" + encodeURIComponent(provincia) : "")
+    const url =
+        GEOREF +
+        "/direcciones?max=8&direccion=" +
+        encodeURIComponent(calle) +
+        (provincia ? "&provincia=" + encodeURIComponent(provincia) : "")
 
     return fetch(url)
         .then((respuesta) => respuesta.json())
         .then((datos) => {
             const encontradas = datos.direcciones ?? []
             const textos = encontradas.map(textoDeDireccion)
-            return encontradas.filter((sugerida, indice) =>
-                textos.indexOf(textos[indice]) === indice)
+            return encontradas.filter((sugerida, indice) => textos.indexOf(textos[indice]) === indice)
         })
         .catch(() => [])
 }

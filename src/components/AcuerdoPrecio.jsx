@@ -13,8 +13,21 @@ import CampoFormulario from "./CampoFormulario"
 //   puedeDefinir, puedeAceptar, puedePagar: qué botones corresponden ahora.
 //   ocupado, error, aviso: el pedido en curso, su falla y su confirmación.
 //   onDefinir(valor), onAceptar(), onPagar(): lo que hace cada botón.
-const AcuerdoPrecio = ({ estado, precio, esCliente, esArtista, puedeDefinir, puedeAceptar, puedePagar, ocupado, error, aviso, onDefinir, onAceptar, onPagar }) => {
-
+const AcuerdoPrecio = ({
+    estado,
+    precio,
+    esCliente,
+    esArtista,
+    puedeDefinir,
+    puedeAceptar,
+    puedePagar,
+    ocupado,
+    error,
+    aviso,
+    onDefinir,
+    onAceptar,
+    onPagar
+}) => {
     const [texto, setTexto] = useState(precio !== null && precio !== undefined ? String(Number(precio)) : "")
     const [errorCampo, setErrorCampo] = useState("")
 
@@ -22,7 +35,9 @@ const AcuerdoPrecio = ({ estado, precio, esCliente, esArtista, puedeDefinir, pue
         if (estado === "CANCELADO") return "El encargo fue cancelado."
         if (estado === "PAGADO") return "El encargo está pagado."
         if (estado === "TERMINADO") {
-            return esCliente ? "El encargo está terminado: ya podés pagarlo." : "El encargo está terminado. Falta que el cliente lo pague."
+            return esCliente
+                ? "El encargo está terminado: ya podés pagarlo."
+                : "El encargo está terminado. Falta que el cliente lo pague."
         }
         if (estado === "APROBADO" || estado === "EN_PROCESO") {
             return esCliente
@@ -59,10 +74,10 @@ const AcuerdoPrecio = ({ estado, precio, esCliente, esArtista, puedeDefinir, pue
 
     return (
         <section className="cartela detalle-ficha" aria-labelledby="titulo-precio">
-            <h2 id="titulo-precio" className="catalog-number muted">Precio del encargo</h2>
-            <p className="price-lg">
-                {precio !== null && precio !== undefined ? pesos(precio) : "Sin precio todavía"}
-            </p>
+            <h2 id="titulo-precio" className="catalog-number muted">
+                Precio del encargo
+            </h2>
+            <p className="price-lg">{precio !== null && precio !== undefined ? pesos(precio) : "Sin precio todavía"}</p>
             <p className="body-sm muted detalle-texto">{explicacion()}</p>
 
             {puedeDefinir && (
@@ -76,10 +91,17 @@ const AcuerdoPrecio = ({ estado, precio, esCliente, esArtista, puedeDefinir, pue
                         value={texto}
                         disabled={ocupado}
                         error={errorCampo}
-                        onChange={(e) => { setTexto(e.target.value); setErrorCampo("") }}
+                        onChange={(e) => {
+                            setTexto(e.target.value)
+                            setErrorCampo("")
+                        }}
                     />
                     <Boton type="submit" tipo={ocupado ? "deshabilitado" : "primario"}>
-                        {ocupado ? "Guardando..." : precio === null || precio === undefined ? "Proponer precio" : "Actualizar precio"}
+                        {ocupado
+                            ? "Guardando..."
+                            : precio === null || precio === undefined
+                              ? "Proponer precio"
+                              : "Actualizar precio"}
                     </Boton>
                 </form>
             )}
@@ -91,11 +113,21 @@ const AcuerdoPrecio = ({ estado, precio, esCliente, esArtista, puedeDefinir, pue
             )}
 
             {puedePagar && (
-                <Boton tipo="primario" onClick={onPagar}>Pagar encargo</Boton>
+                <Boton tipo="primario" onClick={onPagar}>
+                    Pagar encargo
+                </Boton>
             )}
 
-            {error && <p className="campo-error body-sm" role="alert">{error}</p>}
-            {aviso && <p className="body-sm detalle-confirmacion" role="status">{aviso}</p>}
+            {error && (
+                <p className="campo-error body-sm" role="alert">
+                    {error}
+                </p>
+            )}
+            {aviso && (
+                <p className="body-sm detalle-confirmacion" role="status">
+                    {aviso}
+                </p>
+            )}
         </section>
     )
 }

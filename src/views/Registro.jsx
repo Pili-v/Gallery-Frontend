@@ -8,7 +8,6 @@ import { api } from "../api/cliente"
 import { guardarSesion } from "../api/sesion"
 
 const Registro = () => {
-
     const navigate = useNavigate()
 
     const [datos, setDatos] = useState({
@@ -25,46 +24,31 @@ const Registro = () => {
     const [errorGeneral, setErrorGeneral] = useState("")
 
     const limpiarNombre = (texto) => {
-
-        const soloLetras = texto.replace(
-            /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g,
-            ""
-        )
+        const soloLetras = texto.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g, "")
 
         return soloLetras
             .split(" ")
             .map((palabra) => {
-
                 if (!palabra) {
                     return ""
                 }
 
-                return (
-                    palabra.charAt(0).toUpperCase() +
-                    palabra.slice(1).toLowerCase()
-                )
+                return palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase()
             })
             .join(" ")
     }
 
     const handleChange = (e) => {
-
         const { name, value } = e.target
 
         let nuevoValor = value
 
-        if (
-            name === "nombre_persona" ||
-            name === "apellido_persona"
-        ) {
+        if (name === "nombre_persona" || name === "apellido_persona") {
             nuevoValor = limpiarNombre(value)
         }
 
         if (name === "telefono_usuario") {
-
-            nuevoValor = value
-                .replace(/\D/g, "")
-                .slice(0, 10)
+            nuevoValor = value.replace(/\D/g, "").slice(0, 10)
         }
 
         setDatos({
@@ -81,37 +65,30 @@ const Registro = () => {
     }
 
     const validar = () => {
-
         const nuevosErrores = {}
 
         if (!datos.nombre_usuario.trim()) {
-            nuevosErrores.nombre_usuario =
-                "Ingresá un nombre de usuario."
+            nuevosErrores.nombre_usuario = "Ingresá un nombre de usuario."
         }
 
         if (!datos.nombre_persona.trim()) {
-            nuevosErrores.nombre_persona =
-                "Ingresá tu nombre."
+            nuevosErrores.nombre_persona = "Ingresá tu nombre."
         }
 
         if (!datos.apellido_persona.trim()) {
-            nuevosErrores.apellido_persona =
-                "Ingresá tu apellido."
+            nuevosErrores.apellido_persona = "Ingresá tu apellido."
         }
 
         if (!datos.email_usuario.trim()) {
-            nuevosErrores.email_usuario =
-                "Ingresá tu email."
+            nuevosErrores.email_usuario = "Ingresá tu email."
         }
 
         if (!datos.telefono_usuario.trim()) {
-            nuevosErrores.telefono_usuario =
-                "Ingresá tu teléfono."
+            nuevosErrores.telefono_usuario = "Ingresá tu teléfono."
         }
 
         if (!datos.contrasenia_usuario.trim()) {
-            nuevosErrores.contrasenia_usuario =
-                "Ingresá una contraseña."
+            nuevosErrores.contrasenia_usuario = "Ingresá una contraseña."
         }
 
         setErrores(nuevosErrores)
@@ -120,7 +97,6 @@ const Registro = () => {
     }
 
     const handleSubmit = (e) => {
-
         e.preventDefault()
 
         if (!validar()) {
@@ -130,12 +106,8 @@ const Registro = () => {
         setCargando(true)
         setErrorGeneral("")
 
-        api.post(
-            "/api/v1/auth/register",
-            datos
-        )
+        api.post("/api/v1/auth/register", datos)
             .then((respuesta) => {
-
                 const token = respuesta.access_token
 
                 localStorage.setItem("token", token)
@@ -143,7 +115,6 @@ const Registro = () => {
                 return api.get("/api/usuarios/me")
             })
             .then((perfil) => {
-
                 const token = localStorage.getItem("token")
 
                 guardarSesion(token, perfil)
@@ -151,13 +122,9 @@ const Registro = () => {
                 navigate("/")
             })
             .catch((e) => {
-
-                setErrorGeneral(
-                    e.message || "No se pudo crear la cuenta."
-                )
+                setErrorGeneral(e.message || "No se pudo crear la cuenta.")
             })
             .finally(() => {
-
                 setCargando(false)
             })
     }
@@ -165,25 +132,12 @@ const Registro = () => {
     return (
         <div className="seccion">
             <div className="contenido col-media">
+                <h1 className="headline-lg centro">Crear cuenta</h1>
 
-                <h1 className="headline-lg centro">
-                    Crear cuenta
-                </h1>
+                <p className="body-lg muted centro">Completá tus datos para registrarte.</p>
 
-                <p
-                    className="body-lg muted centro"
-                >
-                    Completá tus datos para registrarte.
-                </p>
-
-                <form
-                    className="cartela"
-                    style={{ padding: "var(--lg)" }}
-                    onSubmit={handleSubmit}
-                >
-
+                <form className="cartela" style={{ padding: "var(--lg)" }} onSubmit={handleSubmit}>
                     <div className="fila-campos">
-
                         <CampoFormulario
                             etiqueta="Nombre"
                             name="nombre_persona"
@@ -199,7 +153,6 @@ const Registro = () => {
                             onChange={handleChange}
                             error={errores.apellido_persona}
                         />
-
                     </div>
 
                     <CampoFormulario
@@ -240,41 +193,22 @@ const Registro = () => {
                     />
 
                     {errorGeneral && (
-                        <p
-                            className="campo-error body-sm"
-                            style={{ marginBottom: "var(--md)" }}
-                        >
+                        <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>
                             {errorGeneral}
                         </p>
                     )}
 
-                    <Boton
-                        tipo={cargando ? "deshabilitado" : "primario"}
-                        bloque
-                        type="submit"
-                    >
-                        {cargando
-                            ? "Creando cuenta..."
-                            : "Crear cuenta"
-                        }
+                    <Boton tipo={cargando ? "deshabilitado" : "primario"} bloque type="submit">
+                        {cargando ? "Creando cuenta..." : "Crear cuenta"}
                     </Boton>
-
                 </form>
 
-                <p
-                    className="body-sm centro muted"
-                    style={{ marginTop: "var(--md)" }}
-                >
+                <p className="body-sm centro muted" style={{ marginTop: "var(--md)" }}>
                     ¿Ya tenés cuenta?{" "}
-
-                    <Link
-                        to="/login"
-                        style={{ color: "var(--bordo)" }}
-                    >
+                    <Link to="/login" style={{ color: "var(--bordo)" }}>
                         Ingresar
                     </Link>
                 </p>
-
             </div>
         </div>
     )

@@ -1,14 +1,12 @@
 // Mis compras — Área 4 · Compra
 // Historial del usuario logueado. Esta pantalla solo lee: no modifica nada.
 
-
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { api, lista } from "../api/cliente"
 import { pesos, fecha } from "../api/formato"
 
 import Estado from "../components/Estado"
-
 
 // Una lista vacía no es una falla: el backend la informa con 404 o con 409
 // según el endpoint. En los dos casos devolvemos [].
@@ -21,7 +19,7 @@ const MisCompras = () => {
     const [compras, setCompras] = useState([])
     const [cargando, setCargando] = useState(true)
     const [error, setError] = useState(null)
-    
+
     // El backend saca el usuario del token, por eso no hace falta mandarle el id.
     const cargarCompras = () => {
         listaVacia(api.get("/api/compras/me"))
@@ -38,9 +36,7 @@ const MisCompras = () => {
         <div className="seccion">
             <div className="contenido">
                 <h1 className="headline-lg titulo-oculto">Mis compras</h1>
-                <p className="body-lg muted titulo-oculto">
-                    Las compras que hiciste.
-                </p>
+                <p className="body-lg muted titulo-oculto">Las compras que hiciste.</p>
 
                 {/* El título está siempre; solo lo que viene del back espera. */}
                 {cargando ? (
@@ -75,8 +71,8 @@ const MisCompras = () => {
                                         {compra.tipo_entrega === "ENVIO_DOMICILIO"
                                             ? "Envío a domicilio"
                                             : compra.tipo_entrega
-                                                ? "Retiro en el local"
-                                                : "Encargo (sin envío)"}
+                                              ? "Retiro en el local"
+                                              : "Encargo (sin envío)"}
                                     </td>
                                     <td className="price-md">{pesos(compra.total_compra)}</td>
                                     <td>

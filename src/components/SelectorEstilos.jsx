@@ -5,10 +5,13 @@ const SelectorEstilos = ({ estilos, elegidos, onAlternar }) => {
         <div className="fila" style={{ margin: "var(--xs) 0 var(--md)", flexWrap: "wrap" }}>
             {estilos.length === 0 && <span className="body-sm muted">Todavía no hay estilos cargados.</span>}
             {estilos.map((estilo) => (
-                <button key={estilo.id} type="button"
+                <button
+                    key={estilo.id}
+                    type="button"
                     className={"chip" + (elegidos.includes(estilo.id) ? " activo" : "")}
                     aria-pressed={elegidos.includes(estilo.id)}
-                    onClick={() => onAlternar(estilo.id)}>
+                    onClick={() => onAlternar(estilo.id)}
+                >
                     {estilo.nombre_estilo}
                 </button>
             ))}

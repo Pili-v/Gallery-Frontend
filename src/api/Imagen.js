@@ -28,8 +28,12 @@ export function prepararImagen(archivo, { maxLado = 1600, minLado = 600, calidad
                 const medidas = imagen.width + " × " + imagen.height
                 imagen.close()
                 throw new Error(
-                    "La imagen es muy chica (" + medidas + " px) y se vería borrosa. " +
-                    "Subí una de al menos " + minLado + " px de lado."
+                    "La imagen es muy chica (" +
+                        medidas +
+                        " px) y se vería borrosa. " +
+                        "Subí una de al menos " +
+                        minLado +
+                        " px de lado."
                 )
             }
 
@@ -48,11 +52,9 @@ export function prepararImagen(archivo, { maxLado = 1600, minLado = 600, calidad
             contexto.drawImage(imagen, 0, 0, ancho, alto)
             imagen.close()
 
-            return lienzo
-                .convertToBlob({ type: "image/jpeg", quality: calidad })
-                .catch(() => {
-                    throw new Error("No se pudo procesar la imagen.")
-                })
+            return lienzo.convertToBlob({ type: "image/jpeg", quality: calidad }).catch(() => {
+                throw new Error("No se pudo procesar la imagen.")
+            })
         })
         .then((blob) => {
             const nombre = archivo.name.replace(/\.[^.]+$/, "") + ".jpg"

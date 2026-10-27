@@ -5,15 +5,32 @@ import { Link } from "react-router-dom"
 // estilos el texto ya armado, y cantidadVariantes y variantesSinStock los conteos.
 // Al hacer click en la fila se llama a onAlternar, que abre o cierra el detalle de la obra.
 // Los datos de la obra llegan cada uno en su prop: id, nombreObra y enVenta.
-const FilaObra = ({ id, nombreObra, enVenta, portada, estilos, cantidadVariantes, variantesSinStock, abierta, onAlternar }) => {
+const FilaObra = ({
+    id,
+    nombreObra,
+    enVenta,
+    portada,
+    estilos,
+    cantidadVariantes,
+    variantesSinStock,
+    abierta,
+    onAlternar
+}) => {
     return (
         <tr onClick={onAlternar} style={{ cursor: "pointer" }}>
             <td>
                 <div className="fila">
                     <span style={{ color: "var(--bordo)" }}>{abierta ? "▾" : "▸"}</span>
-                    <div className="linea-mini" style={{ width: 56, flex: "none", display: "grid", placeItems: "center" }}>
+                    <div
+                        className="linea-mini"
+                        style={{ width: 56, flex: "none", display: "grid", placeItems: "center" }}
+                    >
                         {portada && <img src={portada} alt={"Portada de " + nombreObra} />}
-                        {portada === null && <span className="cartela-meta" style={{ fontSize: 10, textAlign: "center" }}>Sin foto</span>}
+                        {portada === null && (
+                            <span className="cartela-meta" style={{ fontSize: 10, textAlign: "center" }}>
+                                Sin foto
+                            </span>
+                        )}
                     </div>
                     <span className="title-work" style={{ fontSize: 16 }}>
                         {nombreObra}

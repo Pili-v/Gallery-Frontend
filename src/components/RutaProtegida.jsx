@@ -4,7 +4,6 @@ import { getUsuario, getRol } from "../api/sesion"
 // Envuelve una pantalla que no es para cualquiera.
 // roles: lista de roles que pueden entrar. Si no se pasa, alcanza con estar logueado.
 const RutaProtegida = ({ roles, children }) => {
-
     const usuario = getUsuario()
     const ubicacion = useLocation()
 

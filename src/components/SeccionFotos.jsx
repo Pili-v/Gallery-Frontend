@@ -29,8 +29,13 @@ const BORDE_PX = 70
 const VELOCIDAD_PX = 14
 
 const botonChico = {
-    all: "unset", cursor: "pointer", color: "var(--bordo)", fontSize: 13, padding: "2px 6px",
-    border: "1px solid var(--border)", background: "var(--surface)"
+    all: "unset",
+    cursor: "pointer",
+    color: "var(--bordo)",
+    fontSize: 13,
+    padding: "2px 6px",
+    border: "1px solid var(--border)",
+    background: "var(--surface)"
 }
 
 // Lo que se está arrastrando desde el escritorio son archivos; lo que se arrastra entre fotos, no.
@@ -58,11 +63,14 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
         if (claveArrastrada === null) return
 
         const mover = (e) => {
-            setArrastre((previo) => previo && {
-                ...previo,
-                dx: e.clientX - previo.x0,
-                dy: e.clientY - previo.y0 + (window.scrollY - previo.scroll0)
-            })
+            setArrastre(
+                (previo) =>
+                    previo && {
+                        ...previo,
+                        dx: e.clientX - previo.x0,
+                        dy: e.clientY - previo.y0 + (window.scrollY - previo.scroll0)
+                    }
+            )
             setDestino(claveBajoPuntero(e.clientX, e.clientY))
 
             // Cerca de los bordes la página se desplaza sola, para poder llegar a fotos que no se ven.
@@ -115,12 +123,16 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
     return (
         <div>
             {fotos.length === 0 && (
-                <p className="body-sm muted">
-                    Todavía no hay fotos. Una obra sin fotos no se muestra en el catálogo.
-                </p>
+                <p className="body-sm muted">Todavía no hay fotos. Una obra sin fotos no se muestra en el catálogo.</p>
             )}
 
-            <div style={{ display: "grid", gap: "var(--md)", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))" }}>
+            <div
+                style={{
+                    display: "grid",
+                    gap: "var(--md)",
+                    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))"
+                }}
+            >
                 {fotos.map((foto, i) => {
                     const sePuedeArrastrar = !bloqueado
                     const esLaArrastrada = claveArrastrada === foto.clave
@@ -133,12 +145,17 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
                             onDragStart={(e) => e.preventDefault()}
                             style={{
                                 position: "relative",
-                                border: "1px solid var(--border)", padding: "var(--sm)", background: "var(--surface)",
+                                border: "1px solid var(--border)",
+                                padding: "var(--sm)",
+                                background: "var(--surface)",
                                 cursor: sePuedeArrastrar ? (esLaArrastrada ? "grabbing" : "grab") : "default",
-                                userSelect: "none", WebkitUserSelect: "none",
+                                userSelect: "none",
+                                WebkitUserSelect: "none",
                                 // La foto que se lleva el puntero sigue su movimiento y deja pasar los eventos
                                 // a las de abajo: así se sabe sobre cuál se la suelta.
-                                transform: esLaArrastrada ? "translate(" + arrastre.dx + "px, " + arrastre.dy + "px)" : "none",
+                                transform: esLaArrastrada
+                                    ? "translate(" + arrastre.dx + "px, " + arrastre.dy + "px)"
+                                    : "none",
                                 pointerEvents: esLaArrastrada ? "none" : "auto",
                                 zIndex: esLaArrastrada ? 10 : "auto",
                                 boxShadow: esLaArrastrada ? "0 8px 24px rgba(0, 0, 0, 0.25)" : "none",
@@ -148,32 +165,74 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
                             }}
                         >
                             <div style={{ position: "relative", aspectRatio: "4 / 5", background: "var(--canvas)" }}>
-                                <img src={foto.vista || foto.url} alt={"Foto " + (i + 1)} draggable={false}
-                                    style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }} />
+                                <img
+                                    src={foto.vista || foto.url}
+                                    alt={"Foto " + (i + 1)}
+                                    draggable={false}
+                                    style={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+                                />
                                 {i === 0 && (
-                                    <span className="catalog-number" style={{ position: "absolute", top: 4, left: 4, background: "var(--bordo)", color: "#fff", padding: "1px 6px" }}>
+                                    <span
+                                        className="catalog-number"
+                                        style={{
+                                            position: "absolute",
+                                            top: 4,
+                                            left: 4,
+                                            background: "var(--bordo)",
+                                            color: "#fff",
+                                            padding: "1px 6px"
+                                        }}
+                                    >
                                         Portada
                                     </span>
                                 )}
                                 {foto.vista && (
-                                    <span className="catalog-number" style={{ position: "absolute", bottom: 4, left: 4, background: "var(--surface)", padding: "1px 6px" }}>
+                                    <span
+                                        className="catalog-number"
+                                        style={{
+                                            position: "absolute",
+                                            bottom: 4,
+                                            left: 4,
+                                            background: "var(--surface)",
+                                            padding: "1px 6px"
+                                        }}
+                                    >
                                         {foto.id === null ? "Nueva" : "Reemplazo"}
                                     </span>
                                 )}
 
                                 {/* El agarre: el único lugar desde donde se arrastra con el dedo. touch-action: none
                                     le dice al navegador que no use ese gesto para desplazar la página. */}
-                                <button type="button" data-agarre disabled={bloqueado}
-                                    aria-label={"Mover la foto " + (i + 1) + ". Con las flechas izquierda y derecha cambia de lugar"}
+                                <button
+                                    type="button"
+                                    data-agarre
+                                    disabled={bloqueado}
+                                    aria-label={
+                                        "Mover la foto " +
+                                        (i + 1) +
+                                        ". Con las flechas izquierda y derecha cambia de lugar"
+                                    }
                                     title="Arrastrá para ordenar"
                                     onKeyDown={(e) => moverConTeclado(e, foto.clave)}
                                     style={{
-                                        all: "unset", position: "absolute", top: 4, right: 4, width: 32, height: 32,
-                                        display: "grid", placeItems: "center", boxSizing: "border-box",
-                                        background: "var(--surface)", border: "1px solid var(--border)", color: "var(--bordo)",
-                                        fontSize: 18, lineHeight: 1, touchAction: "none",
+                                        all: "unset",
+                                        position: "absolute",
+                                        top: 4,
+                                        right: 4,
+                                        width: 32,
+                                        height: 32,
+                                        display: "grid",
+                                        placeItems: "center",
+                                        boxSizing: "border-box",
+                                        background: "var(--surface)",
+                                        border: "1px solid var(--border)",
+                                        color: "var(--bordo)",
+                                        fontSize: 18,
+                                        lineHeight: 1,
+                                        touchAction: "none",
                                         cursor: sePuedeArrastrar ? (esLaArrastrada ? "grabbing" : "grab") : "default"
-                                    }}>
+                                    }}
+                                >
                                     ⠿
                                 </button>
                             </div>
@@ -181,14 +240,26 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
                             <div className="fila" style={{ flexWrap: "wrap", gap: 4, marginTop: "var(--xs)" }}>
                                 <label style={{ ...botonChico, display: "inline-block" }}>
                                     Reemplazar
-                                    <input type="file" accept={TIPOS} disabled={bloqueado} style={{ display: "none" }}
+                                    <input
+                                        type="file"
+                                        accept={TIPOS}
+                                        disabled={bloqueado}
+                                        style={{ display: "none" }}
                                         onChange={(e) => {
                                             if (e.target.files[0]) onReemplazar(foto.clave, e.target.files[0])
                                             e.target.value = ""
-                                        }} />
+                                        }}
+                                    />
                                 </label>
-                                <button type="button" style={{ ...botonChico, color: "var(--error)" }} disabled={bloqueado}
-                                    aria-label={"Quitar la foto " + (i + 1)} onClick={() => onQuitar(foto.clave)}>Quitar</button>
+                                <button
+                                    type="button"
+                                    style={{ ...botonChico, color: "var(--error)" }}
+                                    disabled={bloqueado}
+                                    aria-label={"Quitar la foto " + (i + 1)}
+                                    onClick={() => onQuitar(foto.clave)}
+                                >
+                                    Quitar
+                                </button>
                             </div>
                         </div>
                     )
@@ -210,7 +281,10 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
                     if (e.dataTransfer.files.length > 0) onAgregar(e.dataTransfer.files)
                 }}
                 style={{
-                    display: "block", marginTop: "var(--md)", padding: "var(--lg)", textAlign: "center",
+                    display: "block",
+                    marginTop: "var(--md)",
+                    padding: "var(--lg)",
+                    textAlign: "center",
                     border: "2px dashed " + (soltandoArchivos ? "var(--bordo)" : "var(--border)"),
                     background: soltandoArchivos ? "var(--canvas)" : "transparent",
                     color: soltandoArchivos ? "var(--bordo)" : "var(--ink-muted)",
@@ -220,16 +294,23 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
                 {preparando
                     ? "Preparando fotos…"
                     : soltandoArchivos
-                        ? "Soltá las fotos acá"
-                        : "Arrastrá fotos hasta acá o tocá para elegirlas"}
-                <input type="file" accept={TIPOS} multiple disabled={bloqueado} style={{ display: "none" }}
+                      ? "Soltá las fotos acá"
+                      : "Arrastrá fotos hasta acá o tocá para elegirlas"}
+                <input
+                    type="file"
+                    accept={TIPOS}
+                    multiple
+                    disabled={bloqueado}
+                    style={{ display: "none" }}
                     onChange={(e) => {
                         if (e.target.files.length > 0) onAgregar(e.target.files)
                         e.target.value = ""
-                    }} />
+                    }}
+                />
             </label>
             <p className="body-sm muted" style={{ marginTop: "var(--xs)" }}>
-                Ordenalas arrastrando el ícono ⠿ de cada foto: la primera es la que se ve en el catálogo. Se achican a 1600 px y deben tener al menos 600 px de lado.
+                Ordenalas arrastrando el ícono ⠿ de cada foto: la primera es la que se ve en el catálogo. Se achican a
+                1600 px y deben tener al menos 600 px de lado.
             </p>
 
             {error && (

@@ -5,11 +5,17 @@
 //   eliminando: true mientras se borra (el enlace queda apagado).
 //   onEditar(), onEliminar(), onConfirmar(), onCancelar(): lo que hace cada enlace.
 const AccionesCatalogo = ({ confirmando, eliminando, onEditar, onEliminar, onConfirmar, onCancelar }) => {
-
     // Un enlace que no navega: hace su acción y listo.
     const enlace = (texto, accion, apagado = false) => (
-        <a href="#" className="body-sm" style={{ color: apagado ? "var(--ink-muted)" : "var(--bordo)", pointerEvents: apagado ? "none" : "auto" }}
-            onClick={(e) => { e.preventDefault(); accion() }}>
+        <a
+            href="#"
+            className="body-sm"
+            style={{ color: apagado ? "var(--ink-muted)" : "var(--bordo)", pointerEvents: apagado ? "none" : "auto" }}
+            onClick={(e) => {
+                e.preventDefault()
+                accion()
+            }}
+        >
             {texto}
         </a>
     )

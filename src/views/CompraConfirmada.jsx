@@ -2,7 +2,6 @@
 // Es la pantalla donde se ve lo que hace el checkout por dentro: una sola
 // compra, pero una factura por cada artista que vendió algo.
 
-
 import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
@@ -11,7 +10,6 @@ import Estado from "../components/Estado"
 import Boton from "../components/Boton"
 
 const CompraConfirmada = () => {
-
     const [compra, setCompra] = useState(null)
     const [facturas, setFacturas] = useState([])
     const [cargando, setCargando] = useState(true)
@@ -35,7 +33,8 @@ const CompraConfirmada = () => {
                 // uno atras del otro tardaria mas sin ninguna ventaja.
                 return Promise.all(
                     susFacturas.map((factura) =>
-                        api.get("/api/artistas/" + factura.artista_id)
+                        api
+                            .get("/api/artistas/" + factura.artista_id)
                             .then((artista) => ({ ...factura, nombre_artistico: artista.nombre_artistico }))
                     )
                 )
@@ -45,17 +44,30 @@ const CompraConfirmada = () => {
             .finally(() => setCargando(false))
     }, [id])
 
-    if (cargando) return <div className="seccion"><div className="contenido"><Estado tipo="cargando" /></div></div>
-    if (error) return <div className="seccion"><div className="contenido"><Estado tipo="error" mensaje={error} /></div></div>
+    if (cargando)
+        return (
+            <div className="seccion">
+                <div className="contenido">
+                    <Estado tipo="cargando" />
+                </div>
+            </div>
+        )
+    if (error)
+        return (
+            <div className="seccion">
+                <div className="contenido">
+                    <Estado tipo="error" mensaje={error} />
+                </div>
+            </div>
+        )
 
     return (
         <div className="seccion">
             <div className="contenido col-media">
-
-                <p className="catalog-number cartela-num">
-                    Compra Nº {String(compra.id).padStart(6, "0")}
-                </p>
-                <h1 className="headline-lg" style={{ marginTop: "var(--xs)" }}>Compra confirmada</h1>
+                <p className="catalog-number cartela-num">Compra Nº {String(compra.id).padStart(6, "0")}</p>
+                <h1 className="headline-lg" style={{ marginTop: "var(--xs)" }}>
+                    Compra confirmada
+                </h1>
                 <p className="body-lg muted">{fecha(compra.fecha_compra)}</p>
 
                 {/* De donde sale el total: las obras y, si eligio envio, el costo de envio. */}
@@ -101,9 +113,10 @@ const CompraConfirmada = () => {
 
                 <div className="fila" style={{ marginTop: "var(--lg)" }}>
                     <Boton onClick={() => navegar("/mis-compras")}>Ver mis compras</Boton>
-                    <Boton tipo="secundario" onClick={() => navegar("/")}>Volver al catálogo</Boton>
+                    <Boton tipo="secundario" onClick={() => navegar("/")}>
+                        Volver al catálogo
+                    </Boton>
                 </div>
-
             </div>
         </div>
     )

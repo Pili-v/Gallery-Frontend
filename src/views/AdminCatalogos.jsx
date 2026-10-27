@@ -34,13 +34,12 @@ const limpiarTextoConNumeros = (texto) => capitalizarPalabras(texto.replace(/[^A
 // Reemplaza el elemento con el mismo id (una edición) o lo agrega al final (un alta).
 const guardarEnLista = (elementos, guardado) => {
     if (elementos.some((elemento) => elemento.id === guardado.id)) {
-        return elementos.map((elemento) => elemento.id === guardado.id ? guardado : elemento)
+        return elementos.map((elemento) => (elemento.id === guardado.id ? guardado : elemento))
     }
     return [...elementos, guardado]
 }
 
 const AdminCatalogos = () => {
-
     const [pestania, setPestania] = useState("estilos")
 
     const [estilos, setEstilos] = useState([])
@@ -70,11 +69,7 @@ const AdminCatalogos = () => {
 
     // Los tres catálogos, una sola vez al entrar.
     useEffect(() => {
-        Promise.all([
-            api.get("/api/estilos"),
-            api.get("/api/tamanios-lienzo"),
-            api.get("/api/marcos")
-        ])
+        Promise.all([api.get("/api/estilos"), api.get("/api/tamanios-lienzo"), api.get("/api/marcos")])
             .then((respuestas) => {
                 setEstilos(lista(respuestas[0]))
                 setTamanios(lista(respuestas[1]))
@@ -347,7 +342,8 @@ const AdminCatalogos = () => {
     }
 
     // El texto del botón de guardar, igual en los tres formularios.
-    const textoGuardar = (nombre, editando) => guardando === nombre ? "Guardando..." : editando ? "Guardar cambios" : "Agregar"
+    const textoGuardar = (nombre, editando) =>
+        guardando === nombre ? "Guardando..." : editando ? "Guardar cambios" : "Agregar"
 
     const pestanias = [
         { clave: "estilos", texto: "Estilos", cantidad: estilos.length },
@@ -358,7 +354,6 @@ const AdminCatalogos = () => {
     return (
         <div className="seccion">
             <div className="contenido">
-
                 <h1 className="headline-lg titulo-oculto">Catálogos</h1>
 
                 <nav className="pestanias" aria-label="Catálogos" style={{ marginBottom: "var(--lg)" }}>
@@ -368,25 +363,33 @@ const AdminCatalogos = () => {
                             type="button"
                             className={"pestania" + (pestania === item.clave ? " activa" : "")}
                             aria-pressed={pestania === item.clave}
-                            onClick={() => cambiarPestania(item.clave)}>
+                            onClick={() => cambiarPestania(item.clave)}
+                        >
                             {item.texto} ({item.cantidad})
                         </button>
                     ))}
                 </nav>
 
-                {error && <div style={{ marginBottom: "var(--md)" }}><Estado tipo="error" mensaje={error} /></div>}
+                {error && (
+                    <div style={{ marginBottom: "var(--md)" }}>
+                        <Estado tipo="error" mensaje={error} />
+                    </div>
+                )}
 
                 <div className="dos-columnas">
-
                     {/* ESTILOS */}
 
                     {pestania === "estilos" && (
                         <>
-                            {estilos.length === 0
-                                ? <Estado tipo="vacio" mensaje="Todavía no hay estilos." />
-                                : <table className="tabla">
+                            {estilos.length === 0 ? (
+                                <Estado tipo="vacio" mensaje="Todavía no hay estilos." />
+                            ) : (
+                                <table className="tabla">
                                     <thead>
-                                        <tr><th>Estilo</th><th></th></tr>
+                                        <tr>
+                                            <th>Estilo</th>
+                                            <th></th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         {estilos.map((estilo) => (
@@ -397,29 +400,47 @@ const AdminCatalogos = () => {
                                                         confirmando={esConfirmacion("estilo", estilo.id)}
                                                         eliminando={eliminando === "estilo-" + estilo.id}
                                                         onEditar={() => editarEstilo(estilo)}
-                                                        onEliminar={() => setConfirmando({ tipo: "estilo", id: estilo.id })}
+                                                        onEliminar={() =>
+                                                            setConfirmando({ tipo: "estilo", id: estilo.id })
+                                                        }
                                                         onConfirmar={() => eliminarEstilo(estilo.id)}
-                                                        onCancelar={() => setConfirmando(null)} />
+                                                        onCancelar={() => setConfirmando(null)}
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>}
+                                </table>
+                            )}
 
-                            <form className="cartela" onSubmit={guardarEstilo} style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}>
+                            <form
+                                className="cartela"
+                                onSubmit={guardarEstilo}
+                                style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}
+                            >
                                 <CampoFormulario
                                     etiqueta={editandoEstilo ? "Editar estilo" : "Nuevo estilo"}
                                     value={nuevoEstilo}
                                     error={errorFormulario}
-                                    onChange={(e) => { setNuevoEstilo(limpiarSoloTexto(e.target.value)); setErrorFormulario("") }} />
+                                    onChange={(e) => {
+                                        setNuevoEstilo(limpiarSoloTexto(e.target.value))
+                                        setErrorFormulario("")
+                                    }}
+                                />
 
-                                <Boton tipo={guardando === "estilo" ? "deshabilitado" : "primario"} bloque type="submit">
+                                <Boton
+                                    tipo={guardando === "estilo" ? "deshabilitado" : "primario"}
+                                    bloque
+                                    type="submit"
+                                >
                                     {textoGuardar("estilo", editandoEstilo)}
                                 </Boton>
 
                                 {editandoEstilo && (
                                     <div style={{ marginTop: "var(--sm)" }}>
-                                        <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionEstilo}>Cancelar edición</Boton>
+                                        <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionEstilo}>
+                                            Cancelar edición
+                                        </Boton>
                                     </div>
                                 )}
                             </form>
@@ -430,49 +451,95 @@ const AdminCatalogos = () => {
 
                     {pestania === "tamanios" && (
                         <>
-                            {tamanios.length === 0
-                                ? <Estado tipo="vacio" mensaje="Todavía no hay tamaños." />
-                                : <table className="tabla">
+                            {tamanios.length === 0 ? (
+                                <Estado tipo="vacio" mensaje="Todavía no hay tamaños." />
+                            ) : (
+                                <table className="tabla">
                                     <thead>
-                                        <tr><th>Tamaño</th><th>Medidas</th><th></th></tr>
+                                        <tr>
+                                            <th>Tamaño</th>
+                                            <th>Medidas</th>
+                                            <th></th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         {tamanios.map((tamanio) => (
                                             <tr key={tamanio.id}>
                                                 <td>{tamanio.nombre_tamanio}</td>
-                                                <td className="muted">{tamanio.ancho_lienzo} × {tamanio.largo_lienzo} cm</td>
+                                                <td className="muted">
+                                                    {tamanio.ancho_lienzo} × {tamanio.largo_lienzo} cm
+                                                </td>
                                                 <td>
                                                     <AccionesCatalogo
                                                         confirmando={esConfirmacion("tamanio", tamanio.id)}
                                                         eliminando={eliminando === "tamanio-" + tamanio.id}
                                                         onEditar={() => editarTamanio(tamanio)}
-                                                        onEliminar={() => setConfirmando({ tipo: "tamanio", id: tamanio.id })}
+                                                        onEliminar={() =>
+                                                            setConfirmando({ tipo: "tamanio", id: tamanio.id })
+                                                        }
                                                         onConfirmar={() => eliminarTamanio(tamanio.id)}
-                                                        onCancelar={() => setConfirmando(null)} />
+                                                        onCancelar={() => setConfirmando(null)}
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>}
+                                </table>
+                            )}
 
-                            <form className="cartela" onSubmit={guardarTamanio} style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}>
+                            <form
+                                className="cartela"
+                                onSubmit={guardarTamanio}
+                                style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}
+                            >
                                 <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>
                                     {editandoTamanio ? "Editar tamaño" : "Nuevo tamaño"}
                                 </p>
 
-                                <CampoFormulario etiqueta="Nombre" name="nombre_tamanio" value={nuevoTamanio.nombre_tamanio} onChange={handleTamanio} />
-                                <CampoFormulario etiqueta="Ancho (cm)" tipo="number" name="ancho_lienzo" min="0.01" step="0.01" value={nuevoTamanio.ancho_lienzo} onChange={handleTamanio} />
-                                <CampoFormulario etiqueta="Largo (cm)" tipo="number" name="largo_lienzo" min="0.01" step="0.01" value={nuevoTamanio.largo_lienzo} onChange={handleTamanio} />
+                                <CampoFormulario
+                                    etiqueta="Nombre"
+                                    name="nombre_tamanio"
+                                    value={nuevoTamanio.nombre_tamanio}
+                                    onChange={handleTamanio}
+                                />
+                                <CampoFormulario
+                                    etiqueta="Ancho (cm)"
+                                    tipo="number"
+                                    name="ancho_lienzo"
+                                    min="0.01"
+                                    step="0.01"
+                                    value={nuevoTamanio.ancho_lienzo}
+                                    onChange={handleTamanio}
+                                />
+                                <CampoFormulario
+                                    etiqueta="Largo (cm)"
+                                    tipo="number"
+                                    name="largo_lienzo"
+                                    min="0.01"
+                                    step="0.01"
+                                    value={nuevoTamanio.largo_lienzo}
+                                    onChange={handleTamanio}
+                                />
 
-                                {errorFormulario && <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>{errorFormulario}</p>}
+                                {errorFormulario && (
+                                    <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>
+                                        {errorFormulario}
+                                    </p>
+                                )}
 
-                                <Boton tipo={guardando === "tamanio" ? "deshabilitado" : "primario"} bloque type="submit">
+                                <Boton
+                                    tipo={guardando === "tamanio" ? "deshabilitado" : "primario"}
+                                    bloque
+                                    type="submit"
+                                >
                                     {textoGuardar("tamanio", editandoTamanio)}
                                 </Boton>
 
                                 {editandoTamanio && (
                                     <div style={{ marginTop: "var(--sm)" }}>
-                                        <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionTamanio}>Cancelar edición</Boton>
+                                        <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionTamanio}>
+                                            Cancelar edición
+                                        </Boton>
                                     </div>
                                 )}
                             </form>
@@ -483,17 +550,32 @@ const AdminCatalogos = () => {
 
                     {pestania === "marcos" && (
                         <>
-                            {marcos.length === 0
-                                ? <Estado tipo="vacio" mensaje="Todavía no hay marcos." />
-                                : <table className="tabla">
+                            {marcos.length === 0 ? (
+                                <Estado tipo="vacio" mensaje="Todavía no hay marcos." />
+                            ) : (
+                                <table className="tabla">
                                     <thead>
-                                        <tr><th></th><th>Marco</th><th>Color</th><th>Precio</th><th></th></tr>
+                                        <tr>
+                                            <th></th>
+                                            <th>Marco</th>
+                                            <th>Color</th>
+                                            <th>Precio</th>
+                                            <th></th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         {marcos.map((marco) => (
                                             <tr key={marco.id}>
                                                 <td style={{ width: 64 }}>
-                                                    {marco.url && <img src={optimizada(marco.url, 96)} alt="" width="48" height="48" style={{ objectFit: "contain", display: "block" }} />}
+                                                    {marco.url && (
+                                                        <img
+                                                            src={optimizada(marco.url, 96)}
+                                                            alt=""
+                                                            width="48"
+                                                            height="48"
+                                                            style={{ objectFit: "contain", display: "block" }}
+                                                        />
+                                                    )}
                                                 </td>
                                                 <td>{marco.nombre_marco}</td>
                                                 <td className="muted">{marco.color_marco}</td>
@@ -503,23 +585,49 @@ const AdminCatalogos = () => {
                                                         confirmando={esConfirmacion("marco", marco.id)}
                                                         eliminando={eliminando === "marco-" + marco.id}
                                                         onEditar={() => editarMarco(marco)}
-                                                        onEliminar={() => setConfirmando({ tipo: "marco", id: marco.id })}
+                                                        onEliminar={() =>
+                                                            setConfirmando({ tipo: "marco", id: marco.id })
+                                                        }
                                                         onConfirmar={() => eliminarMarco(marco.id)}
-                                                        onCancelar={() => setConfirmando(null)} />
+                                                        onCancelar={() => setConfirmando(null)}
+                                                    />
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>}
+                                </table>
+                            )}
 
-                            <form className="cartela" onSubmit={guardarMarco} style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}>
+                            <form
+                                className="cartela"
+                                onSubmit={guardarMarco}
+                                style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}
+                            >
                                 <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>
                                     {editandoMarco ? "Editar marco" : "Nuevo marco"}
                                 </p>
 
-                                <CampoFormulario etiqueta="Nombre" name="nombre_marco" value={nuevoMarco.nombre_marco} onChange={handleMarco} />
-                                <CampoFormulario etiqueta="Color" name="color_marco" value={nuevoMarco.color_marco} onChange={handleMarco} />
-                                <CampoFormulario etiqueta="Precio" tipo="number" name="precio_marco" min="0.01" step="0.01" value={nuevoMarco.precio_marco} onChange={handleMarco} />
+                                <CampoFormulario
+                                    etiqueta="Nombre"
+                                    name="nombre_marco"
+                                    value={nuevoMarco.nombre_marco}
+                                    onChange={handleMarco}
+                                />
+                                <CampoFormulario
+                                    etiqueta="Color"
+                                    name="color_marco"
+                                    value={nuevoMarco.color_marco}
+                                    onChange={handleMarco}
+                                />
+                                <CampoFormulario
+                                    etiqueta="Precio"
+                                    tipo="number"
+                                    name="precio_marco"
+                                    min="0.01"
+                                    step="0.01"
+                                    value={nuevoMarco.precio_marco}
+                                    onChange={handleMarco}
+                                />
 
                                 <div className="campo">
                                     <label className="catalog-number muted">
@@ -530,10 +638,18 @@ const AdminCatalogos = () => {
                                         className="input"
                                         type="file"
                                         accept="image/*"
-                                        onChange={(e) => { setArchivoMarco(e.target.files[0] || null); setErrorFormulario("") }} />
+                                        onChange={(e) => {
+                                            setArchivoMarco(e.target.files[0] || null)
+                                            setErrorFormulario("")
+                                        }}
+                                    />
                                 </div>
 
-                                {errorFormulario && <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>{errorFormulario}</p>}
+                                {errorFormulario && (
+                                    <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>
+                                        {errorFormulario}
+                                    </p>
+                                )}
 
                                 <Boton tipo={guardando === "marco" ? "deshabilitado" : "primario"} bloque type="submit">
                                     {textoGuardar("marco", editandoMarco)}
@@ -541,15 +657,15 @@ const AdminCatalogos = () => {
 
                                 {editandoMarco && (
                                     <div style={{ marginTop: "var(--sm)" }}>
-                                        <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionMarco}>Cancelar edición</Boton>
+                                        <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionMarco}>
+                                            Cancelar edición
+                                        </Boton>
                                     </div>
                                 )}
                             </form>
                         </>
                     )}
-
                 </div>
-
             </div>
         </div>
     )
