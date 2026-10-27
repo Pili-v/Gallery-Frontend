@@ -23,7 +23,7 @@ const sin404 = (promesa) =>
     })
 
 const SIN_RANGO = { min: "", max: "" }
-const POR_PAGINA = 3
+const POR_PAGINA = 9
 
 export default function Catalogo() {
     // Datos de apoyo (livianos, una sola vez)
