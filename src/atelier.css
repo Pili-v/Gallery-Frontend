@@ -157,6 +157,21 @@ body {
   display: grid; place-items: center; font-size: 12px; font-weight: 600;
 }
 
+/* ---------- Barra de navegación en bordó (el color de marca) ---------- */
+.barra-marca { background: var(--bordo-dark); }
+.header { background: var(--bordo); border-bottom: 0; color: var(--carbon-text); }
+.header-franja { border-bottom: 1px solid rgba(243, 240, 235, .22); color: rgba(243, 240, 235, .75); }
+.header-nav a { color: rgba(243, 240, 235, .8); }
+.header-nav a:hover { color: var(--carbon-text); }
+.header-nav a.activo { color: var(--carbon-text); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 8px; text-decoration-color: rgba(243, 240, 235, .85); }
+.header .avatar { background: var(--carbon-text); color: var(--bordo); }
+.header .boton-secundario { color: var(--carbon-text) !important; border-color: rgba(243, 240, 235, .45); }
+.header .boton-secundario:hover { border-color: var(--carbon-text); }
+.header-menu-boton { color: var(--carbon-text); border-color: rgba(243, 240, 235, .45); }
+@media (max-width: 1000px) {
+  .header-nav > a:not(.avatar) { border-top-color: rgba(243, 240, 235, .22); }
+}
+
 /* ---------- Componente: Footer ---------- */
 .footer {
   border-top: 1px solid var(--border);
