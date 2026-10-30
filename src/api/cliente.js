@@ -20,11 +20,13 @@ const crearError = (respuesta) => {
         .catch(() => "")
         .then((texto) => {
             let mensaje = texto
+            let detalle = null
 
             try {
                 const cuerpo = JSON.parse(texto)
                 if (cuerpo && typeof cuerpo === "object") {
                     mensaje = cuerpo.mensaje || cuerpo.message || ""
+                    detalle = cuerpo
                 }
             } catch {
                 // Si no es JSON, conservamos el texto.
@@ -38,6 +40,8 @@ const crearError = (respuesta) => {
 
             const error = new Error(mensaje)
             error.status = respuesta.status
+            // El cuerpo completo, por si trae algo más que el mensaje (por ejemplo, la lista de ítems sin stock del checkout).
+            error.detalle = detalle
             return error
         })
 }
