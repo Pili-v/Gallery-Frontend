@@ -44,8 +44,18 @@ const Pago = () => {
     }, [])
 
     // Quién compra sale del token, igual que en el backend.
+    // Si el back rechaza la compra porque algo ya no está disponible (alguien compró lo último mientras tanto), vuelve al
+    // carrito con el aviso: el carrito se pide de nuevo y marca cuáles son los ítems.
     const pagar = () =>
-        api.post("/api/checkout", { tipo_entrega: tipoEntrega }).then((compra) => navegar("/compra/" + compra.id))
+        api
+            .post("/api/checkout", { tipo_entrega: tipoEntrega })
+            .then((compra) => navegar("/compra/" + compra.id))
+            .catch((e) => {
+                if (e.status === 409 && e.detalle && e.detalle.items) {
+                    navegar("/carrito", { state: { sinDisponibilidad: e.detalle.mensaje } })
+                }
+                throw e
+            })
 
     const subtotal = items.reduce((suma, item) => suma + item.precio_unitario * item.cantidad, 0)
     const marcos = items.reduce((suma, item) => suma + item.precio_marco * item.cantidad, 0)

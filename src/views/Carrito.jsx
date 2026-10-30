@@ -1,11 +1,12 @@
 // Tu carrito — Área 4 · Compra
 // Muestra los ítems del carrito del usuario logueado, deja cambiar cantidades, quitar ítems y vaciarlo, y elegir
 // cómo se recibe la compra (envío o retiro, con la dirección). El botón lleva directo al pago.
-// Los ítems se piden una sola vez al entrar: cada cambio actualiza la lista que ya está en pantalla con lo que
-// responde el back, sin volver a pedir el carrito.
+// Los ítems se piden al entrar y cada vez que se vuelve a la pantalla después de haberla dejado (otra pestaña u otra
+// ventana): así se ve enseguida si algo dejó de estar disponible. Cada cambio de cantidad actualiza la lista que ya está
+// en pantalla con lo que responde el back. Mientras haya ítems sin disponibilidad no se puede ir al pago.
 
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { api, lista } from "../api/cliente"
 import { getUsuario } from "../api/sesion"
 import { optimizada, portadaDe } from "../api/formato"
@@ -25,6 +26,18 @@ const listaVacia = (promesa) =>
         throw e
     })
 
+// Los ítems del carrito (con su disponibilidad de hoy) y las portadas de sus obras, en un solo pedido cada uno.
+const pedirItemsConPortadas = (idDelCarrito) =>
+    listaVacia(api.get("/api/carritos/" + idDelCarrito + "/items")).then((susItems) => {
+        const items = lista(susItems)
+        // Solo las portadas de las obras que hay en el carrito, en un solo pedido
+        if (items.length === 0) return { items, imagenes: [] }
+
+        return listaVacia(
+            api.get("/api/imagenes?portada=true&" + items.map((item) => "obraId=" + item.obra_id).join("&"))
+        ).then((imagenes) => ({ items, imagenes: lista(imagenes) }))
+    })
+
 const Carrito = () => {
     // Estados locales de la pantalla.
     const [carrito, setCarrito] = useState(null)
@@ -41,6 +54,11 @@ const Carrito = () => {
 
     const usuario = getUsuario()
     const navegar = useNavigate()
+    const ubicacion = useLocation()
+
+    // Si el pago volvió acá porque algo ya no estaba disponible, trae el aviso del back (los ítems afectados se
+    // marcan solos: la lista se acaba de pedir de nuevo y cada ítem trae su disponibilidad).
+    const avisoDelPago = ubicacion.state ? ubicacion.state.sinDisponibilidad : null
 
     // Trae el carrito del usuario y después sus ítems (y las portadas de sus obras).
     // El id del usuario sale de la sesión, no de la URL: así nadie
@@ -51,21 +69,36 @@ const Carrito = () => {
             .then((miCarrito) => {
                 setCarrito(miCarrito)
                 setDireccion(miCarrito.direccion_cliente || "")
-                return listaVacia(api.get("/api/carritos/" + miCarrito.id + "/items"))
+                return pedirItemsConPortadas(miCarrito.id)
             })
-            .then((susItems) => {
-                const losItems = lista(susItems)
-                setItems(losItems)
-                // Solo las portadas de las obras que hay en el carrito, en un solo pedido
-                if (losItems.length === 0) return []
-                return listaVacia(
-                    api.get("/api/imagenes?portada=true&" + losItems.map((item) => "obraId=" + item.obra_id).join("&"))
-                )
+            .then((resultado) => {
+                setItems(resultado.items)
+                setImagenes(resultado.imagenes)
             })
-            .then((lasImagenes) => setImagenes(lista(lasImagenes)))
             .catch((e) => setError(e.message))
             .finally(() => setCargando(false))
     }, [])
+
+    // Al volver a la pantalla después de haberla dejado (otra pestaña u otra ventana) se piden de nuevo los ítems: así
+    // se ve enseguida si mientras tanto una obra se quedó sin stock o salió de la venta. Solo en ese momento, sin
+    // pedidos periódicos. Si el pedido falla se deja lo que ya había en pantalla.
+    useEffect(() => {
+        if (carrito === null) return
+
+        const alVolver = () => {
+            if (document.visibilityState !== "visible") return
+
+            pedirItemsConPortadas(carrito.id)
+                .then((resultado) => {
+                    setItems(resultado.items)
+                    setImagenes(resultado.imagenes)
+                })
+                .catch(() => {})
+        }
+
+        document.addEventListener("visibilitychange", alVolver)
+        return () => document.removeEventListener("visibilitychange", alVolver)
+    }, [carrito])
 
     // Cambiar la cantidad de un ítem. No baja de 1: un ítem se saca con "Quitar" (la fila deshabilita el "−").
     // La fila avisa con el id del ítem; los demás datos (variante y marco) salen de la lista de ítems.
@@ -106,6 +139,12 @@ const Carrito = () => {
         }
     }, [cambio, carrito])
 
+    // Ajusta un ítem a las unidades que quedan (cuando se pidieron más de las que hay).
+    const ajustarCantidad = (itemId) => {
+        const item = items.find((otro) => otro.id === itemId)
+        cambiarCantidad(itemId, item.stock_disponible)
+    }
+
     const quitarItem = (itemId) => {
         setError("")
         api.delete("/api/items-carrito/" + itemId)
@@ -123,7 +162,7 @@ const Carrito = () => {
     // Guarda la dirección en el carrito y pasa al pago. El tipo de entrega y los ítems viajan a la pantalla
     // siguiente, que es la que hace el POST /api/checkout (así no vuelve a pedir lo que ya se sabe).
     const irAlPago = () => {
-        if (yendo) return
+        if (yendo || hayNoDisponibles) return
 
         if (tipoEntrega === ENVIO_DOMICILIO && direccion.trim() === "") {
             setErrorDireccion("Para el envío a domicilio hace falta una dirección.")
@@ -146,6 +185,9 @@ const Carrito = () => {
         return imagen ? optimizada(imagen.url, 160) : null
     }
 
+    // Con algo no disponible (sin stock, con menos unidades de las pedidas o fuera de la venta) no se puede pagar.
+    const hayNoDisponibles = items.some((item) => !item.disponible)
+
     // Los totales se calculan con lo que ya devuelve la API por cada ítem: al cambiar la lista se recalculan solos.
     const envio = costoDeEnvio(tipoEntrega)
     const subtotal = items.reduce((suma, item) => suma + item.precio_unitario * item.cantidad, 0)
@@ -164,6 +206,12 @@ const Carrito = () => {
     return (
         <div className="seccion">
             <div className="contenido">
+                {avisoDelPago && (
+                    <p className="aviso" role="alert" style={{ marginBottom: "var(--md)" }}>
+                        No se pudo completar la compra. {avisoDelPago} Las obras afectadas están marcadas abajo.
+                    </p>
+                )}
+
                 {error && (
                     <div style={{ marginBottom: "var(--md)" }}>
                         <Estado tipo="error" mensaje={error} />
@@ -197,8 +245,19 @@ const Carrito = () => {
                                     subtotal={item.subtotal}
                                     imagen={fotoDe(item.obra_id)}
                                     editable={true}
+                                    aviso={item.motivo_no_disponible}
+                                    accionAviso={
+                                        item.stock_disponible > 0 && !item.disponible
+                                            ? item.stock_disponible === 1
+                                                ? "Ajustar a 1 unidad"
+                                                : "Ajustar a " + item.stock_disponible + " unidades"
+                                            : null
+                                    }
+                                    maximo={item.stock_disponible}
+                                    disponibles={item.stock_disponible}
                                     onCambiarCantidad={cambiarCantidad}
                                     onQuitar={quitarItem}
+                                    onAccionAviso={ajustarCantidad}
                                 />
                             ))}
 
@@ -231,6 +290,12 @@ const Carrito = () => {
                             total={total}
                             boton={yendo ? "Guardando..." : "Ir al pago"}
                             onBoton={irAlPago}
+                            botonDeshabilitado={hayNoDisponibles}
+                            nota={
+                                hayNoDisponibles
+                                    ? "Hay obras que ya no están disponibles: quitalas o ajustá la cantidad para poder pagar."
+                                    : undefined
+                            }
                         >
                             <EntregaCompra
                                 tipoEntrega={tipoEntrega}

@@ -1,7 +1,8 @@
 import { pesos } from "../api/formato"
 
 // El resumen de importes de una compra. Lo que se pase como contenido (children) se dibuja entre el total y el
-// botón: el carrito lo usa para mostrar ahí cómo se recibe la compra.
+// botón: el carrito lo usa para mostrar ahí cómo se recibe la compra. Con botonDeshabilitado el botón no se puede apretar
+// (la nota de abajo suele decir por qué).
 const ResumenTotales = ({
     subtotal,
     etiquetaSubtotal = "Obras",
@@ -10,6 +11,7 @@ const ResumenTotales = ({
     total,
     boton,
     onBoton,
+    botonDeshabilitado = false,
     nota,
     children
 }) => {
@@ -51,8 +53,9 @@ const ResumenTotales = ({
 
             {boton && (
                 <button
-                    className="boton boton-primario boton-bloque"
+                    className={"boton boton-bloque " + (botonDeshabilitado ? "boton-deshabilitado" : "boton-primario")}
                     style={{ marginTop: "var(--md)" }}
+                    disabled={botonDeshabilitado}
                     onClick={onBoton}
                 >
                     {boton}
