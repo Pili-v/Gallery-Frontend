@@ -1,119 +1,65 @@
 // Perfil del artista — Área 3 · Catálogo
-// El artista sale de GET /api/artistas/{id} y sus obras de GET /api/obras?artistaId=,
-// que devuelve la misma forma que el catálogo y está paginado.
+// Todo lo que viene del backend pasa por Redux: esta pantalla solo despacha acciones y lee el estado.
+// El artista sale de la lista de artistas (que se pide una sola vez para toda la app) y sus obras de
+// GET /api/obras?artistaId=, que devuelve la misma forma que el catálogo y está paginado.
 // Las variantes y las imágenes se piden solo de las obras de la página que se ve:
 // pedir las listas completas traería las fotos de todas las obras de la base.
 
 import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchEstilos } from "../redux/estilosSlice"
+import { fetchArtistas } from "../redux/artistasSlice"
+import { cargarObrasDeArtista } from "../redux/obrasDeArtistaSlice"
 import { optimizada } from "../api/formato"
 import TarjetaObra from "../components/TarjetaObra"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
 import Paginador from "../components/Paginador"
 
-// Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
-// respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
-const sin404 = (promesa) =>
-    promesa.catch((e) => {
-        if (e.status === 404) return []
-        throw e
-    })
-
 const POR_PAGINA = 6
 
+// La key hace que, al pasar de un artista a otro, la pantalla arranque de cero (vuelve a la primera página).
 export default function PerfilArtista() {
     const { id } = useParams()
+    return <PerfilDeArtista key={id} id={id} />
+}
 
-    const [artista, setArtista] = useState(null)
-    const [estilos, setEstilos] = useState([])
-    const [items, setItems] = useState([])
+function PerfilDeArtista({ id }) {
+    const dispatch = useDispatch()
     const [pagina, setPagina] = useState(0)
-    const [totalPaginas, setTotalPaginas] = useState(1)
-    const [totalObras, setTotalObras] = useState(0)
 
-    const [cargando, setCargando] = useState(true)
-    const [cargandoObras, setCargandoObras] = useState(true)
-    const [error, setError] = useState("")
-    const [intento, setIntento] = useState(0)
+    const artistas = useSelector((state) => state.artistas)
+    const estilos = useSelector((state) => state.estilos)
+    const {
+        items,
+        totalPaginas,
+        totalObras,
+        loading: cargandoObras,
+        error: errorObras
+    } = useSelector((state) => state.obrasDeArtista)
 
-    // Al cambiar de artista se vuelve a la primera página
+    // El artista y los estilos: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir)
     useEffect(() => {
-        setPagina(0)
-    }, [id])
-
-    // El artista y los estilos
-    useEffect(() => {
-        let vigente = true
-        setCargando(true)
-        setError("")
-
-        Promise.all([api.get("/api/artistas/" + id), sin404(api.get("/api/estilos"))])
-            .then(([suArtista, susEstilos]) => {
-                if (!vigente) return
-                setArtista(suArtista)
-                setEstilos(lista(susEstilos))
-            })
-            .catch((e) => {
-                if (vigente) setError(e.message)
-            })
-            .finally(() => {
-                if (vigente) setCargando(false)
-            })
-
-        return () => {
-            vigente = false
-        }
-    }, [id, intento])
+        dispatch(fetchArtistas())
+        dispatch(fetchEstilos())
+    }, [dispatch])
 
     // Las obras de la página visible, con sus variantes e imágenes
     useEffect(() => {
-        let vigente = true
-        setCargandoObras(true)
+        dispatch(cargarObrasDeArtista({ artistaId: id, pagina, size: POR_PAGINA }))
+    }, [dispatch, id, pagina])
 
-        sin404(api.get("/api/obras?artistaId=" + id + "&page=" + pagina + "&size=" + POR_PAGINA))
-            .then((respuesta) => {
-                const lasObras = lista(respuesta)
-                if (vigente) {
-                    setTotalPaginas(respuesta?.totalPages ?? 1)
-                    setTotalObras(respuesta?.totalElements ?? lasObras.length)
-                }
-                // Las portadas de toda la página en un solo pedido (portada=true); las variantes, de a una obra.
-                const pedirPortadas =
-                    lasObras.length > 0
-                        ? sin404(
-                              api.get(
-                                  "/api/imagenes?portada=true&" + lasObras.map((obra) => "obraId=" + obra.id).join("&")
-                              )
-                          )
-                        : Promise.resolve([])
+    const error = artistas.error || estilos.error || errorObras
+    const cargando = !error && !(artistas.cargado && estilos.cargado)
+    const artista = artistas.items.find((a) => String(a.id) === String(id))
 
-                return Promise.all([
-                    pedirPortadas,
-                    Promise.all(lasObras.map((obra) => sin404(api.get("/api/variantes?obraId=" + obra.id))))
-                ]).then(([susPortadas, susVariantes]) =>
-                    lasObras.map((obra, i) => ({
-                        obra,
-                        variante: lista(susVariantes[i]).find((v) => v.stock_variante > 0) ?? lista(susVariantes[i])[0],
-                        imagenes: lista(susPortadas).filter((p) => p.obra_id === obra.id)
-                    }))
-                )
-            })
-            .then((armadas) => {
-                if (vigente) setItems(armadas)
-            })
-            .catch((e) => {
-                if (vigente) setError(e.message)
-            })
-            .finally(() => {
-                if (vigente) setCargandoObras(false)
-            })
-
-        return () => {
-            vigente = false
-        }
-    }, [id, pagina, intento])
+    // Si el artista no está en la lista, puede ser uno recién creado: el Reintentar vuelve a pedirla.
+    const reintentar = () => {
+        dispatch(fetchArtistas({ forzar: true }))
+        dispatch(fetchEstilos())
+        dispatch(cargarObrasDeArtista({ artistaId: id, pagina, size: POR_PAGINA }))
+    }
 
     if (cargando)
         return (
@@ -131,7 +77,7 @@ export default function PerfilArtista() {
                         tipo="error"
                         mensaje={error || "No se encontró al artista."}
                         accion="Reintentar"
-                        onAccion={() => setIntento((n) => n + 1)}
+                        onAccion={reintentar}
                     />
                 </div>
             </div>
@@ -140,7 +86,7 @@ export default function PerfilArtista() {
 
     const armarTarjeta = (item) => {
         const portada = [...item.imagenes].sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0))[0]
-        const estilo = estilos.find((e) => (item.obra.estilo_ids ?? []).includes(e.id))
+        const estilo = estilos.items.find((e) => (item.obra.estilo_ids ?? []).includes(e.id))
         return {
             obra: {
                 ...item.obra,

@@ -1,7 +1,8 @@
 // Obras relacionadas — fila de hasta 4 tarjetas debajo del detalle de una obra.
 // Sirve para dos secciones: "Más obras de <artista>" y "Obras parecidas" (mismo estilo).
 // Es un complemento: si algo falla, la sección simplemente no se muestra y el detalle sigue
-// funcionando. Sin async/await y sin tocar el DOM.
+// funcionando. Todo lo que viene del backend pasa por Redux (obrasRelacionadasSlice): acá solo se
+// despacha y se lee. Los nombres de artistas y estilos salen de sus slices (que se piden una sola vez).
 //
 // Props:
 //   titulo           : encabezado de la sección
@@ -12,103 +13,52 @@
 //
 // Usarlo con key={obra.id}: así, al pasar a otra obra, la sección se arma de nuevo.
 
-import { useState, useEffect } from "react"
-import { api, lista } from "../api/cliente"
+import { useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchArtistas } from "../redux/artistasSlice"
+import { fetchEstilos } from "../redux/estilosSlice"
+import { cargarRelacionadas } from "../redux/obrasRelacionadasSlice"
 import { optimizada } from "../api/formato"
 import TarjetaObra from "./TarjetaObra"
 
-// Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
-// respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
-const sin404 = (promesa) =>
-    promesa.catch((e) => {
-        if (e.status === 404) return []
-        throw e
-    })
-
 export default function ObrasRelacionadas({ titulo, consultas, excluirId, excluirArtistaId = null, maximo = 4 }) {
-    const [items, setItems] = useState([])
-    const clave = consultas.join("|")
+    const dispatch = useDispatch()
+
+    // Cada sección guarda su resultado bajo su propia clave (hay dos a la vez en el detalle).
+    const clave = consultas.join("|") + "#" + excluirId + "#" + excluirArtistaId + "#" + maximo
+    const grupo = useSelector((state) => state.obrasRelacionadas.porClave[clave])
+    const artistas = useSelector((state) => state.artistas.items)
+    const estilos = useSelector((state) => state.estilos.items)
 
     useEffect(() => {
-        let vigente = true
-        setItems([])
+        dispatch(fetchArtistas())
+        dispatch(fetchEstilos())
+    }, [dispatch])
 
+    // La clave ya resume las consultas, la obra excluida y el máximo: cambia cuando cambia cualquiera de ellos.
+    useEffect(() => {
         if (consultas.length > 0) {
-            // Se piden de más porque después se descartan la obra actual y las del mismo artista.
-            const tamanio = maximo * 3 + 1
-
-            Promise.all(consultas.map((c) => sin404(api.get("/api/obras?" + c + "&page=0&size=" + tamanio))))
-                .then((respuestas) => {
-                    // Sin repetidas (una obra puede aparecer en dos estilos) y sin la que se está viendo
-                    const vistas = new Set()
-                    const elegidas = []
-                    respuestas.forEach((respuesta) => {
-                        lista(respuesta).forEach((obra) => {
-                            if (obra.id === excluirId || obra.artista_id === excluirArtistaId || vistas.has(obra.id))
-                                return
-                            vistas.add(obra.id)
-                            elegidas.push(obra)
-                        })
-                    })
-                    const obras = elegidas.slice(0, maximo)
-                    if (obras.length === 0) return null
-
-                    const idsArtistas = [...new Set(obras.map((o) => o.artista_id))]
-
-                    return Promise.all([
-                        // Las portadas de todas las obras en un solo pedido (portada=true); las variantes, de a una obra.
-                        Promise.all([
-                            sin404(
-                                api.get(
-                                    "/api/imagenes?portada=true&" + obras.map((obra) => "obraId=" + obra.id).join("&")
-                                )
-                            ),
-                            Promise.all(obras.map((obra) => sin404(api.get("/api/variantes?obraId=" + obra.id))))
-                        ]).then(([susPortadas, susVariantes]) =>
-                            obras.map((obra, i) => ({
-                                obra,
-                                variantes: lista(susVariantes[i]),
-                                imagenes: lista(susPortadas).filter((p) => p.obra_id === obra.id)
-                            }))
-                        ),
-                        Promise.all(idsArtistas.map((id) => api.get("/api/artistas/" + id))),
-                        sin404(api.get("/api/estilos"))
-                    ])
-                })
-                .then((resultado) => {
-                    if (!vigente || !resultado) return
-                    const [conDatos, artistas, estilos] = resultado
-
-                    setItems(
-                        conDatos.map(({ obra, variantes, imagenes }) => {
-                            const portada = [...imagenes].sort(
-                                (x, y) => (x.orden_imagen ?? 0) - (y.orden_imagen ?? 0)
-                            )[0]
-                            const artista = artistas.find((a) => a.id === obra.artista_id)
-                            const estilo = lista(estilos).find((e) => (obra.estilo_ids ?? []).includes(e.id))
-
-                            return {
-                                obra: {
-                                    ...obra,
-                                    estilo: estilo ? estilo.nombre_estilo : "",
-                                    artistaId: obra.artista_id,
-                                    nombre_artistico: artista ? artista.nombre_artistico : "Artista"
-                                },
-                                variante: variantes.find((v) => v.stock_variante > 0) ?? variantes[0],
-                                imagen: portada ? optimizada(portada.url, 600) : null
-                            }
-                        })
-                    )
-                })
-                .catch(() => {
-                    // Es un complemento: si falla, la sección no se muestra.
-                })
+            dispatch(cargarRelacionadas({ clave, consultas, excluirId, excluirArtistaId, maximo }))
         }
+    }, [dispatch, clave, excluirId, excluirArtistaId, maximo])
 
-        return () => {
-            vigente = false
+    // Se arma lo que muestra cada tarjeta: los ids se traducen a nombres y se elige la portada.
+    const items = (grupo?.items ?? []).map(({ obra, variante, imagenes }) => {
+        const portada = [...imagenes].sort((x, y) => (x.orden_imagen ?? 0) - (y.orden_imagen ?? 0))[0]
+        const artista = artistas.find((a) => a.id === obra.artista_id)
+        const estilo = estilos.find((e) => (obra.estilo_ids ?? []).includes(e.id))
+
+        return {
+            obra: {
+                ...obra,
+                estilo: estilo ? estilo.nombre_estilo : "",
+                artistaId: obra.artista_id,
+                nombre_artistico: artista ? artista.nombre_artistico : "Artista"
+            },
+            variante,
+            imagen: portada ? optimizada(portada.url, 600) : null
         }
-    }, [clave, excluirId, excluirArtistaId, maximo])
+    })
 
     if (items.length === 0) return null
 

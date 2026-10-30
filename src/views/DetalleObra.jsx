@@ -1,9 +1,14 @@
 // Detalle de obra — Área 3 · Catálogo
-// Trae la obra con sus variantes, imágenes, artista y marcos. Sin async/await.
+// Todo lo que viene del backend pasa por Redux: esta pantalla solo despacha acciones y lee el estado.
+// La obra con sus variantes e imágenes sale de obraDetalleSlice; los marcos y los artistas se piden una sola
+// vez para toda la app (si otra pantalla ya los pidió, no se vuelven a pedir).
 
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchMarcos } from "../redux/marcosSlice"
+import { fetchArtistas } from "../redux/artistasSlice"
+import { fetchObraDetalle, agregarAlCarrito } from "../redux/obraDetalleSlice"
 import { getUsuario } from "../api/sesion"
 import { pesos } from "../api/formato"
 import Badge from "../components/Badge"
@@ -12,94 +17,62 @@ import Boton from "../components/Boton"
 import VisorImagenes from "../components/Visorimagenes"
 import ObrasRelacionadas from "../components/ObrasRelacionadas"
 
-// Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
-// respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
-const sin404 = (promesa) =>
-    promesa.catch((e) => {
-        if (e.status === 404) return []
-        throw e
-    })
-
+// La key hace que, al pasar de una obra a otra, la pantalla arranque de cero (vuelve al primer tamaño y marco).
 export default function DetalleObra() {
     const { id } = useParams()
+    return <DetalleDeObra key={id} id={id} />
+}
+
+function DetalleDeObra({ id }) {
+    const dispatch = useDispatch()
     const navegar = useNavigate()
 
-    const [obra, setObra] = useState(null)
-    const [variantes, setVariantes] = useState([])
-    const [imagenes, setImagenes] = useState([])
-    const [artista, setArtista] = useState(null)
-    const [marcos, setMarcos] = useState([])
+    const detalle = useSelector((state) => state.obraDetalle)
+    const marcosEstado = useSelector((state) => state.marcos)
+    const artistasEstado = useSelector((state) => state.artistas)
 
-    const [varianteSeleccionada, setVarianteSeleccionada] = useState(null)
-    const [marcoSeleccionado, setMarcoSeleccionado] = useState(null)
+    // Lo que el usuario eligió (estado de la pantalla, no del backend). Sin elegir, vale el primero de la lista.
+    const [varianteElegida, setVarianteElegida] = useState(null)
+    const [marcoElegido, setMarcoElegido] = useState(null)
 
-    const [cargando, setCargando] = useState(true)
-    const [agregando, setAgregando] = useState(false)
-    const [error, setError] = useState("")
-
-    // Depende del id: si se navega a otra obra, se vuelve a pedir.
+    // Marcos y artistas: una sola vez
     useEffect(() => {
-        let vigente = true
-        setCargando(true)
-        setError("")
+        dispatch(fetchMarcos())
+        dispatch(fetchArtistas())
+    }, [dispatch])
 
-        api.get("/api/obras/" + id)
-            .then((laObra) =>
-                Promise.all([
-                    sin404(api.get("/api/variantes?obraId=" + id)),
-                    sin404(api.get("/api/imagenes?obraId=" + id)),
-                    api.get("/api/artistas/" + laObra.artista_id),
-                    sin404(api.get("/api/marcos"))
-                ]).then(([susVariantes, susImagenes, suArtista, losMarcos]) => {
-                    if (!vigente) return
-                    const vars = lista(susVariantes)
-                    const mars = lista(losMarcos)
-                    setObra(laObra)
-                    setVariantes(vars)
-                    setImagenes(lista(susImagenes))
-                    setArtista(suArtista)
-                    setMarcos(mars)
-                    setVarianteSeleccionada(vars[0] ?? null)
-                    setMarcoSeleccionado(mars[0] ?? null)
-                })
-            )
-            .catch((e) => {
-                if (vigente) setError(e.message)
-            })
-            .finally(() => {
-                if (vigente) setCargando(false)
-            })
+    // La obra: depende del id, si se navega a otra obra se vuelve a pedir.
+    useEffect(() => {
+        dispatch(fetchObraDetalle(id))
+    }, [dispatch, id])
 
-        return () => {
-            vigente = false
-        }
-    }, [id])
+    // El estado puede ser todavía el de otra obra (el pedido de esta recién sale): se ignora hasta que sea el de esta.
+    const esDeEstaObra = detalle.id === id
+    const obra = esDeEstaObra ? detalle.obra : null
+    const variantes = esDeEstaObra ? detalle.variantes : []
+    const imagenes = esDeEstaObra ? detalle.imagenes : []
+    const marcos = marcosEstado.items
+    const artista = obra ? artistasEstado.items.find((a) => a.id === obra.artista_id) : null
+
+    const varianteSeleccionada = variantes.find((v) => v.id === varianteElegida) ?? variantes[0] ?? null
+    const marcoSeleccionado = marcos.find((m) => m.id === marcoElegido) ?? marcos[0] ?? null
+
+    const error = (esDeEstaObra && detalle.error) || marcosEstado.error || artistasEstado.error
+    const cargando = !error && (!obra || !marcosEstado.cargado || !artistasEstado.cargado)
+    const agregando = detalle.agregando
 
     // Agregar al carrito es lo único que escribe. Sin sesión, al login.
-    const agregarAlCarrito = () => {
+    const alAgregar = async () => {
         if (!getUsuario()) {
             navegar("/login")
             return
         }
         if (!varianteSeleccionada || !marcoSeleccionado) return
 
-        setAgregando(true)
-        setError("")
-
-        api.get("/api/carritos/me")
-            .then((miCarrito) =>
-                api.post("/api/items-carrito", {
-                    carrito_id: miCarrito.id,
-                    variante_id: varianteSeleccionada.id,
-                    marco_id: marcoSeleccionado.id,
-                    cantidad: 1
-                })
-            )
-            .then(() => navegar("/carrito"))
-            .catch((e) => {
-                setError(e.message)
-                setAgregando(false)
-            })
+        const resultado = await dispatch(
+            agregarAlCarrito({ varianteId: varianteSeleccionada.id, marcoId: marcoSeleccionado.id })
+        )
+        if (agregarAlCarrito.fulfilled.match(resultado)) navegar("/carrito")
     }
 
     if (cargando)
@@ -110,7 +83,7 @@ export default function DetalleObra() {
                 </div>
             </div>
         )
-    if (error && !obra)
+    if (error)
         return (
             <div className="seccion">
                 <div className="contenido">
@@ -185,7 +158,7 @@ export default function DetalleObra() {
                                     <button
                                         key={v.id}
                                         className={"chip " + (varianteSeleccionada?.id === v.id ? "activo" : "")}
-                                        onClick={() => setVarianteSeleccionada(v)}
+                                        onClick={() => setVarianteElegida(v.id)}
                                     >
                                         {v.nombre_tamanio}
                                     </button>
@@ -204,7 +177,7 @@ export default function DetalleObra() {
                                     <button
                                         key={m.id}
                                         className={"chip " + (marcoSeleccionado?.id === m.id ? "activo" : "")}
-                                        onClick={() => setMarcoSeleccionado(m)}
+                                        onClick={() => setMarcoElegido(m.id)}
                                     >
                                         {m.nombre_marco} · {pesos(m.precio_marco)}
                                     </button>
@@ -236,9 +209,9 @@ export default function DetalleObra() {
                             </span>
                         </div>
 
-                        {error && (
+                        {detalle.errorCarrito && (
                             <div className="campo-error body-sm" style={{ marginTop: "var(--sm)" }}>
-                                {error}
+                                {detalle.errorCarrito}
                             </div>
                         )}
 
@@ -246,7 +219,7 @@ export default function DetalleObra() {
                             <Boton
                                 tipo={noDisponible ? "deshabilitado" : "primario"}
                                 bloque
-                                onClick={noDisponible || agregando ? undefined : agregarAlCarrito}
+                                onClick={noDisponible || agregando ? undefined : alAgregar}
                             >
                                 {textoBoton}
                             </Boton>

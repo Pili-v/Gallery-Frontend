@@ -1,13 +1,16 @@
 // Artistas — lista completa de artistas, visible para visitante, cliente y artista.
 // Cada artista es una tarjeta horizontal, una debajo de la otra, con:
 // 3 portadas chicas de sus obras, hasta 4 estilos que trabaja y la cantidad de obras.
-// Las obras, imágenes y estilos se piden UNA sola vez y se agrupan acá por artista,
-// así no se hacen pedidos por tarjeta. GET /api/artistas viene paginado y se puede buscar por
-// nombre artístico (q) y filtrar por estilo (estiloId): lo resuelve el backend, sobre todos los artistas.
+// Todo lo que viene del backend pasa por Redux: esta pantalla solo despacha acciones y lee el estado.
+// Las obras, imágenes y estilos se piden UNA sola vez y se agrupan acá por artista, así no se hacen pedidos
+// por tarjeta. GET /api/artistas viene paginado y se puede buscar por nombre artístico (q) y filtrar por
+// estilo (estiloId): lo resuelve el backend, sobre todos los artistas.
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchEstilos } from "../redux/estilosSlice"
+import { fetchArtistas, buscarArtistas, fetchResumenArtistas } from "../redux/artistasSlice"
 import { optimizada } from "../api/formato"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
@@ -15,26 +18,22 @@ import Paginador from "../components/Paginador"
 import FiltroEstilos from "../components/FiltroEstilos"
 import BuscadorArtista from "../components/BuscadorArtista"
 
-const POR_PAGINA = 10
+const POR_PAGINA = 3
 const MAX_PORTADAS = 3
 const MAX_ESTILOS = 4
 
-// Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
-// respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
-const sin404 = (promesa) =>
-    promesa.catch((e) => {
-        if (e.status === 404) return []
-        throw e
-    })
-
 export default function Artistas() {
-    const [artistas, setArtistas] = useState([])
+    const dispatch = useDispatch()
+
+    // Lo que viene del backend (Redux)
+    const estilos = useSelector((state) => state.estilos.items)
+    const todos = useSelector((state) => state.artistas.items) // todos los artistas, solo para sugerir nombres
+    const resultados = useSelector((state) => state.artistas.resultados) // la página visible
+    const { obras, imagenes } = useSelector((state) => state.artistas.resumen)
+
+    const { items: artistas, totalPaginas, loading: cargando, error } = resultados
+
     const [pagina, setPagina] = useState(0)
-    const [totalPaginas, setTotalPaginas] = useState(1)
-    const [cargando, setCargando] = useState(true)
-    const [error, setError] = useState("")
-    const [vacio, setVacio] = useState(false)
-    const [intento, setIntento] = useState(0)
 
     // Búsqueda: lo que se escribe, lo que está aplicado, el artista elegido en la lista y los estilos elegidos
     const [texto, setTexto] = useState("")
@@ -44,69 +43,25 @@ export default function Artistas() {
     const [estiloIds, setEstiloIds] = useState([]) // varios estilos: artistas con obras de ALGUNO de ellos
     const hayFiltros = busqueda !== "" || estiloIds.length > 0
 
-    // Datos de apoyo para armar las tarjetas (una sola vez)
-    const [obras, setObras] = useState([])
-    const [imagenes, setImagenes] = useState([])
-    const [estilos, setEstilos] = useState([])
-    const [todosLosArtistas, setTodosLosArtistas] = useState([]) // solo para sugerir nombres en el buscador
+    const todosLosArtistas = todos.map((a) => ({ id: a.id, nombre: a.nombre_artistico }))
 
+    // Datos de apoyo para armar las tarjetas (una sola vez). Si fallan, las tarjetas quedan sin fotos ni
+    // estilos, pero la lista se ve igual.
     useEffect(() => {
-        let vigente = true
-
-        Promise.all([
-            sin404(api.get("/api/obras")),
-            sin404(api.get("/api/imagenes?portada=true")),
-            sin404(api.get("/api/estilos")),
-            sin404(api.get("/api/artistas"))
-        ])
-            .then(([susObras, susImagenes, susEstilos, susArtistas]) => {
-                if (!vigente) return
-                setObras(lista(susObras))
-                setImagenes(lista(susImagenes))
-                setEstilos(lista(susEstilos))
-                setTodosLosArtistas(lista(susArtistas).map((a) => ({ id: a.id, nombre: a.nombre_artistico })))
-            })
-            .catch(() => {
-                // Si esto falla las tarjetas quedan sin fotos ni estilos, pero la lista se ve igual.
-            })
-
-        return () => {
-            vigente = false
-        }
-    }, [intento])
+        dispatch(fetchEstilos())
+        dispatch(fetchArtistas())
+        dispatch(fetchResumenArtistas())
+    }, [dispatch])
 
     // Los artistas de la página visible
     useEffect(() => {
-        let vigente = true
-        setCargando(true)
-        setError("")
-        setVacio(false)
+        dispatch(buscarArtistas({ pagina, size: POR_PAGINA, busqueda, estiloIds }))
+    }, [dispatch, pagina, busqueda, estiloIds])
 
-        const partes = ["page=" + pagina, "size=" + POR_PAGINA]
-        if (busqueda !== "") partes.push("q=" + encodeURIComponent(busqueda))
-        if (estiloIds.length > 0) partes.push("estiloId=" + estiloIds.join(","))
-
-        api.get("/api/artistas?" + partes.join("&"))
-            .then((respuesta) => {
-                if (!vigente) return
-                setArtistas(lista(respuesta))
-                setTotalPaginas(respuesta?.totalPages ?? 1)
-            })
-            .catch((e) => {
-                if (!vigente) return
-                setArtistas([])
-                // Sin artistas el backend responde 204 (llega como lista vacía); el 404 queda como respaldo
-                if (e.status === 404) setVacio(true)
-                else setError(e.message)
-            })
-            .finally(() => {
-                if (vigente) setCargando(false)
-            })
-
-        return () => {
-            vigente = false
-        }
-    }, [pagina, busqueda, estiloIds, intento])
+    const reintentar = () => {
+        dispatch(fetchResumenArtistas())
+        dispatch(buscarArtistas({ pagina, size: POR_PAGINA, busqueda, estiloIds }))
+    }
 
     // Cualquier cambio de búsqueda o de estilo vuelve a la primera página
     const buscar = (e) => {
@@ -182,8 +137,8 @@ export default function Artistas() {
     if (cargando) {
         cuerpo = <Estado tipo="cargando" />
     } else if (error) {
-        cuerpo = <Estado tipo="error" mensaje={error} accion="Reintentar" onAccion={() => setIntento((n) => n + 1)} />
-    } else if ((vacio || artistas.length === 0) && hayFiltros) {
+        cuerpo = <Estado tipo="error" mensaje={error} accion="Reintentar" onAccion={reintentar} />
+    } else if (artistas.length === 0 && hayFiltros) {
         const nombresEstilos = estilos.filter((e) => estiloIds.includes(e.id)).map((e) => e.nombre_estilo)
         const partes = []
         if (busqueda !== "") partes.push("que coincidan con “" + busqueda + "”")
@@ -203,7 +158,7 @@ export default function Artistas() {
                 onAccion={quitarFiltros}
             />
         )
-    } else if (vacio || artistas.length === 0) {
+    } else if (artistas.length === 0) {
         cuerpo = <Estado tipo="vacio" mensaje="Todavía no hay artistas registrados." />
     } else {
         cuerpo = (
