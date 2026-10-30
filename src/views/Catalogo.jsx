@@ -1,12 +1,16 @@
 // Catálogo — Área 3 · Catálogo
-// Estilos y artistas se piden una sola vez. Las obras se piden de a una PÁGINA (12) cada
-// vez que cambia un filtro o la página; de esas obras se traen sus variantes e imágenes. Si el filtro no devuelve nada
-// (lista vacía: 204) o es inválido (400), la pantalla avisa DENTRO de la zona de resultados, deja
-// los filtros a la vista y ofrece un botón para quitarlos (no vuelve sola). Sin async/await y sin tocar el DOM.
+// Todo lo que viene del backend pasa por Redux: esta pantalla solo despacha acciones y lee el estado.
+// Estilos y artistas se piden una sola vez (se comparten con las demás pantallas). Las obras se piden de a una
+// PÁGINA (9) cada vez que cambia un filtro o la página; de esas obras se traen sus variantes e imágenes.
+// Si el filtro no devuelve nada (lista vacía: 204) o es inválido (400), la pantalla avisa DENTRO de la zona de
+// resultados, deja los filtros a la vista y ofrece un botón para quitarlos (no vuelve sola).
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchEstilos } from "../redux/estilosSlice"
+import { fetchArtistas } from "../redux/artistasSlice"
+import { cargarObras } from "../redux/obrasSlice"
 import TarjetaObra from "../components/TarjetaObra"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
@@ -14,36 +18,29 @@ import Paginador from "../components/Paginador"
 import FiltroEstilos from "../components/FiltroEstilos"
 import { pesos, optimizada } from "../api/formato"
 
-// Una lista vacía ahora llega como 204 (cliente.js la entrega como null y lista(null) = []). Se deja este
-// respaldo por si algún endpoint todavía responde 404 para "no hay"; el 404 de una obra/artista inexistente se maneja aparte.
-const sin404 = (promesa) =>
-    promesa.catch((e) => {
-        if (e.status === 404) return []
-        throw e
-    })
-
 const SIN_RANGO = { min: "", max: "" }
-const POR_PAGINA = 9
+const POR_PAGINA = 3
 
 export default function Catalogo() {
-    // Datos de apoyo (livianos, una sola vez)
-    const [estilos, setEstilos] = useState([])
-    const [artistas, setArtistas] = useState([])
-    const [cargandoApoyo, setCargandoApoyo] = useState(true)
-    const [errorApoyo, setErrorApoyo] = useState("")
+    const dispatch = useDispatch()
 
-    // Obras de la página actual y lo que se trajo de cada una (variante y fotos), por id de obra
-    const [obras, setObras] = useState([])
-    const [extras, setExtras] = useState({})
-    const [cargandoObras, setCargandoObras] = useState(true)
-    const [aviso, setAviso] = useState(null) // { mensaje (null = sin resultados), deFiltro }
-    const [primeraObra, setPrimeraObra] = useState(null)
-    const [intento, setIntento] = useState(0)
+    // Lo que viene del backend (Redux)
+    const estilos = useSelector((state) => state.estilos)
+    const artistas = useSelector((state) => state.artistas)
+    const {
+        items: obras,
+        extras,
+        totalPaginas,
+        totalObras,
+        primeraObra,
+        conFiltros,
+        loading: cargandoObras,
+        error: errorObras,
+        codigo: codigoError
+    } = useSelector((state) => state.obras)
 
     // Paginación
     const [pagina, setPagina] = useState(0)
-    const [totalPaginas, setTotalPaginas] = useState(1)
-    const [totalObras, setTotalObras] = useState(0)
 
     // Filtros: lo que se escribe, y lo que está aplicado
     const [estiloIds, setEstiloIds] = useState([]) // varios estilos: se muestran las obras de ALGUNO de ellos
@@ -57,114 +54,33 @@ export default function Catalogo() {
 
     const hayFiltros = estiloIds.length > 0 || rango.min !== "" || rango.max !== "" || busqueda !== ""
 
-    // Estilos y artistas: una sola vez
+    // Estilos y artistas: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir)
     useEffect(() => {
-        let vigente = true
+        dispatch(fetchEstilos())
+        dispatch(fetchArtistas())
+    }, [dispatch])
 
-        Promise.all([sin404(api.get("/api/estilos")), sin404(api.get("/api/artistas"))])
-            .then(([susEstilos, susArtistas]) => {
-                if (!vigente) return
-                setEstilos(lista(susEstilos))
-                setArtistas(lista(susArtistas))
-            })
-            .catch((e) => {
-                if (vigente) setErrorApoyo(e.message)
-            })
-            .finally(() => {
-                if (vigente) setCargandoApoyo(false)
-            })
-
-        return () => {
-            vigente = false
-        }
-    }, [intento])
-
-    // Obras: se vuelven a pedir cuando cambia un filtro o la página
+    // Obras: se vuelven a pedir cuando cambia un filtro, el orden o la página
     useEffect(() => {
-        let vigente = true
+        dispatch(cargarObras({ pagina, size: POR_PAGINA, orden, estiloIds, rango, busqueda }))
+    }, [dispatch, pagina, orden, estiloIds, rango, busqueda])
 
-        const partes = ["page=" + pagina, "size=" + POR_PAGINA, "orden=" + orden]
-        if (estiloIds.length > 0) partes.push("estiloId=" + estiloIds.join(","))
-        if (rango.min !== "") partes.push("precioMin=" + rango.min)
-        if (rango.max !== "") partes.push("precioMax=" + rango.max)
-        if (busqueda !== "") partes.push("q=" + encodeURIComponent(busqueda))
-        const conFiltros = estiloIds.length > 0 || rango.min !== "" || rango.max !== "" || busqueda !== ""
+    const errorApoyo = estilos.error || artistas.error
+    const cargandoApoyo = !errorApoyo && !(estilos.cargado && artistas.cargado)
 
-        setCargandoObras(true)
-        setAviso(null)
-
-        api.get("/api/obras?" + partes.join("&"))
-            .then((respuesta) => {
-                const lasObras = lista(respuesta)
-                if (vigente) {
-                    setTotalPaginas(respuesta?.totalPages ?? 1)
-                    setTotalObras(respuesta?.totalElements ?? lasObras.length)
-                }
-                // Variante e imágenes solo de las obras de ESTA página: las portadas de toda la página en un
-                // solo pedido (portada=true) y las variantes de a una obra.
-                const pedirPortadas =
-                    lasObras.length > 0
-                        ? sin404(
-                              api.get(
-                                  "/api/imagenes?portada=true&" + lasObras.map((obra) => "obraId=" + obra.id).join("&")
-                              )
-                          )
-                        : Promise.resolve([])
-
-                return Promise.all([
-                    pedirPortadas,
-                    Promise.all(lasObras.map((obra) => sin404(api.get("/api/variantes?obraId=" + obra.id))))
-                ]).then(([susPortadas, susVariantes]) => {
-                    const portadas = lista(susPortadas)
-                    const datos = lasObras.map((obra, i) => {
-                        const lasVariantes = lista(susVariantes[i])
-                        return {
-                            id: obra.id,
-                            variante: lasVariantes.find((v) => v.stock_variante > 0) ?? lasVariantes[0],
-                            imagenes: portadas.filter((p) => p.obra_id === obra.id)
-                        }
-                    })
-                    return { lasObras, datos }
-                })
-            })
-            .then(({ lasObras, datos }) => {
-                if (!vigente) return
-                setExtras((previos) => {
-                    const nuevos = { ...previos }
-                    datos.forEach((d) => {
-                        nuevos[d.id] = d
-                    })
-                    return nuevos
-                })
-                setObras(lasObras)
-                // Lista vacía (el back responde 204, sin cuerpo): con filtros se avisa DENTRO de los
-                // resultados, con el botón para quitarlos; sin filtros se muestra el estado vacío.
-                if (lasObras.length === 0 && conFiltros) setAviso({ mensaje: null, deFiltro: true })
-                // La obra del hero es la primera del catálogo SIN filtros y en el orden por defecto
-                if (!conFiltros && orden === "recientes" && pagina === 0 && lasObras.length > 0)
-                    setPrimeraObra(lasObras[0])
-            })
-            .catch((e) => {
-                if (!vigente) return
-                setObras([])
-                setTotalObras(0)
-                const esDeFiltro = e.status === 404 || e.status === 400
-                if (conFiltros && esDeFiltro) {
-                    setAviso({ mensaje: e.status === 404 ? null : e.message, deFiltro: true })
-                } else if (e.status === 404) {
-                    setAviso(null) // catálogo vacío de verdad: se muestra el estado vacío
-                } else {
-                    setAviso({ mensaje: e.message, deFiltro: false })
-                }
-            })
-            .finally(() => {
-                if (vigente) setCargandoObras(false)
-            })
-
-        return () => {
-            vigente = false
+    // Qué avisar en la zona de resultados. conFiltros es el del pedido que se está mostrando.
+    // Un 404 o un 400 con filtros es un aviso de filtro; sin filtros, un 404 es el catálogo vacío de verdad.
+    let aviso = null // { mensaje (null = sin resultados), deFiltro }
+    if (errorObras) {
+        const esDeFiltro = codigoError === "404" || codigoError === "400"
+        if (conFiltros && esDeFiltro) {
+            aviso = { mensaje: codigoError === "404" ? null : errorObras, deFiltro: true }
+        } else if (codigoError !== "404") {
+            aviso = { mensaje: errorObras, deFiltro: false }
         }
-    }, [estiloIds, rango, busqueda, orden, pagina, intento])
+    } else if (!cargandoObras && obras.length === 0 && conFiltros) {
+        aviso = { mensaje: null, deFiltro: true }
+    }
 
     // Cualquier cambio de filtro u orden vuelve a la primera página
     const cambiarEstilos = (ids) => {
@@ -193,7 +109,6 @@ export default function Catalogo() {
         setErrorPrecio("")
         setTexto("")
         setBusqueda("")
-        setAviso(null)
         setPagina(0)
     }
 
@@ -214,19 +129,21 @@ export default function Catalogo() {
         setPagina(0)
     }
 
+    // Reintentar: si falló lo de apoyo, esos pedidos se repiten; las obras se piden de nuevo con los mismos filtros.
     const reintentar = () => {
-        setErrorApoyo("")
-        setCargandoApoyo(true)
-        setIntento((n) => n + 1)
+        dispatch(fetchEstilos())
+        dispatch(fetchArtistas())
+        dispatch(cargarObras({ pagina, size: POR_PAGINA, orden, estiloIds, rango, busqueda }))
     }
+
 
     // La API devuelve ids, no nombres: la vista los traduce
     const armarItem = (obra) => {
         const extra = extras[obra.id]
         const variante = extra?.variante
         const portada = [...(extra?.imagenes ?? [])].sort((x, y) => (x.orden_imagen ?? 0) - (y.orden_imagen ?? 0))[0]
-        const artista = artistas.find((a) => a.id === obra.artista_id)
-        const estilo = estilos.find((e) => (obra.estilo_ids ?? []).includes(e.id))
+        const artista = artistas.items.find((a) => a.id === obra.artista_id)
+        const estilo = estilos.items.find((e) => (obra.estilo_ids ?? []).includes(e.id))
 
         return {
             obra: {
@@ -244,7 +161,7 @@ export default function Catalogo() {
     const items = obras.map(armarItem)
 
     const destacada = primeraObra ? armarItem(primeraObra) : null
-    const cantidadArtistas = artistas.length
+    const cantidadArtistas = artistas.items.length
 
     if (cargandoApoyo) {
         return (
@@ -267,7 +184,7 @@ export default function Catalogo() {
 
     // El texto depende de qué filtro dejó la lista vacía: búsqueda, estilo, precio o una combinación.
     const mensajeSinResultados = () => {
-        const nombresEstilos = estilos.filter((e) => estiloIds.includes(e.id)).map((e) => e.nombre_estilo)
+        const nombresEstilos = estilos.items.filter((e) => estiloIds.includes(e.id)).map((e) => e.nombre_estilo)
         const textoEstilos =
             (nombresEstilos.length === 1 ? "del estilo " : "de los estilos ") + nombresEstilos.join(" o ")
         const hayPrecio = rango.min !== "" || rango.max !== ""
@@ -308,7 +225,7 @@ export default function Catalogo() {
                 tipo="error"
                 mensaje={aviso.mensaje}
                 accion="Reintentar"
-                onAccion={() => setIntento((n) => n + 1)}
+                onAccion={reintentar}
             />
         )
     } else if (items.length === 0) {
@@ -419,7 +336,7 @@ export default function Catalogo() {
                         <Boton tipo="secundario" onClick={aplicarFiltroPrecio}>
                             Aplicar
                         </Boton>
-                        <FiltroEstilos estilos={estilos} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
+                        <FiltroEstilos estilos={estilos.items} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
                         {hayFiltros && (
                             <Boton tipo="secundario" onClick={quitarFiltros}>
                                 Quitar filtros
