@@ -409,8 +409,10 @@ body {
 /* ---------- Hero editorial del catalogo ---------- */
 .hero { display: grid; grid-template-columns: 1fr 46%; align-items: stretch; min-height: 560px; }
 .hero-texto { padding: var(--xxl) 0; display: flex; flex-direction: column; justify-content: center; }
-.hero-obra { position: relative; border-left: 1px solid var(--border); margin-right: calc(-1 * var(--xxl)); }
-.hero-obra .pintura { position: absolute; inset: 0; }
+.hero-obra { position: relative; border-left: 1px solid var(--border); }
+/* La imagen llena la caja de la obra (que es cuadrada en escritorio y una banda en pantallas angostas), sea cual sea su
+   tamaño original: se recorta para cubrirla en lugar de mostrarse a su tamaño natural. */
+.hero-obra .pintura, .hero-obra img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .hero-pie {
   position: absolute; left: 0; bottom: 0; right: 0;
   background: var(--surface); border-top: 1px solid var(--border);
@@ -419,7 +421,7 @@ body {
 .hero-regla { height: 3px; background: var(--bordo); width: 56px; margin-bottom: var(--md); }
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; min-height: 0; }
-  .hero-obra { height: 380px; border-left: 0; border-top: 1px solid var(--border); margin: 0 -20px; }
+  .hero-obra { height: 380px; border-left: 0; border-top: 1px solid var(--border); }
 }
 
 /* Primera obra de la grilla, a lo ancho de dos columnas */
@@ -499,6 +501,8 @@ body {
 /* ---------- Ajustes de hero y proporciones finales ---------- */
 .hero { min-height: 0; align-items: center; }
 .hero-obra { aspect-ratio: 1 / 1; align-self: center; }
+/* En una sola columna la obra es una banda del ancho de la pantalla (si no, el cuadrado se ensancha hasta el alto). */
+@media (max-width: 900px) { .hero-obra { width: 100%; height: 380px; aspect-ratio: auto; } }
 .hero-texto { padding-left: var(--xl); padding-right: var(--xl); }
 @media (min-width: 1200px) { .hero-texto { padding-left: 64px; } }
 
