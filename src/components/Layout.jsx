@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react"
 import { Outlet, useLocation } from "react-router-dom"
 import Header from "./Header"
 import Footer from "./Footer"
@@ -7,36 +6,19 @@ import SesionVencida from "./SesionVencida"
 // El marco de todas las pantallas: header arriba, el contenido en el medio,
 // footer abajo. Así nadie tiene que repetirlos en cada pantalla.
 // El header queda fijo: lo que scrollea es la zona de abajo (.desplazable), que contiene la vista y el footer.
-// El contenido ocupa como mínimo todo el alto de la ventana menos el del header (ver .vista en atelier.css):
-// así el footer queda justo debajo de lo que se ve y aparece apenas se scrollea, aunque la pantalla sea corta.
-// El alto del header cambia (por ejemplo, cuando se abre el menú en un celular): se mide y se vuelve a medir.
+// La vista ocupa como mínimo todo el alto de esa zona (ver .vista en atelier.css): así el footer queda justo
+// debajo de lo que se ve y aparece apenas se scrollea, aunque la pantalla sea corta.
+// La zona lleva como key la ruta: al cambiar de pantalla se arma de nuevo y arranca desde arriba (si no, conservaría el
+// scroll de la anterior).
 const Layout = () => {
-    const pagina = useRef(null)
-    const cabecera = useRef(null)
-    const zona = useRef(null)
     const { pathname } = useLocation()
 
-    // Al cambiar de pantalla se vuelve arriba: si no, la zona conserva el scroll de la anterior y el footer queda a la vista.
-    useEffect(() => {
-        zona.current.scrollTop = 0
-    }, [pathname])
-
-    useEffect(() => {
-        const medir = () => pagina.current.style.setProperty("--alto-cabecera", cabecera.current.offsetHeight + "px")
-
-        medir()
-        const observador = new ResizeObserver(medir)
-        observador.observe(cabecera.current)
-
-        return () => observador.disconnect()
-    }, [])
-
     return (
-        <div className="pagina" ref={pagina}>
-            <div className="cabecera" ref={cabecera}>
+        <div className="pagina">
+            <div className="cabecera">
                 <Header />
             </div>
-            <div className="desplazable" ref={zona}>
+            <div className="desplazable" key={pathname}>
                 <div className="vista">
                     <Outlet />
                 </div>

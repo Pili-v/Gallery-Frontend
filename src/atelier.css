@@ -79,9 +79,9 @@ body {
 .desplazable { flex: 1; min-height: 0; overflow-y: scroll; display: flex; flex-direction: column; }
 /* Si el contenido es corto, el footer queda pegado abajo; si es largo, lo empuja. */
 .desplazable > .footer { margin-top: auto; flex: none; }
-/* Cada pantalla ocupa al menos todo el alto de la ventana menos el del header (lo mide Layout en --alto-cabecera):
-   el footer queda justo fuera de la vista y aparece apenas se scrollea. */
-.vista { flex: none; min-height: calc(100vh - var(--alto-cabecera, 96px)); min-height: calc(100dvh - var(--alto-cabecera, 96px)); }
+/* Cada pantalla ocupa al menos todo el alto de la zona que scrollea: el footer queda justo fuera de la vista y
+   aparece apenas se scrollea. */
+.vista { flex: none; min-height: 100%; }
 .contenido { max-width: 1440px; margin: 0 auto; padding: 0 var(--xxl); }
 .seccion { padding: var(--xl) 0 var(--xxl); }
 .seccion-sm { padding: var(--xl) 0; }
