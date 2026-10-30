@@ -24,7 +24,7 @@ import { useEffect, useState } from "react"
 
 const TIPOS = "image/jpeg,image/png,image/webp,image/gif"
 
-// Cuánto antes de llegar al borde de la pantalla empieza a desplazarse la página mientras se arrastra.
+// Cuánto antes de llegar al borde de la zona que se desplaza empieza a desplazarse mientras se arrastra.
 const BORDE_PX = 70
 const VELOCIDAD_PX = 14
 
@@ -40,6 +40,9 @@ const botonChico = {
 
 // Lo que se está arrastrando desde el escritorio son archivos; lo que se arrastra entre fotos, no.
 const traeArchivos = (e) => Array.from(e.dataTransfer.types).includes("Files")
+
+// La zona que se desplaza (la vista y el footer; el header queda fijo, ver Layout).
+const zonaDesplazable = () => document.querySelector(".desplazable")
 
 // La clave de la foto que está debajo del puntero (null si no hay ninguna).
 const claveBajoPuntero = (x, y) => {
@@ -68,14 +71,16 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
                     previo && {
                         ...previo,
                         dx: e.clientX - previo.x0,
-                        dy: e.clientY - previo.y0 + (window.scrollY - previo.scroll0)
+                        dy: e.clientY - previo.y0 + (zonaDesplazable().scrollTop - previo.scroll0)
                     }
             )
             setDestino(claveBajoPuntero(e.clientX, e.clientY))
 
-            // Cerca de los bordes la página se desplaza sola, para poder llegar a fotos que no se ven.
-            if (e.clientY < BORDE_PX) window.scrollBy(0, -VELOCIDAD_PX)
-            else if (e.clientY > window.innerHeight - BORDE_PX) window.scrollBy(0, VELOCIDAD_PX)
+            // Cerca de los bordes la zona se desplaza sola, para poder llegar a fotos que no se ven.
+            const zona = zonaDesplazable()
+            const { top, bottom } = zona.getBoundingClientRect()
+            if (e.clientY < top + BORDE_PX) zona.scrollBy(0, -VELOCIDAD_PX)
+            else if (e.clientY > bottom - BORDE_PX) zona.scrollBy(0, VELOCIDAD_PX)
         }
 
         const soltar = (e) => {
@@ -106,7 +111,7 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
         if (!enElAgarre && e.target.closest("button, label, input") !== null) return
 
         e.preventDefault()
-        setArrastre({ clave, x0: e.clientX, y0: e.clientY, scroll0: window.scrollY, dx: 0, dy: 0 })
+        setArrastre({ clave, x0: e.clientX, y0: e.clientY, scroll0: zonaDesplazable().scrollTop, dx: 0, dy: 0 })
     }
 
     const moverConTeclado = (e, clave) => {
