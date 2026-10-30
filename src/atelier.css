@@ -28,9 +28,10 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* La barra de desplazamiento siempre está: así el ancho no cambia al desplegar contenido.
+/* La ventana no se desplaza: el header queda fijo y solo scrollea la zona de abajo (.desplazable, ver Layout).
+   Su barra de desplazamiento siempre está: así el ancho no cambia al desplegar contenido.
    Va con los colores del diseño: pista del color del fondo, borde fino y pulgar en tinta. */
-html { overflow-y: scroll; }
+html { overflow: hidden; }
 
 ::-webkit-scrollbar { width: 12px; height: 12px; }
 ::-webkit-scrollbar-track { background: var(--canvas); border-left: 1px solid var(--border); }
@@ -39,7 +40,7 @@ html { overflow-y: scroll; }
 
 /* Firefox no entiende lo de arriba: usa la propiedad estándar. */
 @supports not selector(::-webkit-scrollbar) {
-  html { scrollbar-color: var(--border) var(--canvas); }
+  .desplazable { scrollbar-color: var(--border) var(--canvas); }
 }
 
 body {
@@ -72,12 +73,15 @@ body {
 }
 
 /* ---------- Layout ---------- */
-.pagina { background: var(--canvas); min-height: 100vh; display: flex; flex-direction: column; }
+.pagina { background: var(--canvas); height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+.pagina > .cabecera { flex: none; }
+/* La zona que scrollea: todo lo que está debajo del header (la vista y el footer). */
+.desplazable { flex: 1; min-height: 0; overflow-y: scroll; display: flex; flex-direction: column; }
 /* Si el contenido es corto, el footer queda pegado abajo; si es largo, lo empuja. */
-.pagina > .footer { margin-top: auto; }
+.desplazable > .footer { margin-top: auto; flex: none; }
 /* Cada pantalla ocupa al menos todo el alto de la ventana menos el del header (lo mide Layout en --alto-cabecera):
    el footer queda justo fuera de la vista y aparece apenas se scrollea. */
-.vista { min-height: calc(100vh - var(--alto-cabecera, 96px)); min-height: calc(100dvh - var(--alto-cabecera, 96px)); }
+.vista { flex: none; min-height: calc(100vh - var(--alto-cabecera, 96px)); min-height: calc(100dvh - var(--alto-cabecera, 96px)); }
 .contenido { max-width: 1440px; margin: 0 auto; padding: 0 var(--xxl); }
 .seccion { padding: var(--xl) 0 var(--xxl); }
 .seccion-sm { padding: var(--xl) 0; }
