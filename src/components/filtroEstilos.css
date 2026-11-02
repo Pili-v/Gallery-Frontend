@@ -1,6 +1,0 @@
-.filtro-estilos { flex-wrap: wrap; gap: var(--sm); align-items: center; }
-.filtro-estilos-control { position: relative; }
-.filtro-estilos-opcion { cursor: pointer; }
-.filtro-estilos-opcion input { accent-color: var(--bordo); }
-/* Los estilos elegidos, al lado del desplegable: del mismo alto que él. */
-.filtro-estilos .chip { display: inline-flex; align-items: center; height: var(--alto-control); padding-top: 0; padding-bottom: 0; }

@@ -6,7 +6,6 @@ import CampoFormulario from "../components/CampoFormulario"
 import BuscadorArtista from "../components/BuscadorArtista"
 import Estado from "../components/Estado"
 import { prepararEncargo } from "../api/encargoContrato.js"
-import "./encargoNuevo.css"
 
 const inicial = {
     artista_id: "",

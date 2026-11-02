@@ -7,7 +7,7 @@ const Paginador = ({ pagina, totalPaginas, onCambiar }) => {
     if (totalPaginas <= 1) return null
 
     return (
-        <div className="entre" style={{ marginTop: "var(--xl)" }}>
+        <div className="entre mt-xl">
             <Boton tipo={pagina === 0 ? "deshabilitado" : "secundario"} onClick={() => onCambiar(pagina - 1)}>
                 Anterior
             </Boton>

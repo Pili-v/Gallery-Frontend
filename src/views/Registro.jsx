@@ -136,7 +136,7 @@ const Registro = () => {
 
                 <p className="body-lg muted centro">Completá tus datos para registrarte.</p>
 
-                <form className="cartela" style={{ padding: "var(--lg)" }} onSubmit={handleSubmit}>
+                <form className="cartela pad-lg" onSubmit={handleSubmit}>
                     <div className="fila-campos">
                         <CampoFormulario
                             etiqueta="Nombre"
@@ -192,20 +192,16 @@ const Registro = () => {
                         error={errores.contrasenia_usuario}
                     />
 
-                    {errorGeneral && (
-                        <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>
-                            {errorGeneral}
-                        </p>
-                    )}
+                    {errorGeneral && <p className="campo-error body-sm mb-md">{errorGeneral}</p>}
 
                     <Boton tipo={cargando ? "deshabilitado" : "primario"} bloque type="submit">
                         {cargando ? "Creando cuenta..." : "Crear cuenta"}
                     </Boton>
                 </form>
 
-                <p className="body-sm centro muted" style={{ marginTop: "var(--md)" }}>
+                <p className="body-sm centro muted mt-md">
                     ¿Ya tenés cuenta?{" "}
-                    <Link to="/login" style={{ color: "var(--bordo)" }}>
+                    <Link className="texto-bordo" to="/login">
                         Ingresar
                     </Link>
                 </p>

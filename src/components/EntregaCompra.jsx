@@ -57,9 +57,7 @@ const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDirecci
 
     return (
         <div>
-            <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>
-                Cómo la recibís
-            </p>
+            <p className="catalog-number muted mb-sm">Cómo la recibís</p>
 
             <div className="fila">
                 <span
@@ -78,7 +76,7 @@ const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDirecci
 
             {/* La dirección solo aparece si elige envío: si retira, no hace falta. */}
             {tipoEntrega === ENVIO_DOMICILIO && (
-                <div className="autocompletar" style={{ marginTop: "var(--md)" }}>
+                <div className="autocompletar mt-md">
                     <CampoFormulario
                         etiqueta="Dirección de entrega"
                         value={direccion}
@@ -86,7 +84,7 @@ const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDirecci
                         onChange={escribirDireccion}
                     />
 
-                    <p className="body-sm muted" style={{ marginTop: "var(--xs)" }}>
+                    <p className="body-sm muted mt-xs">
                         Si no aparece, agregá la provincia después de una coma: “Florida 500, CABA”.
                     </p>
 

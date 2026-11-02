@@ -17,9 +17,7 @@ const ResumenTotales = ({
 }) => {
     return (
         <div className="resumen">
-            <h3 className="headline-sm" style={{ marginBottom: "var(--sm)" }}>
-                Resumen
-            </h3>
+            <h3 className="headline-sm mb-sm">Resumen</h3>
 
             <div className="resumen-fila">
                 <span className="muted">{etiquetaSubtotal}</span>
@@ -45,16 +43,13 @@ const ResumenTotales = ({
                 <span className="price-lg">{pesos(total)}</span>
             </div>
 
-            {children && (
-                <div style={{ borderTop: "1px solid var(--border)", marginTop: "var(--md)", paddingTop: "var(--md)" }}>
-                    {children}
-                </div>
-            )}
+            {children && <div className="resumen-extra">{children}</div>}
 
             {boton && (
                 <button
-                    className={"boton boton-bloque " + (botonDeshabilitado ? "boton-deshabilitado" : "boton-primario")}
-                    style={{ marginTop: "var(--md)" }}
+                    className={
+                        "boton boton-bloque mt-md " + (botonDeshabilitado ? "boton-deshabilitado" : "boton-primario")
+                    }
                     disabled={botonDeshabilitado}
                     onClick={onBoton}
                 >
@@ -62,11 +57,7 @@ const ResumenTotales = ({
                 </button>
             )}
 
-            {nota && (
-                <p className="body-sm muted" style={{ marginTop: "var(--sm)" }}>
-                    {nota}
-                </p>
-            )}
+            {nota && <p className="body-sm muted mt-sm">{nota}</p>}
         </div>
     )
 }

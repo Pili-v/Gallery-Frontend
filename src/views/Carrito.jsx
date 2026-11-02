@@ -207,13 +207,13 @@ const Carrito = () => {
         <div className="seccion">
             <div className="contenido">
                 {avisoDelPago && (
-                    <p className="aviso" role="alert" style={{ marginBottom: "var(--md)" }}>
+                    <p className="aviso mb-md" role="alert">
                         No se pudo completar la compra. {avisoDelPago} Las obras afectadas están marcadas abajo.
                     </p>
                 )}
 
                 {error && (
-                    <div style={{ marginBottom: "var(--md)" }}>
+                    <div className="mb-md">
                         <Estado tipo="error" mensaje={error} />
                     </div>
                 )}
@@ -261,14 +261,13 @@ const Carrito = () => {
                                 />
                             ))}
 
-                            <div className="fila" style={{ marginTop: "var(--md)" }}>
+                            <div className="fila mt-md">
                                 <Boton tipo="secundario" onClick={vaciarCarrito}>
                                     Vaciar carrito
                                 </Boton>
                                 <a
                                     href="#"
-                                    className="body-sm"
-                                    style={{ color: "var(--bordo)" }}
+                                    className="body-sm texto-bordo"
                                     onClick={(e) => {
                                         e.preventDefault()
                                         navegar("/")
@@ -278,7 +277,7 @@ const Carrito = () => {
                                 </a>
                             </div>
 
-                            <p className="body-sm muted" style={{ marginTop: "var(--md)" }}>
+                            <p className="body-sm muted mt-md">
                                 Esta compra genera una factura por cada artista involucrado.
                             </p>
                         </div>

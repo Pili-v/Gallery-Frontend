@@ -356,7 +356,7 @@ const AdminCatalogos = () => {
             <div className="contenido">
                 <h1 className="headline-lg titulo-oculto">Catálogos</h1>
 
-                <nav className="pestanias" aria-label="Catálogos" style={{ marginBottom: "var(--lg)" }}>
+                <nav className="pestanias mb-lg" aria-label="Catálogos">
                     {pestanias.map((item) => (
                         <button
                             key={item.clave}
@@ -371,7 +371,7 @@ const AdminCatalogos = () => {
                 </nav>
 
                 {error && (
-                    <div style={{ marginBottom: "var(--md)" }}>
+                    <div className="mb-md">
                         <Estado tipo="error" mensaje={error} />
                     </div>
                 )}
@@ -413,11 +413,7 @@ const AdminCatalogos = () => {
                                 </table>
                             )}
 
-                            <form
-                                className="cartela"
-                                onSubmit={guardarEstilo}
-                                style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}
-                            >
+                            <form className="cartela pegado-arriba pad-lg" onSubmit={guardarEstilo}>
                                 <CampoFormulario
                                     etiqueta={editandoEstilo ? "Editar estilo" : "Nuevo estilo"}
                                     value={nuevoEstilo}
@@ -437,7 +433,7 @@ const AdminCatalogos = () => {
                                 </Boton>
 
                                 {editandoEstilo && (
-                                    <div style={{ marginTop: "var(--sm)" }}>
+                                    <div className="mt-sm">
                                         <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionEstilo}>
                                             Cancelar edición
                                         </Boton>
@@ -487,12 +483,8 @@ const AdminCatalogos = () => {
                                 </table>
                             )}
 
-                            <form
-                                className="cartela"
-                                onSubmit={guardarTamanio}
-                                style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}
-                            >
-                                <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>
+                            <form className="cartela pegado-arriba pad-lg" onSubmit={guardarTamanio}>
+                                <p className="catalog-number muted mb-sm">
                                     {editandoTamanio ? "Editar tamaño" : "Nuevo tamaño"}
                                 </p>
 
@@ -521,11 +513,7 @@ const AdminCatalogos = () => {
                                     onChange={handleTamanio}
                                 />
 
-                                {errorFormulario && (
-                                    <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>
-                                        {errorFormulario}
-                                    </p>
-                                )}
+                                {errorFormulario && <p className="campo-error body-sm mb-md">{errorFormulario}</p>}
 
                                 <Boton
                                     tipo={guardando === "tamanio" ? "deshabilitado" : "primario"}
@@ -536,7 +524,7 @@ const AdminCatalogos = () => {
                                 </Boton>
 
                                 {editandoTamanio && (
-                                    <div style={{ marginTop: "var(--sm)" }}>
+                                    <div className="mt-sm">
                                         <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionTamanio}>
                                             Cancelar edición
                                         </Boton>
@@ -566,14 +554,14 @@ const AdminCatalogos = () => {
                                     <tbody>
                                         {marcos.map((marco) => (
                                             <tr key={marco.id}>
-                                                <td style={{ width: 64 }}>
+                                                <td className="celda-miniatura">
                                                     {marco.url && (
                                                         <img
                                                             src={optimizada(marco.url, 96)}
                                                             alt=""
                                                             width="48"
                                                             height="48"
-                                                            style={{ objectFit: "contain", display: "block" }}
+                                                            className="miniatura-marco"
                                                         />
                                                     )}
                                                 </td>
@@ -598,12 +586,8 @@ const AdminCatalogos = () => {
                                 </table>
                             )}
 
-                            <form
-                                className="cartela"
-                                onSubmit={guardarMarco}
-                                style={{ padding: "var(--lg)", position: "sticky", top: "var(--md)" }}
-                            >
-                                <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>
+                            <form className="cartela pegado-arriba pad-lg" onSubmit={guardarMarco}>
+                                <p className="catalog-number muted mb-sm">
                                     {editandoMarco ? "Editar marco" : "Nuevo marco"}
                                 </p>
 
@@ -645,18 +629,14 @@ const AdminCatalogos = () => {
                                     />
                                 </div>
 
-                                {errorFormulario && (
-                                    <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>
-                                        {errorFormulario}
-                                    </p>
-                                )}
+                                {errorFormulario && <p className="campo-error body-sm mb-md">{errorFormulario}</p>}
 
                                 <Boton tipo={guardando === "marco" ? "deshabilitado" : "primario"} bloque type="submit">
                                     {textoGuardar("marco", editandoMarco)}
                                 </Boton>
 
                                 {editandoMarco && (
-                                    <div style={{ marginTop: "var(--sm)" }}>
+                                    <div className="mt-sm">
                                         <Boton tipo="secundario" bloque type="button" onClick={cancelarEdicionMarco}>
                                             Cancelar edición
                                         </Boton>

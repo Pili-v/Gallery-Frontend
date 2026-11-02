@@ -1,5 +1,4 @@
 import { useEffect, useId, useRef, useState } from "react"
-import "./buscadorArtista.css"
 import { normalizarNombre } from "../api/formato"
 
 export default function BuscadorArtista({

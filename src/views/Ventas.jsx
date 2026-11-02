@@ -185,8 +185,8 @@ const Ventas = () => {
                             {/* Un tbody por factura: así la fila y su detalle van juntas sin envoltorio extra. */}
                             {facturas.map((f) => (
                                 <tbody key={f.id}>
-                                    <tr onClick={() => alternar(f)} style={{ cursor: "pointer" }}>
-                                        <td style={{ color: "var(--bordo)" }}>
+                                    <tr onClick={() => alternar(f)} className="fila-abrible">
+                                        <td className="texto-bordo">
                                             {abiertas[f.id] ? "▾" : "▸"} {numero(f.id)}
                                         </td>
                                         <td>{numero(f.compra_id)}</td>
@@ -196,7 +196,7 @@ const Ventas = () => {
                                     </tr>
                                     {abiertas[f.id] && (
                                         <tr>
-                                            <td colSpan={5} style={{ background: "var(--canvas)" }}>
+                                            <td className="fondo-canvas" colSpan={5}>
                                                 {detalleDe(f)}
                                             </td>
                                         </tr>

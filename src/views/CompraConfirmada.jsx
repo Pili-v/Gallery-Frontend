@@ -65,13 +65,11 @@ const CompraConfirmada = () => {
         <div className="seccion">
             <div className="contenido col-media">
                 <p className="catalog-number cartela-num">Compra Nº {String(compra.id).padStart(6, "0")}</p>
-                <h1 className="headline-lg" style={{ marginTop: "var(--xs)" }}>
-                    Compra confirmada
-                </h1>
+                <h1 className="headline-lg mt-xs">Compra confirmada</h1>
                 <p className="body-lg muted">{fecha(compra.fecha_compra)}</p>
 
                 {/* De donde sale el total: las obras y, si eligio envio, el costo de envio. */}
-                <div className="resumen" style={{ marginTop: "var(--md)" }}>
+                <div className="resumen mt-md">
                     <div className="resumen-fila">
                         <span>Obras y marcos </span>
                         <span>{pesos(compra.total_compra - compra.costo_envio)}</span>
@@ -90,14 +88,14 @@ const CompraConfirmada = () => {
 
                 <hr className="divisor" />
 
-                <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>
+                <p className="catalog-number muted mb-md">
                     {facturas.length === 1
                         ? "Se emitió 1 factura"
                         : "Se emitieron " + facturas.length + " facturas, una por artista"}
                 </p>
 
                 {facturas.map((factura) => (
-                    <div key={factura.id} className="cartela" style={{ marginBottom: "var(--md)" }}>
+                    <div key={factura.id} className="cartela mb-md">
                         <div className="cartela-fila">
                             <span className="catalog-number cartela-num">
                                 Factura Nº {String(factura.id).padStart(4, "0")}
@@ -111,7 +109,7 @@ const CompraConfirmada = () => {
                     </div>
                 ))}
 
-                <div className="fila" style={{ marginTop: "var(--lg)" }}>
+                <div className="fila mt-lg">
                     <Boton onClick={() => navegar("/mis-compras")}>Ver mis compras</Boton>
                     <Boton tipo="secundario" onClick={() => navegar("/")}>
                         Volver al catálogo

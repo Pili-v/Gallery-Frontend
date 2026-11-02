@@ -13,7 +13,7 @@ const DetalleVenta = ({ error, cargado, fechaCompra, nombreComprador, tipoEntreg
 
     return (
         <div>
-            <p className="body-sm muted" style={{ marginBottom: "var(--sm)" }}>
+            <p className="body-sm muted mb-sm">
                 Comprado el {fecha(fechaCompra)} por {nombreComprador} ·{" "}
                 {tipoEntrega === "ENVIO_DOMICILIO"
                     ? "Envío a domicilio: " + direccionEntrega

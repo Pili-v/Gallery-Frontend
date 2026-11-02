@@ -9,8 +9,7 @@ const AccionesCatalogo = ({ confirmando, eliminando, onEditar, onEliminar, onCon
     const enlace = (texto, accion, apagado = false) => (
         <a
             href="#"
-            className="body-sm"
-            style={{ color: apagado ? "var(--ink-muted)" : "var(--bordo)", pointerEvents: apagado ? "none" : "auto" }}
+            className={"body-sm accion-catalogo" + (apagado ? " apagada" : "")}
             onClick={(e) => {
                 e.preventDefault()
                 accion()
@@ -21,7 +20,7 @@ const AccionesCatalogo = ({ confirmando, eliminando, onEditar, onEliminar, onCon
     )
 
     return (
-        <div className="fila" style={{ justifyContent: "flex-end", gap: "var(--md)" }}>
+        <div className="fila al-final gap-md">
             {confirmando ? (
                 <>
                     <span className="body-sm muted">¿Eliminar?</span>

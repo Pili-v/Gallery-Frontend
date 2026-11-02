@@ -24,6 +24,19 @@
 
   /* El alto de todo control de formulario de una línea (campo, selector, desplegable y botón de una fila de filtros). */
   --alto-control: 40px;
+
+  /* Revamp (dirección mixta): esquinas apenas redondeadas, píldoras para filtros y chips, sombras cortas y suaves. */
+  --radio: 6px;
+  --radio-pildora: 999px;
+  --sombra-suave: 0 1px 2px rgb(28 28 25 / 6%), 0 2px 8px rgb(28 28 25 / 6%);
+  --sombra-flotante: 0 8px 24px rgb(28 28 25 / 12%), 0 2px 6px rgb(28 28 25 / 8%);
+  /* Fondo neutro sobre el que se apoyan las obras (como la pared de una galería). */
+  --fondo-obra: #EDE8E0;
+  /* Fondo de lo que está elegido (chips, filtros aplicados): el bordó muy suave. */
+  --bordo-suave: #F3E3E8;
+  /* Anillo de foco de los controles. */
+  --anillo-foco: 0 0 0 3px rgb(133 14 53 / 16%);
+  --transicion: .18s ease;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -57,6 +70,8 @@ body {
 .headline-md   { font-family: "EB Garamond", Georgia, serif; font-size: 28px; line-height: 36px; letter-spacing: -.01em; }
 .headline-sm   { font-family: "EB Garamond", Georgia, serif; font-size: 22px; line-height: 30px; }
 .title-work    { font-family: "EB Garamond", Georgia, serif; font-size: 20px; line-height: 28px; font-style: italic; }
+.title-work.mediano { font-size: 17px; line-height: 24px; }
+.title-work.chico   { font-size: 16px; line-height: 22px; }
 .body-lg  { font-size: 16px; line-height: 26px; }
 .body-sm  { font-size: 13px; line-height: 18px; }
 .muted    { color: var(--ink-muted); }
@@ -123,110 +138,106 @@ body {
 /* Las tablas anchas se deslizan hacia los costados en lugar de ensanchar la página. */
 @media (max-width: 720px) { .tabla { display: block; overflow-x: auto; } }
 
-/* ---------- Componente: Header ---------- */
-.header { border-bottom: 1px solid var(--border); background: var(--canvas); }
-.header-franja {
-  border-bottom: 1px solid var(--border);
-  display: flex; justify-content: space-between;
-  padding: 6px var(--xxl); color: var(--ink-muted);
-}
+/* ---------- Componente: Header ----------
+   Una sola barra bordó (el color de marca): la marca a la izquierda y el menú a la derecha, en tipografía normal.
+   En pantallas angostas el menú se esconde detrás del botón "Menú" y se abre como lista. */
+.header { background: var(--bordo); color: var(--carbon-text); }
 .header-barra {
-  height: 64px; display: flex; align-items: center; gap: var(--xl);
+  height: 60px; display: flex; align-items: center; gap: var(--xl);
   padding: 0 var(--xxl);
 }
-.header-marca { font-family: "EB Garamond", Georgia, serif; font-size: 24px; letter-spacing: -.01em; }
-.header-nav { display: flex; gap: var(--lg); margin-left: auto; align-items: center; }
-.header-nav a { color: var(--ink-muted); text-decoration: none; }
-.header-nav a.activo { color: var(--bordo); }
+.header-marca { font-family: "EB Garamond", Georgia, serif; font-size: 24px; letter-spacing: -.01em; color: inherit; text-decoration: none; }
+.header-nav { display: flex; gap: var(--xs); margin-left: auto; align-items: center; }
+.header-nav a { color: rgba(243, 240, 235, .82); text-decoration: none; }
+.header-nav .nav-link {
+  font-size: 14px; letter-spacing: 0; text-transform: none; font-weight: 500;
+  padding: 6px 10px; border-radius: var(--radio); transition: background-color var(--transicion), color var(--transicion);
+}
+.header-nav a.nav-link:hover { color: var(--carbon-text); background: rgba(243, 240, 235, .1); }
+.header-nav a.activo { color: var(--carbon-text); background: rgba(243, 240, 235, .16); }
+.header .avatar { background: var(--carbon-text); color: var(--bordo); margin-left: var(--sm); }
+.header .boton-secundario { color: var(--carbon-text); border-color: rgba(243, 240, 235, .45); background: transparent; }
+.header .boton-secundario:hover { border-color: var(--carbon-text); background: rgba(243, 240, 235, .1); }
 /* El botón del menú solo se ve en pantallas angostas. */
 .header-menu-boton {
-  display: none; margin-left: auto; padding: 8px 14px; cursor: pointer;
-  background: transparent; border: 1px solid var(--border); color: var(--ink);
-  font: inherit; font-size: 13px; line-height: 16px; letter-spacing: .04em; font-weight: 500; text-transform: uppercase;
+  display: none; margin-left: auto; padding: 8px 14px; cursor: pointer; border-radius: var(--radio);
+  background: transparent; border: 1px solid rgba(243, 240, 235, .45); color: var(--carbon-text);
+  font: inherit; font-size: 14px; line-height: 16px; font-weight: 500;
 }
 @media (max-width: 1000px) {
-  .header-franja, .header-barra { padding-left: 20px; padding-right: 20px; }
-  .header-franja { flex-wrap: wrap; gap: 0 var(--md); }
-  .header-franja span:last-child { display: none; }
-  .header-barra { height: auto; min-height: 64px; flex-wrap: wrap; gap: 0 var(--md); }
+  .header-barra { height: auto; min-height: 60px; padding: 0 20px; flex-wrap: wrap; gap: 0 var(--md); }
   .header-menu-boton { display: block; }
   .header-nav { display: none; flex-direction: column; align-items: flex-start; gap: 0; width: 100%; margin-left: 0; padding-bottom: var(--sm); }
   .header-nav.abierto { display: flex; }
-  .header-nav > a:not(.avatar) { width: 100%; padding: 12px 0; border-top: 1px solid var(--border); }
-  .header-nav > .avatar { margin: var(--sm) 0; }
+  .header-nav > a:not(.avatar) { width: 100%; padding: 12px 0; border-top: 1px solid rgba(243, 240, 235, .22); border-radius: 0; }
+  .header-nav a.nav-link:hover, .header-nav a.activo { background: transparent; }
+  .header-nav a.activo { text-decoration: underline; text-underline-offset: 6px; }
+  .header .avatar { margin: var(--sm) 0; }
 }
 .avatar {
-  width: 32px; height: 32px; border-radius: 50%;
+  width: 32px; height: 32px; border-radius: 50%; text-decoration: none;
   background: var(--carbon); color: var(--carbon-text);
   display: grid; place-items: center; font-size: 12px; font-weight: 600;
 }
 
-/* ---------- Barra de navegación en bordó (el color de marca) ---------- */
-.barra-marca { background: var(--bordo-dark); }
-.header { background: var(--bordo); border-bottom: 0; color: var(--carbon-text); }
-.header-franja { border-bottom: 1px solid rgba(243, 240, 235, .22); color: rgba(243, 240, 235, .75); }
-.header-nav a { color: rgba(243, 240, 235, .8); }
-.header-nav a:hover { color: var(--carbon-text); }
-.header-nav a.activo { color: var(--carbon-text); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 8px; text-decoration-color: rgba(243, 240, 235, .85); }
-.header .avatar { background: var(--carbon-text); color: var(--bordo); }
-.header .boton-secundario { color: var(--carbon-text) !important; border-color: rgba(243, 240, 235, .45); }
-.header .boton-secundario:hover { border-color: var(--carbon-text); }
-.header-menu-boton { color: var(--carbon-text); border-color: rgba(243, 240, 235, .45); }
-@media (max-width: 1000px) {
-  .header-nav > a:not(.avatar) { border-top-color: rgba(243, 240, 235, .22); }
-}
-
 /* ---------- Componente: Footer ---------- */
 .footer {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border); background: var(--surface);
   padding: var(--xl) var(--xxl) var(--lg);
   display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--lg) var(--xl);
   color: var(--ink-muted);
 }
 .footer-bloque { display: flex; flex-direction: column; gap: 6px; }
+.footer-marca { font-size: 18px; color: var(--ink); }
 @media (max-width: 720px) { .footer { grid-template-columns: 1fr; padding: var(--lg) 20px; } }
 
 /* ---------- Componente: Confirmacion ---------- */
 .modal {
   border: 1px solid var(--border); background: var(--surface); color: var(--ink);
   padding: var(--lg); width: calc(100% - 40px); max-width: 440px; margin: auto;
+  border-radius: calc(var(--radio) * 2); box-shadow: var(--sombra-flotante);
 }
 .modal::backdrop { background: rgba(28, 28, 25, .45); }
 .modal-acciones { display: flex; justify-content: flex-end; gap: var(--md); margin-top: var(--lg); }
 
 /* ---------- Componente: Boton ---------- */
 .boton {
-  display: inline-block; padding: 12px 24px; border: 1px solid transparent;
-  font-size: 13px; letter-spacing: .04em; font-weight: 500; text-transform: uppercase;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sm);
+  min-height: var(--alto-control); padding: 8px 20px; border: 1px solid transparent; border-radius: var(--radio);
+  font-size: 14px; line-height: 20px; letter-spacing: 0; font-weight: 500; text-transform: none;
   cursor: pointer; font-family: inherit; text-decoration: none;
 }
+.boton:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
 .boton-primario   { background: var(--bordo); color: var(--surface); }
 .boton-primario:hover { background: var(--bordo-dark); }
-.boton-secundario { background: transparent; color: var(--bordo); border-color: rgba(133,14,53,.4); }
-.boton-secundario:hover { border-color: var(--bordo); }
-.boton-deshabilitado { background: var(--canvas); color: var(--ink-muted); border-color: var(--border); opacity: .45; cursor: not-allowed; }
-.boton-bloque { display: block; width: 100%; text-align: center; }
+.boton-secundario { background: var(--surface); color: var(--bordo); border-color: rgba(133,14,53,.35); }
+.boton-secundario:hover { border-color: var(--bordo); background: var(--bordo-suave); }
+.boton-deshabilitado { background: var(--canvas); color: var(--ink-muted); border-color: var(--border); opacity: .55; cursor: not-allowed; }
+.boton-bloque { display: flex; width: 100%; text-align: center; }
+.boton-chico { min-height: 32px; padding: 4px 14px; white-space: nowrap; }
 
 /* ---------- Componente: Chip ---------- */
 .chip {
-  display: inline-block; padding: 8px 16px;
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--ink-muted); font-size: 13px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio-pildora);
+  color: var(--ink-muted); font: inherit; font-size: 13px; line-height: 18px; cursor: pointer;
 }
-.chip.activo { border-color: var(--bordo); color: var(--bordo); }
+.chip:hover { border-color: rgba(133,14,53,.35); color: var(--ink); }
+.chip.activo { border-color: var(--bordo); color: var(--bordo-dark); background: var(--bordo-suave); }
+.chip:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
 
 /* ---------- Componente: Badge ---------- */
 .badge {
   position: absolute; top: var(--sm); left: var(--sm);
-  padding: 4px 8px; color: var(--surface);
-  font-size: 11px; letter-spacing: .08em; font-weight: 500; text-transform: uppercase;
+  padding: 3px 8px; color: var(--surface); border-radius: var(--radio);
+  font-size: 11px; letter-spacing: .06em; font-weight: 500; text-transform: uppercase;
   z-index: 2;
 }
 .badge-descuento { background: var(--bordo); }
 .badge-sinstock  { background: var(--gray-badge); }
 
 /* ---------- Componente: Cartela ---------- */
-.cartela { background: var(--surface); border: 1px solid var(--border); }
+.cartela { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio); }
 .cartela-fila {
   display: flex; justify-content: space-between; gap: var(--sm);
   padding: var(--sm); border-bottom: 1px solid var(--border);
@@ -236,25 +247,17 @@ body {
 
 /* ---------- Componente: TarjetaObra ---------- */
 .tarjeta-obra { text-decoration: none; color: inherit; display: block; }
+/* La obra se apoya sobre un fondo neutro (la "pared"), con un paspartú claro alrededor y una sombra corta: así cada
+   pintura conserva su forma y todas las tarjetas quedan del mismo tamaño. */
 .obra-imagen {
   position: relative;
   aspect-ratio: 4/5;
-  background: var(--surface); /* Funciona como el paspartú / passe-partout */
-  padding: 8px;
-  
-  /* 1. Marco exterior negro y grueso */
-  border: 4px solid var(--carbon); 
-  
-  /* 2. Sombra en capas para darle profundidad realista sobre la pared */
-  box-shadow: 
-    0 15px 35px rgba(0, 0, 0, 0.35), /* Sombra principal difuminada hacia abajo */
-    0 5px 12px rgba(0, 0, 0, 0.20);  /* Sombra corta de contacto */
-  
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: var(--fondo-obra);
+  border-radius: var(--radio);
 }
 
-.obra-imagen.sin-stock { filter: grayscale(.85); }
-.grilla-obras { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--xl); }
+.obra-imagen.sin-stock img { filter: grayscale(.85); opacity: .75; }
+.grilla-obras { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--xl) var(--lg); }
 .grilla-obras.cuatro { grid-template-columns: repeat(4, 1fr); gap: var(--lg); }
 @media (max-width: 900px) { .grilla-obras, .grilla-obras.cuatro { grid-template-columns: repeat(2, 1fr); gap: var(--lg); } }
 
@@ -263,11 +266,14 @@ body {
 .campo label { display: block; margin-bottom: var(--xs); }
 .input, .select, .textarea, .desplegable-boton {
   width: 100%; padding: 10px 12px;
-  background: var(--surface); border: 1px solid var(--border);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio);
   color: var(--ink); font-family: inherit; font-size: 14px;
 }
 .input, .select, .desplegable-boton { height: var(--alto-control); }
-.input:focus, .select:focus, .textarea:focus, .desplegable-boton:focus-visible { outline: none; border-color: var(--bordo); }
+.input:hover, .select:hover, .textarea:hover, .desplegable-boton:hover { border-color: #CFC9C1; }
+.input:focus, .select:focus, .textarea:focus, .desplegable-boton:focus-visible {
+  outline: none; border-color: var(--bordo); box-shadow: var(--anillo-foco);
+}
 
 /* ---------- Componente: Desplegable ----------
    Lo que se abre debajo de un control: el botón que lo abre parece un selector, y el panel y sus opciones son los
@@ -280,8 +286,8 @@ body {
 .desplegable-boton.activo { border-color: var(--bordo); color: var(--bordo); }
 .desplegable-panel {
   position: absolute; top: 100%; left: 0; z-index: 10; min-width: 100%;
-  margin-top: -1px; background: var(--surface); border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgb(28 28 25 / 8%);
+  margin-top: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio);
+  box-shadow: var(--sombra-flotante); overflow: hidden;
 }
 .desplegable-panel.completo { right: 0; }
 .desplegable-lista { list-style: none; max-height: calc(6 * 40px); overflow-y: auto; overscroll-behavior: contain; }
@@ -311,6 +317,11 @@ body {
 .campo-error { color: var(--error); margin-top: var(--xs); }
 .input.con-error { border-color: var(--error); }
 .fila-campos { display: grid; grid-template-columns: 1fr 1fr; gap: var(--md); }
+/* Campos que se acomodan solos en columnas de al menos 150 px (por ejemplo, los de una variante). */
+.grilla-campos { display: grid; gap: 0 var(--md); grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.campo-precio { width: 120px; }
+.campo-orden { width: 200px; }
+.ancho-auto { width: auto; }
 
 /* ---------- Componente: LineaItem ---------- */
 .linea-item {
@@ -318,7 +329,11 @@ body {
   gap: var(--md); align-items: center;
   padding: var(--md) 0; border-bottom: 1px solid var(--border);
 }
-.linea-mini { width: 72px; aspect-ratio: 4/5; border: 1px solid var(--border); }
+.linea-mini { width: 72px; aspect-ratio: 4/5; border-radius: var(--radio); }
+/* La miniatura chica de una fila de tabla (Mis obras); si no hay foto, muestra el aviso centrado. */
+.linea-mini.chica { width: 56px; flex: none; display: grid; place-items: center; }
+.sin-foto { font-size: 10px; text-align: center; }
+.linea-importe { min-width: 100px; text-align: right; }
 /* En pantallas angostas la cantidad y el importe pasan a una segunda línea, debajo del nombre. */
 @media (max-width: 600px) {
   .linea-item { grid-template-columns: 72px 1fr auto; row-gap: var(--sm); }
@@ -326,36 +341,48 @@ body {
   .linea-item > :nth-child(3) { grid-column: 2; grid-row: 2; }
   .linea-item > :nth-child(4) { grid-column: 3; grid-row: 2; min-width: 0 !important; }
 }
-.contador { display: inline-flex; border: 1px solid var(--border); background: var(--surface); }
+.contador { display: inline-flex; border: 1px solid var(--border); background: var(--surface); border-radius: var(--radio); overflow: hidden; }
 .contador button { width: 30px; height: 30px; border: 0; background: none; cursor: pointer; color: var(--ink); font-size: 15px; }
 .contador button:disabled { color: var(--ink-muted); opacity: .4; cursor: not-allowed; }
 .contador span { width: 34px; display: grid; place-items: center; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
 
 /* ---------- Componente: ResumenTotales ---------- */
-.resumen { background: var(--surface); border: 1px solid var(--border); padding: var(--lg); }
+.resumen { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio); padding: var(--lg); }
 .resumen-fila { display: flex; justify-content: space-between; padding: var(--sm) 0; }
 .resumen-total { border-top: 1px solid var(--border); margin-top: var(--sm); padding-top: var(--md); }
+/* Lo que el resumen muestra entre el total y el botón (en el carrito, cómo se recibe la compra). */
+.resumen-extra { border-top: 1px solid var(--border); margin-top: var(--md); padding-top: var(--md); }
 
 /* ---------- Componente: TablaSimple ---------- */
-.tabla { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
+/* border-collapse: separate para que el borde redondeado funcione; las líneas entre filas las ponen las celdas. */
+.tabla {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio); overflow: hidden;
+}
 .tabla th {
-  text-align: left; padding: 10px var(--md); border-bottom: 1px solid var(--border);
+  text-align: left; padding: 12px var(--md); border-bottom: 1px solid var(--border); background: var(--canvas);
   font-size: 11px; letter-spacing: .08em; font-weight: 500; text-transform: uppercase; color: var(--ink-muted);
 }
-.tabla td { padding: 12px var(--md); border-bottom: 1px solid var(--border); }
-.tabla tr:last-child td { border-bottom: 0; }
+.tabla td { padding: 14px var(--md); border-bottom: 1px solid var(--border); }
+.tabla tbody:last-child tr:last-child td { border-bottom: 0; }
+/* Una fila que se abre al hacer click (muestra su detalle debajo): cursor de mano y se marca al pasar el mouse. */
+.tabla tr.fila-abrible { cursor: pointer; }
+.tabla tr.fila-abrible:hover td { background: var(--canvas); }
 
 /* ---------- Componente: Estado ---------- */
 .estado {
-  background: var(--surface); border: 1px solid var(--border);
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio);
   padding: var(--xl); text-align: center;
 }
-.estado-error { border-color: var(--error); text-align: left; padding: var(--md); }
-.esqueleto { background: var(--border); }
+.estado-error { border-color: var(--error); border-left-width: 3px; text-align: left; padding: var(--md); }
+.esqueleto { background: var(--border); border-radius: var(--radio); }
 .esqueleto-linea { height: 12px; margin-bottom: var(--sm); }
+.esqueleto-linea.larga { width: 90%; }
+.esqueleto-linea.media { width: 70%; }
+.esqueleto-linea.corta { width: 55%; }
 
 /* ---------- Componente: EstadoEncargo ---------- */
-.sello { display: inline-block; padding: 3px 10px; font-size: 11px; letter-spacing: .08em; font-weight: 500; text-transform: uppercase; border: 1px solid; }
+.sello { display: inline-block; padding: 3px 10px; font-size: 11px; letter-spacing: .08em; font-weight: 500; text-transform: uppercase; border: 1px solid; border-radius: var(--radio-pildora); }
 .sello-pendiente { color: var(--ink-muted); border-color: var(--border); background: var(--surface); }
 .sello-proceso   { color: var(--bordo); border-color: var(--bordo); background: var(--surface); }
 .sello-terminado { color: var(--carbon-text); border-color: var(--carbon); background: var(--carbon); }
@@ -366,7 +393,7 @@ body {
 .seccion-oscura .muted { color: rgba(243,240,235,.7); }
 
 /* ---------- Componente: HiloMensajes ---------- */
-.mensaje { background: var(--surface); border: 1px solid var(--border); padding: var(--md); margin-bottom: var(--sm); }
+.mensaje { background: var(--surface); border: 1px solid var(--border); border-radius: calc(var(--radio) * 2); padding: var(--md); margin-bottom: var(--sm); }
 .mensaje.propio { border-color: var(--bordo); }
 
 /* ---------- Utilidades ---------- */
@@ -378,6 +405,45 @@ body {
 .divisor { border: 0; border-top: 1px solid var(--border); margin: var(--lg) 0; }
 .centro { text-align: center; }
 
+/* Separaciones con la escala del sistema (en lugar de estilos sueltos en cada pantalla).
+   mt = margen arriba, mb = margen abajo, my = arriba y abajo. */
+.mt-xs { margin-top: var(--xs); }   .mb-xs { margin-bottom: var(--xs); }
+.mt-sm { margin-top: var(--sm); }   .mb-sm { margin-bottom: var(--sm); }
+.mt-md { margin-top: var(--md); }   .mb-md { margin-bottom: var(--md); }
+.mt-lg { margin-top: var(--lg); }   .mb-lg { margin-bottom: var(--lg); }
+.mt-xl { margin-top: var(--xl); }   .mb-xl { margin-bottom: var(--xl); }
+.mt-xxl { margin-top: var(--xxl); } .mb-xxl { margin-bottom: var(--xxl); }
+.my-lg { margin-top: var(--lg); margin-bottom: var(--lg); }
+.pad-md { padding: var(--md); }
+.pad-lg { padding: var(--lg); }
+.gap-xs { gap: var(--xs); }
+.gap-md { gap: var(--md); }
+.envolver { flex-wrap: wrap; }
+.al-final { justify-content: flex-end; }
+.alinear-arriba { align-items: flex-start; }
+.min-ancho-0 { min-width: 0; }
+/* Una columna que acompaña al contenido mientras se scrollea (por ejemplo, el resumen de una compra). */
+.pegado-arriba { position: sticky; top: var(--md); }
+.bloque { display: block; }
+.oculto { display: none; }
+.texto-bordo { color: var(--bordo); }
+.texto-error { color: var(--error); }
+.texto-izquierda { text-align: left; }
+.texto-derecha { text-align: right; }
+.fondo-canvas { background: var(--canvas); }
+.sin-subrayado { text-decoration: none; }
+.color-heredado { color: inherit; }
+/* Un botón que se ve como un link de texto (Quitar, Eliminar obra...). .peligro lo pinta del color de error. */
+.boton-texto {
+  background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  color: var(--bordo); text-decoration: underline; text-underline-offset: 3px;
+}
+.boton-texto.peligro { color: var(--error); }
+.boton-texto:disabled { color: var(--ink-muted); cursor: not-allowed; }
+/* Anchos máximos de texto y de campos sueltos. */
+.ancho-texto { max-width: 460px; }
+.ancho-buscador { flex: 1 1 280px; max-width: 420px; }
+
 /* ===========================================================
    AGREGADOS — devoluciones de la profe
    =========================================================== */
@@ -386,7 +452,7 @@ body {
 .precio-tachado { text-decoration: line-through; color: var(--ink-muted); font-weight: 400; margin-right: 6px; }
 
 /* Desglose de precio: obra sola y obra con marco */
-.desglose { background: var(--surface); border: 1px solid var(--border); padding: var(--md); }
+.desglose { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio); padding: var(--md); }
 .desglose-fila { display: flex; justify-content: space-between; padding: 5px 0; }
 .desglose-fila + .desglose-fila { border-top: 1px solid var(--border); }
 .desglose-fila.final { border-top: 1px solid var(--ink); padding-top: var(--sm); margin-top: var(--xs); }
@@ -398,10 +464,15 @@ body {
 /* Artista como vendedor dentro de la tarjeta */
 .vendedor { display: flex; align-items: center; gap: var(--sm); }
 .vendedor .avatar { width: 24px; height: 24px; font-size: 10px; }
+.avatar.grande, .vendedor .avatar.grande { width: 64px; height: 64px; font-size: 24px; }
 
 /* Pestanias: misma pieza que el chip, con otro rol */
 .pestanias { display: flex; gap: var(--sm); border-bottom: 1px solid var(--border); }
-.pestania { padding: 10px var(--md); color: var(--ink-muted); cursor: pointer; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; font: inherit; }
+.pestania {
+  padding: 10px var(--md); color: var(--ink-muted); cursor: pointer; border: 0; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; background: transparent; font: inherit; font-weight: 500; transition: color var(--transicion);
+}
+.pestania:hover { color: var(--ink); }
 .pestania.activa { color: var(--bordo); border-bottom-color: var(--bordo); }
 
 /* Mensajes: propio a la derecha, ajeno a la izquierda */
@@ -411,14 +482,14 @@ body {
 .mensaje.ajeno  { align-self: flex-start; }
 
 /* Pago simulado */
-.aviso { background: var(--surface); border: 1px solid var(--bordo); border-left-width: 3px; padding: var(--md); }
+.aviso { background: var(--bordo-suave); border: 1px solid rgba(133,14,53,.35); border-left: 3px solid var(--bordo); padding: var(--md); color: var(--bordo-dark); }
 
 /* Un toque de UIverse: transicion suave en foco y en hover. Nada mas. */
-.input, .select, .textarea, .boton, .chip { transition: border-color .18s ease, background-color .18s ease, color .18s ease; }
-.tarjeta-obra:hover .obra-imagen {
-  transform: translateY(-4px);
-  box-shadow: 0 22px 40px rgba(0,0,0,.40), 0 8px 16px rgba(0,0,0,.25);
+.input, .select, .textarea, .boton, .chip {
+  transition: border-color var(--transicion), background-color var(--transicion), color var(--transicion), box-shadow var(--transicion);
 }
+.tarjeta-obra .obra-imagen img { transition: transform .3s ease, box-shadow .3s ease; }
+.tarjeta-obra:hover .obra-imagen img { transform: translateY(-3px); box-shadow: 0 10px 24px rgb(28 28 25 / 22%); }
 
 /* ---------- Pinturas de muestra ---------- */
 .pintura { width: 100%; height: 100%; display: block; }
@@ -426,9 +497,10 @@ body {
 .mini-hero { background: var(--border); }
 
 /* ---------- Hero editorial del catalogo ---------- */
-.hero { display: grid; grid-template-columns: 1fr 46%; align-items: stretch; min-height: 560px; }
-.hero-texto { padding: var(--xxl) 0; display: flex; flex-direction: column; justify-content: center; }
-.hero-obra { position: relative; border-left: 1px solid var(--border); }
+.hero { display: grid; grid-template-columns: 1fr 46%; align-items: center; }
+.hero-texto { padding: var(--xxl) var(--xl); display: flex; flex-direction: column; justify-content: center; }
+@media (min-width: 1200px) { .hero-texto { padding-left: 64px; } }
+.hero-obra { position: relative; aspect-ratio: 1 / 1; align-self: center; border-radius: var(--radio); overflow: hidden; }
 /* La imagen llena la caja de la obra (que es cuadrada en escritorio y una banda en pantallas angostas), sea cual sea su
    tamaño original: se recorta para cubrirla en lugar de mostrarse a su tamaño natural. */
 .hero-obra .pintura, .hero-obra img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -438,18 +510,16 @@ body {
   padding: var(--sm) var(--md); display: flex; justify-content: space-between; align-items: baseline;
 }
 .hero-regla { height: 3px; background: var(--bordo); width: 56px; margin-bottom: var(--md); }
+/* En una sola columna la obra es una banda del ancho de la pantalla (si no, el cuadrado se ensancha hasta el alto). */
 @media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; min-height: 0; }
-  .hero-obra { height: 380px; border-left: 0; border-top: 1px solid var(--border); }
+  .hero { grid-template-columns: 1fr; }
+  .hero-obra { width: 100%; height: 380px; aspect-ratio: auto; }
 }
 
 /* Primera obra de la grilla, a lo ancho de dos columnas */
 .grilla-obras .destacada { grid-column: span 2; }
 .grilla-obras .destacada .obra-imagen { aspect-ratio: 16/10; }
 @media (max-width: 900px) { .grilla-obras .destacada { grid-column: span 2; } }
-
-/* Hairline de marca arriba de todo */
-.barra-marca { height: 3px; background: var(--bordo); }
 
 /* ---------- Pantalla de pago: se escribe sobre la tarjeta ---------- */
 .tarjeta-escena { perspective: 1200px; margin-bottom: var(--md); }
@@ -517,13 +587,6 @@ body {
 }
 .tarjeta-cvv .tarjeta-input:-webkit-autofill { -webkit-text-fill-color: #14110F; }
 
-/* ---------- Ajustes de hero y proporciones finales ---------- */
-.hero { min-height: 0; align-items: center; }
-.hero-obra { aspect-ratio: 1 / 1; align-self: center; }
-/* En una sola columna la obra es una banda del ancho de la pantalla (si no, el cuadrado se ensancha hasta el alto). */
-@media (max-width: 900px) { .hero-obra { width: 100%; height: 380px; aspect-ratio: auto; } }
-.hero-texto { padding-left: var(--xl); padding-right: var(--xl); }
-@media (min-width: 1200px) { .hero-texto { padding-left: 64px; } }
 
 /* ===========================================================
    Imágenes de obra — que siempre se vean enteras y nítidas
@@ -533,9 +596,7 @@ body {
    más que su tamaño real. Antes se usaba "cover": recortaba la obra y, si la foto
    era más chica que el marco, la estiraba hasta que se veía borrosa. Ahora, sea
    cual sea la forma o el tamaño de la foto, el marco queda igual. */
-.obra-imagen,
-.linea-mini { background: var(--surface); }
-.linea-mini { position: relative; }
+.linea-mini { background: var(--fondo-obra); position: relative; }
 
 .obra-imagen img,
 .linea-mini img {
@@ -544,7 +605,12 @@ body {
   max-width: 100%; max-height: 100%;
   object-fit: contain; display: block;
 }
-.obra-imagen img { outline: 1px solid var(--border); }
+/* Sobre la pared, la obra deja un margen alrededor y lleva paspartú (borde claro) y sombra corta. */
+.obra-imagen img {
+  max-width: 82%; max-height: 82%;
+  border: 5px solid var(--surface); box-shadow: var(--sombra-suave);
+}
+.linea-mini img { max-width: 84%; max-height: 84%; border: 2px solid var(--surface); }
 
 /* Una columna de grilla crece con el tamaño real de su contenido: sin esto, una foto
    enorme ensancha la columna y empuja el resto de la pantalla. */
@@ -566,7 +632,7 @@ body {
 .visor-miniatura {
   position: relative; flex-shrink: 0;
   width: 64px; aspect-ratio: 4/5; padding: 0;
-  background: var(--surface); border: 1px solid var(--border); cursor: pointer;
+  background: var(--fondo-obra); border: 1px solid transparent; border-radius: var(--radio); overflow: hidden; cursor: pointer;
 }
 .visor-miniatura img {
   position: absolute; inset: 0; margin: auto;
@@ -577,7 +643,7 @@ body {
 
 .visor-flecha {
   position: absolute; top: 50%; transform: translateY(-50%);
-  width: 40px; height: 40px; padding: 0;
+  width: 40px; height: 40px; padding: 0; border-radius: 50%; box-shadow: var(--sombra-suave);
   background: var(--surface); border: 1px solid var(--border);
   color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer;
 }
@@ -587,7 +653,7 @@ body {
 
 .visor-contador {
   position: absolute; right: var(--sm); bottom: var(--sm);
-  background: var(--surface); border: 1px solid var(--border); padding: 2px 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio-pildora); padding: 2px 10px;
 }
 .visor-vacio { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: var(--md); }
 
@@ -661,6 +727,7 @@ body {
   border-image-width: 36px;
   border-image-repeat: stretch;
   outline: none;
+  box-shadow: none;
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .25));
 }
 .lightbox > img.con-marco-imagen { border-width: 54px; border-image-width: 54px; background: transparent; }
@@ -668,3 +735,155 @@ body {
 /* ---------- Autocompletado de dirección ---------- */
 .autocompletar { position: relative; }
 .autocompletar-buscando { font-size: 11px; letter-spacing: .06em; opacity: .55; }
+/* ---------- Piezas chicas de pantallas ---------- */
+/* Acciones de una fila del admin (Editar, Eliminar): links de texto; apagada = no se puede usar ahora. */
+.accion-catalogo { color: var(--bordo); }
+.accion-catalogo.apagada { color: var(--ink-muted); pointer-events: none; }
+.celda-miniatura { width: 64px; }
+.miniatura-marco { object-fit: contain; display: block; }
+/* Muestra de una obra en la tarjeta de un artista. */
+.muestra-obra { width: 72px; height: 72px; object-fit: contain; background: var(--fondo-obra); border-radius: var(--radio); }
+.titulo-obra { margin: var(--xs) 0 0; }
+.fila.centrada { justify-content: center; }
+/* Páginas de aviso (404, 403). */
+.pagina-aviso { padding: var(--xxl) 0; }
+.pagina-aviso-titulo { margin: var(--sm) 0; }
+
+/* ---------- Componente: SeccionFotos (fotos de la obra en el formulario) ---------- */
+.fotos-grilla { display: grid; gap: var(--md); grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.foto-tarjeta {
+  position: relative; padding: var(--sm); cursor: grab;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio);
+}
+.foto-tarjeta.bloqueada { cursor: default; }
+.foto-tarjeta.arrastrada { opacity: .4; }
+.foto-tarjeta.destino { outline: 2px dashed var(--bordo); outline-offset: 2px; }
+.foto-marco { position: relative; aspect-ratio: 4 / 5; background: var(--fondo-obra); border-radius: var(--radio); overflow: hidden; }
+.foto-marco img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.foto-sello { position: absolute; left: 4px; padding: 1px 6px; border-radius: var(--radio); }
+.foto-sello.portada { top: 4px; background: var(--bordo); color: var(--surface); }
+.foto-sello.nueva { bottom: 4px; background: var(--surface); }
+/* Botones mínimos dentro de una foto (Reemplazar, ← →, Quitar). */
+.boton-mini {
+  display: inline-block; padding: 2px 8px; cursor: pointer; font: inherit; font-size: 13px;
+  color: var(--bordo); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio);
+}
+.boton-mini:hover { border-color: rgba(133,14,53,.35); }
+.boton-mini.peligro { color: var(--error); }
+.boton-mini:disabled { color: var(--ink-muted); opacity: .5; cursor: not-allowed; }
+/* El recuadro para agregar fotos: se hace click o se sueltan archivos encima. */
+.zona-soltar {
+  display: block; margin-top: var(--md); padding: var(--lg); text-align: center; cursor: pointer;
+  border: 2px dashed var(--border); border-radius: var(--radio); color: var(--ink-muted);
+  transition: border-color var(--transicion), background-color var(--transicion), color var(--transicion);
+}
+.zona-soltar:hover, .zona-soltar.activa { border-color: var(--bordo); color: var(--bordo); background: var(--surface); }
+.zona-soltar.bloqueada { cursor: default; }
+
+/* ---------- Componente: FiltroEstilos ---------- */
+.filtro-estilos { flex-wrap: wrap; gap: var(--sm); align-items: center; }
+.filtro-estilos-control { position: relative; }
+.filtro-estilos-opcion { cursor: pointer; }
+.filtro-estilos-opcion input { accent-color: var(--bordo); }
+/* Los estilos elegidos, al lado del desplegable: del mismo alto que él. */
+.filtro-estilos .chip { display: inline-flex; align-items: center; height: var(--alto-control); padding-top: 0; padding-bottom: 0; }
+
+/* ---------- Componente: BuscadorArtista ---------- */
+.buscador-artista-control { position: relative; }
+.buscador-artista-vacio { padding: var(--md); }
+
+/* ---------- Pantalla: Encargos (lista) ---------- */
+.encargos-cabecera { margin-bottom: var(--lg); flex-wrap: wrap; }
+.encargos-pestanias { margin-bottom: var(--lg); }
+/* Las pestañas y el botón de pedir un encargo comparten renglón; la línea gris va solo bajo las pestañas, justo de su ancho. */
+.encargos-barra { display: flex; align-items: center; gap: var(--md); margin-bottom: var(--lg); }
+.encargos-barra .encargos-pestanias { flex: 0 1 auto; margin-bottom: 0; }
+.encargos-barra > .boton { flex-shrink: 0; margin-left: auto; }
+.encargos-pestanias .pestania {
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+}
+.encargos-pestanias .pestania.activa { border-bottom-color: var(--bordo); }
+.encargos-tabla { overflow-x: auto; }
+.encargos-tabla .tabla { display: table; min-width: 680px; } /* ya tiene su propio contenedor con scroll */
+.encargos-tabla .sello { white-space: nowrap; }
+.encargos-tabla .boton-primario { color: #fff; white-space: nowrap; }
+.encargos-tabla a { color: var(--bordo); text-underline-offset: 3px; }
+.encargos-nota { margin-top: var(--md); }
+.encargos-pagina :focus-visible { outline: 2px solid var(--bordo); outline-offset: 3px; }
+.encargos-tabla:focus-visible { outline-offset: -2px; }
+.encargos-solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 600px) {
+  .encargos-barra { flex-wrap: wrap; }
+  .encargos-barra > .boton { width: 100%; }
+  .encargos-pestanias .pestania { flex: 1; padding-inline: var(--sm); }
+}
+
+.encargos-buscador { width: 50%; }
+.encargos-buscador .campo { margin-bottom: 0; }
+@media (max-width: 600px) {
+  .encargos-buscador { width: 100%; }
+}
+
+/* ---------- Pantalla: Detalle de un encargo ---------- */
+.detalle-volver { display: inline-block; color: var(--bordo); margin-bottom: var(--lg); text-underline-offset: 3px; }
+.detalle-cabecera { align-items: flex-start; }
+.detalle-cabecera > div { min-width: 0; }
+.detalle-cabecera .sello { flex-shrink: 0; margin-top: var(--md); white-space: nowrap; }
+.detalle-aviso { margin-top: var(--md); }
+.detalle-texto { margin-top: var(--xs); }
+.detalle-ficha { padding: var(--lg); }
+.detalle-contenido { white-space: pre-wrap; overflow-wrap: anywhere; }
+.detalle-chips { margin-top: var(--md); flex-wrap: wrap; }
+.detalle-chips .chip { cursor: default; }
+.detalle-estado { flex-wrap: wrap; }
+.detalle-controles { flex-wrap: wrap; }
+.detalle-controles .select { width: auto; max-width: 100%; }
+.detalle-mensajes { margin-top: var(--xl); }
+.detalle-intro { margin: var(--sm) 0 var(--md); }
+.detalle-hilo { list-style: none; margin: 0; padding: 0; }
+.detalle-hilo .mensaje { margin-bottom: 0; min-width: 0; }
+.detalle-editor { align-items: flex-end; }
+.detalle-editor .campo { flex: 1; min-width: 0; margin-bottom: 0; }
+.detalle-enviar { margin-top: var(--md); }
+.detalle-enviar .boton { flex-shrink: 0; }
+.detalle-confirmacion { min-height: 18px; margin-top: var(--sm); color: var(--bordo); }
+.detalle-demo { margin-top: var(--lg); }
+.encargo-detalle :focus-visible { outline: 2px solid var(--bordo); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .detalle-cabecera { flex-wrap: wrap; }
+  .detalle-cabecera .sello { margin-top: 0; }
+  .detalle-ficha { padding: var(--md); }
+  .detalle-controles { width: 100%; }
+  .detalle-controles .select { flex: 1; min-width: 0; }
+  .detalle-hilo .mensaje { max-width: 90%; }
+  .detalle-editor { flex-wrap: wrap; }
+  .detalle-editor .campo { flex-basis: 100%; }
+  .detalle-editor .boton { width: 100%; }
+}
+
+/* ---------- Pantalla: Pedir un encargo ---------- */
+.encargo-volver { display: inline-block; color: var(--bordo); margin-bottom: var(--lg); }
+.encargo-aviso { margin: var(--lg) 0; }
+.encargo-formulario { padding: var(--lg); }
+.encargo-obligatorios { margin-bottom: var(--lg); }
+.encargo-contador { margin: calc(-1 * var(--sm)) 0 var(--lg); }
+.encargo-formulario .boton { margin-top: var(--md); }
+.encargo-formulario .con-error { border-color: var(--error); }
+.encargo-nuevo :focus-visible { outline: 2px solid var(--bordo); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .encargo-nuevo .fila-campos { grid-template-columns: 1fr; gap: 0; }
+  .encargo-formulario { padding: var(--md); }
+}

@@ -30,14 +30,8 @@ const TarjetaVariante = ({
     const cambiar = (campo) => (e) => onCambiar(clave, campo, e.target.value)
 
     return (
-        <div style={{ border: "1px solid var(--border)", padding: "var(--md)", marginBottom: "var(--md)" }}>
-            <div
-                style={{
-                    display: "grid",
-                    gap: "0 var(--md)",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))"
-                }}
-            >
+        <div className="cartela pad-md mb-md">
+            <div className="grilla-campos">
                 <CampoFormulario
                     etiqueta="Tamaño"
                     tipo="select"
@@ -94,12 +88,7 @@ const TarjetaVariante = ({
                 />
             </div>
 
-            <button
-                type="button"
-                onClick={() => onQuitar(clave, id)}
-                className="body-sm"
-                style={{ all: "unset", cursor: "pointer", color: "var(--error)" }}
-            >
+            <button type="button" onClick={() => onQuitar(clave, id)} className="body-sm boton-texto peligro">
                 Quitar variante
             </button>
         </div>

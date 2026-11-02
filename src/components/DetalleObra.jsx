@@ -25,7 +25,7 @@ const DetalleObra = ({ variantes }) => {
                     <tr key={variante.id}>
                         <td>{variante.nombre_tamanio}</td>
                         <td className="price-md">{pesos(variante.precio_variante)}</td>
-                        <td style={variante.stock_variante === 0 ? { color: "var(--error)" } : {}}>
+                        <td className={variante.stock_variante === 0 ? "texto-error" : ""}>
                             {variante.stock_variante}
                         </td>
                         <td>
