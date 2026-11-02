@@ -64,9 +64,7 @@ export default function ObrasRelacionadas({ titulo, consultas, excluirId, exclui
 
     return (
         <section>
-            <h2 className="headline-md" style={{ marginBottom: "var(--lg)" }}>
-                {titulo}
-            </h2>
+            <h2 className="headline-md mb-lg">{titulo}</h2>
             <div className="grilla-obras cuatro">
                 {items.map((item) => {
                     const variante = item.variante || {}

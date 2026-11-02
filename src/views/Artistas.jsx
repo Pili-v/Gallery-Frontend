@@ -169,12 +169,12 @@ export default function Artistas() {
                     return (
                         <Link key={artista.id} to={"/artista/" + artista.id} className="cartela tarjeta-artista">
                             {/* Quién es */}
-                            <div style={{ minWidth: 0 }}>
-                                <div className="vendedor" style={{ gap: "var(--md)" }}>
+                            <div className="min-ancho-0">
+                                <div className="vendedor gap-md">
                                     <span className="avatar">{(artista.nombre_artistico ?? "A")[0]}</span>
                                     <span className="title-work">{artista.nombre_artistico}</span>
                                 </div>
-                                <p className="cartela-meta" style={{ marginTop: "var(--sm)" }}>
+                                <p className="cartela-meta mt-sm">
                                     {resumen.cantidad === 1
                                         ? "1 obra publicada"
                                         : resumen.cantidad + " obras publicadas"}
@@ -197,12 +197,7 @@ export default function Artistas() {
                                         key={portada.id}
                                         src={portada.src}
                                         alt={portada.nombre}
-                                        style={{
-                                            width: 72,
-                                            height: 72,
-                                            objectFit: "contain",
-                                            background: "var(--canvas)"
-                                        }}
+                                        className="muestra-obra"
                                     />
                                 ))}
                             </div>
@@ -223,7 +218,7 @@ export default function Artistas() {
 
                 {/* Buscador por nombre artístico (con sugerencias) y filtro por estilos (siempre visibles) */}
                 <form className="filtros" onSubmit={buscar} role="search">
-                    <div style={{ flex: "1 1 280px", maxWidth: 420 }}>
+                    <div className="ancho-buscador">
                         <BuscadorArtista
                             key={reinicio}
                             artistas={todosLosArtistas}

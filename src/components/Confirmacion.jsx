@@ -29,9 +29,7 @@ const Confirmacion = ({ titulo, mensaje, textoConfirmar, onConfirmar, onCancelar
             }}
         >
             <h2 className="headline-sm">{titulo}</h2>
-            <p className="body-lg muted" style={{ marginTop: "var(--sm)" }}>
-                {mensaje}
-            </p>
+            <p className="body-lg muted mt-sm">{mensaje}</p>
 
             <div className="modal-acciones">
                 {onCancelar && (

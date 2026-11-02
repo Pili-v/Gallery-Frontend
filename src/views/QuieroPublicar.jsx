@@ -73,24 +73,18 @@ const QuieroPublicar = () => {
                     Creá tu perfil de artista y vendé tu obra original, directo a quien la compra.
                 </p>
 
-                <div className="cartela" style={{ padding: "var(--lg)", marginBottom: "var(--lg)" }}>
-                    <p className="catalog-number muted" style={{ marginBottom: "var(--sm)" }}>
-                        Qué vas a poder hacer
-                    </p>
+                <div className="cartela mb-lg pad-lg">
+                    <p className="catalog-number muted mb-sm">Qué vas a poder hacer</p>
                     <p className="body-sm">
                         Publicar tus obras con fotos y variantes: tamaños, precios, stock y descuentos.
                     </p>
                     <p className="body-sm">Ver tus ventas y las facturas que se emiten a tu nombre.</p>
                     <p className="body-sm">Recibir encargos de quienes quieran una obra a medida.</p>
-                    <p className="body-sm muted" style={{ marginTop: "var(--sm)" }}>
-                        Seguís pudiendo comprar y hacer encargos como hasta ahora.
-                    </p>
+                    <p className="body-sm muted mt-sm">Seguís pudiendo comprar y hacer encargos como hasta ahora.</p>
                 </div>
 
-                <form className="cartela" style={{ padding: "var(--lg)" }} onSubmit={crearPerfil}>
-                    <p className="catalog-number muted" style={{ marginBottom: "var(--md)" }}>
-                        Tu perfil de artista
-                    </p>
+                <form className="cartela pad-lg" onSubmit={crearPerfil}>
+                    <p className="catalog-number muted mb-md">Tu perfil de artista</p>
 
                     <CampoFormulario
                         etiqueta="Nombre artístico"
@@ -101,7 +95,7 @@ const QuieroPublicar = () => {
                         onChange={(e) => setNombreArtistico(e.target.value)}
                     />
 
-                    <label className="body-sm" style={{ display: "block", marginBottom: "var(--md)" }}>
+                    <label className="body-sm mb-md bloque">
                         <input
                             type="checkbox"
                             checked={aceptaEncargos}
@@ -110,11 +104,7 @@ const QuieroPublicar = () => {
                         Quiero recibir encargos de obras a medida
                     </label>
 
-                    {error && (
-                        <p className="campo-error body-sm" style={{ marginBottom: "var(--md)" }}>
-                            {error}
-                        </p>
-                    )}
+                    {error && <p className="campo-error body-sm mb-md">{error}</p>}
 
                     <Boton tipo={enviando ? "deshabilitado" : "primario"} bloque type="submit">
                         {enviando ? "Creando tu perfil..." : "Crear mi perfil de artista"}

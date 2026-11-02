@@ -131,20 +131,12 @@ const AdminUsuarios = () => {
                 <h1 className="headline-lg titulo-oculto">Usuarios y permisos</h1>
 
                 {error && (
-                    <div
-                        style={{
-                            marginBottom: "var(--md)"
-                        }}
-                    >
+                    <div className="mb-md">
                         <Estado tipo="error" mensaje={error} />
                     </div>
                 )}
 
-                <div
-                    style={{
-                        marginBottom: "var(--md)"
-                    }}
-                >
+                <div className="mb-md">
                     <input
                         className="input"
                         type="text"
@@ -185,10 +177,7 @@ const AdminUsuarios = () => {
 
                                             <td>
                                                 <select
-                                                    className="select"
-                                                    style={{
-                                                        width: "auto"
-                                                    }}
+                                                    className="select ancho-auto"
                                                     value={roles[usuario.id]}
                                                     onChange={(e) => handleRol(usuario.id, e.target.value)}
                                                     disabled={esUsuarioActual}
@@ -219,15 +208,7 @@ const AdminUsuarios = () => {
                             </tbody>
                         </table>
 
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: "var(--md)",
-                                marginTop: "var(--lg)"
-                            }}
-                        >
+                        <div className="fila centrada mt-lg">
                             <Boton tipo={paginaActual === 1 ? "deshabilitado" : "secundario"} onClick={paginaAnterior}>
                                 Anterior
                             </Boton>
@@ -246,12 +227,7 @@ const AdminUsuarios = () => {
                     </>
                 )}
 
-                <p
-                    className="body-sm muted"
-                    style={{
-                        marginTop: "var(--md)"
-                    }}
-                >
+                <p className="body-sm muted mt-md">
                     El cambio de rol tiene efecto en la siguiente petición: no hace falta volver a entrar.
                 </p>
             </div>

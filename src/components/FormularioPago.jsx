@@ -258,7 +258,7 @@ const FormularioPago = ({
                             </div>
                         </div>
 
-                        <p className="tarjeta-pista muted" style={{ marginBottom: "var(--lg)" }}>
+                        <p className="tarjeta-pista muted mb-lg">
                             {girada
                                 ? "Tocá la tarjeta para volver al frente."
                                 : "Tocá la tarjeta para cargar el código."}
@@ -275,7 +275,7 @@ const FormularioPago = ({
                         )}
 
                         {(error || errorCarga) && (
-                            <div style={{ marginBottom: "var(--md)" }}>
+                            <div className="mb-md">
                                 <Estado tipo="error" mensaje={error || errorCarga} />
                             </div>
                         )}

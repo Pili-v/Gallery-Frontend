@@ -52,7 +52,7 @@ const PagoEncargo = () => {
             <div className="seccion">
                 <div className="contenido col-media">
                     <h1 className="headline-lg">Pago del encargo</h1>
-                    <div style={{ marginBottom: "var(--lg)" }}>
+                    <div className="mb-lg">
                         <Estado tipo={error ? "error" : "vacio"} mensaje={motivo} />
                     </div>
                     <Boton tipo="secundario" onClick={volver}>

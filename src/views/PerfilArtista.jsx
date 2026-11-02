@@ -102,11 +102,9 @@ function PerfilDeArtista({ id }) {
     return (
         <div className="seccion">
             <div className="contenido apilado">
-                <header className="encabezado" style={{ alignItems: "flex-start" }}>
-                    <div className="vendedor" style={{ gap: "var(--md)" }}>
-                        <div className="avatar" style={{ width: 64, height: 64, fontSize: 24 }}>
-                            {(artista.nombre_artistico ?? "A")[0]}
-                        </div>
+                <header className="encabezado alinear-arriba">
+                    <div className="vendedor gap-md">
+                        <div className="avatar grande">{(artista.nombre_artistico ?? "A")[0]}</div>
                         <div>
                             <h1 className="headline-lg">{artista.nombre_artistico}</h1>
                             <p className="body-lg muted">
@@ -125,9 +123,7 @@ function PerfilDeArtista({ id }) {
                 <hr className="divisor" />
 
                 <section>
-                    <p className="catalog-number muted" style={{ marginBottom: "var(--lg)" }}>
-                        Obras publicadas — {totalObras} resultados
-                    </p>
+                    <p className="catalog-number muted mb-lg">Obras publicadas — {totalObras} resultados</p>
 
                     {cargandoObras ? (
                         <Estado tipo="cargando" />

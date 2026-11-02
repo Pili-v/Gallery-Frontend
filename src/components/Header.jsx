@@ -85,14 +85,9 @@ const Header = () => {
 
     return (
         <>
-            <div className="barra-marca"></div>
             <header className="header">
-                <div className="header-franja catalog-number">
-                    <span>Atelier Attack · Obra original, directo del artista</span>
-                    <span>Artistas de todo el país</span>
-                </div>
                 <div className="header-barra">
-                    <Link to="/" className="header-marca" style={{ textDecoration: "none", color: "inherit" }}>
+                    <Link to="/" className="header-marca">
                         Atelier&nbsp;Attack
                     </Link>
                     <button
@@ -124,16 +119,15 @@ const Header = () => {
                         {rol === "CLIENTE" && (
                             <Link
                                 to="/quiero-publicar"
-                                className="boton boton-secundario"
+                                className="boton boton-secundario boton-chico"
                                 title="¿Querés publicar tus obras? Creá tu perfil de artista"
-                                style={{ padding: "8px 14px", color: "var(--bordo)", whiteSpace: "nowrap" }}
                             >
                                 ¿Querés publicar?
                             </Link>
                         )}
                         {usuario && (
                             <>
-                                <Link to="/mi-cuenta" className="avatar" style={{ textDecoration: "none" }}>
+                                <Link to="/mi-cuenta" className="avatar">
                                     {iniciales.toUpperCase()}
                                 </Link>
                                 <a href="#" className="nav-link" onClick={salir}>

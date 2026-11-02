@@ -23,7 +23,7 @@ export default function TarjetaObra({
 
     return (
         <div className="tarjeta-obra">
-            <Link to={`/obra/${id}`} style={{ display: "block", textDecoration: "none" }}>
+            <Link className="sin-subrayado bloque" to={`/obra/${id}`}>
                 <div className={"obra-imagen" + (sinStock ? " sin-stock" : "")}>
                     {imagen && <img src={imagen} alt={nombreObra} />}
                     {sinStock && <Badge tipo="sinstock">Sin stock</Badge>}

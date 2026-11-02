@@ -7,7 +7,6 @@ import EstadoEncargo from "../components/EstadoEncargo"
 import Boton from "../components/Boton"
 import BuscadorArtista from "../components/BuscadorArtista"
 import { normalizarNombre } from "../api/formato"
-import "./encargos.css"
 
 export default function Encargos() {
     const [parametros, setParametros] = useSearchParams()
@@ -112,7 +111,7 @@ function ListaEncargos({
             <div className="contenido">
                 <h1 className="headline-lg titulo-oculto">Encargos</h1>
                 {esAdmin && (
-                    <div className="encargos-buscador" style={{ marginBottom: "var(--lg)" }}>
+                    <div className="encargos-buscador mb-lg">
                         <BuscadorArtista
                             artistas={artistas}
                             value={artistaElegido}

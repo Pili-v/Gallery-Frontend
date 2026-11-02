@@ -12,6 +12,8 @@ import obrasRelacionadasReducer from "./obrasRelacionadasSlice"
 import comprasReducer from "./comprasSlice"
 import compraDetalleReducer from "./compraDetalleSlice"
 import carritoReducer from "./carritoSlice"
+import misObrasReducer from "./misObrasSlice"
+import misVentasReducer from "./misVentasSlice"
 
 export const store = configureStore({
     reducer: {
@@ -24,6 +26,8 @@ export const store = configureStore({
         obrasRelacionadas: obrasRelacionadasReducer,
         compras: comprasReducer,
         compraDetalle: compraDetalleReducer,
-        carrito: carritoReducer
+        carrito: carritoReducer,
+        misObras: misObrasReducer,
+        misVentas: misVentasReducer
     }
 })

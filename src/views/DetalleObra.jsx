@@ -132,15 +132,9 @@ function DetalleDeObra({ id }) {
 
                 <div className="detalle-info apilado">
                     <div>
-                        <h1 className="headline-lg" style={{ margin: "var(--xs) 0 0" }}>
-                            {obra.nombre_obra}
-                        </h1>
+                        <h1 className="headline-lg titulo-obra">{obra.nombre_obra}</h1>
 
-                        <Link
-                            to={"/artista/" + obra.artista_id}
-                            className="vendedor"
-                            style={{ marginTop: "var(--sm)", textDecoration: "none" }}
-                        >
+                        <Link to={"/artista/" + obra.artista_id} className="vendedor mt-sm sin-subrayado">
                             <span className="avatar">{(artista?.nombre_artistico ?? "A")[0]}</span>
                             <span className="cartela-artist">{artista?.nombre_artistico ?? "Artista"}</span>
                         </Link>
@@ -150,10 +144,8 @@ function DetalleDeObra({ id }) {
 
                     {variantes.length > 0 && (
                         <div>
-                            <span className="cartela-meta" style={{ display: "block", marginBottom: "var(--xs)" }}>
-                                TAMAÑO
-                            </span>
-                            <div className="fila" style={{ flexWrap: "wrap" }}>
+                            <span className="cartela-meta mb-xs bloque">TAMAÑO</span>
+                            <div className="fila envolver">
                                 {variantes.map((v) => (
                                     <button
                                         key={v.id}
@@ -169,10 +161,8 @@ function DetalleDeObra({ id }) {
 
                     {marcos.length > 0 && (
                         <div>
-                            <span className="cartela-meta" style={{ display: "block", marginBottom: "var(--xs)" }}>
-                                MARCO
-                            </span>
-                            <div className="fila" style={{ flexWrap: "wrap" }}>
+                            <span className="cartela-meta mb-xs bloque">MARCO</span>
+                            <div className="fila envolver">
                                 {marcos.map((m) => (
                                     <button
                                         key={m.id}
@@ -210,12 +200,10 @@ function DetalleDeObra({ id }) {
                         </div>
 
                         {detalle.errorCarrito && (
-                            <div className="campo-error body-sm" style={{ marginTop: "var(--sm)" }}>
-                                {detalle.errorCarrito}
-                            </div>
+                            <div className="campo-error body-sm mt-sm">{detalle.errorCarrito}</div>
                         )}
 
-                        <div style={{ marginTop: "var(--md)" }}>
+                        <div className="mt-md">
                             <Boton
                                 tipo={noDisponible ? "deshabilitado" : "primario"}
                                 bloque
@@ -229,7 +217,7 @@ function DetalleDeObra({ id }) {
             </div>
 
             {/* Complementos: otras obras del mismo artista y obras de estilos parecidos */}
-            <div className="contenido apilado" style={{ marginTop: "var(--xxl)" }}>
+            <div className="contenido apilado mt-xxl">
                 <ObrasRelacionadas
                     key={"artista-" + obra.id}
                     titulo={"Más obras de " + (artista?.nombre_artistico ?? "este artista")}
