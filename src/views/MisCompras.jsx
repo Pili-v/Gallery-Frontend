@@ -148,7 +148,7 @@ const MisCompras = () => {
                                     <td>{TEXTO_ENTREGA[tipoDeEntrega(compra)]}</td>
                                     <td className="price-md">{pesos(compra.total_compra)}</td>
                                     <td>
-                                        <Link to={"/compra/" + compra.id} style={{ color: "var(--bordo)" }}>
+                                        <Link className="texto-bordo" to={"/compra/" + compra.id}>
                                             Ver detalle
                                         </Link>
                                     </td>

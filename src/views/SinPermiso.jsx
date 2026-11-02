@@ -7,35 +7,17 @@ const SinPermiso = () => {
 
     return (
         <div className="seccion">
-            <div
-                className="contenido col-angosta centro"
-                style={{
-                    padding: "var(--xxl) 0"
-                }}
-            >
+            <div className="contenido col-angosta centro pagina-aviso">
                 <p className="catalog-number cartela-num">Error 403</p>
 
-                <h1
-                    className="headline-lg"
-                    style={{
-                        margin: "var(--sm) 0"
-                    }}
-                >
-                    No tenés permiso para ver esto
-                </h1>
+                <h1 className="headline-lg pagina-aviso-titulo">No tenés permiso para ver esto</h1>
 
                 <p className="body-lg muted">
                     Esta sección es de otro rol. Si creés que es un error, pedile a un administrador que revise tu
                     cuenta.
                 </p>
 
-                <Boton
-                    tipo="primario"
-                    style={{
-                        marginTop: "var(--lg)"
-                    }}
-                    onClick={() => navigate("/")}
-                >
+                <Boton className="mt-lg" tipo="primario" onClick={() => navigate("/")}>
                     Volver al catálogo
                 </Boton>
             </div>

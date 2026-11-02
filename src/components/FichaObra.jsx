@@ -25,28 +25,20 @@ export default function FichaObra({
                 <span className="cartela-meta">{estilo ?? ""}</span>
             </div>
 
-            <div className="cartela-fila" style={{ display: "block" }}>
-                <Link
-                    to={`/obra/${id}`}
-                    className="title-work"
-                    style={{ display: "block", color: "inherit", textDecoration: "none" }}
-                >
+            <div className="cartela-fila bloque">
+                <Link to={`/obra/${id}`} className="title-work sin-subrayado bloque color-heredado">
                     {nombreObra}
                 </Link>
 
                 {artistaId ? (
-                    <Link
-                        to={`/artista/${artistaId}`}
-                        className="vendedor"
-                        style={{ marginTop: 4, textDecoration: "none" }}
-                    >
+                    <Link to={`/artista/${artistaId}`} className="vendedor mt-xs sin-subrayado">
                         <span className="avatar">{(nombreArtistico ?? "A")[0]}</span>
                         <span className="cartela-artist">{nombreArtistico ?? "Artista"}</span>
                     </Link>
                 ) : (
                     // Sin artistaId (por ejemplo, en el propio perfil del artista) no tiene
                     // sentido linkear a sí mismo: se muestra como texto plano, no como link.
-                    <div className="vendedor" style={{ marginTop: 4 }}>
+                    <div className="vendedor mt-xs">
                         <span className="avatar">{(nombreArtistico ?? "A")[0]}</span>
                         <span className="cartela-artist">{nombreArtistico ?? "Artista"}</span>
                     </div>

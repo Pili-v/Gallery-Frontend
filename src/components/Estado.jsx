@@ -3,10 +3,10 @@
 const Estado = ({ tipo, mensaje, accion, onAccion }) => {
     if (tipo === "cargando") {
         return (
-            <div className="estado" style={{ textAlign: "left" }}>
-                <div className="esqueleto esqueleto-linea" style={{ width: "70%" }}></div>
-                <div className="esqueleto esqueleto-linea" style={{ width: "90%" }}></div>
-                <div className="esqueleto esqueleto-linea" style={{ width: "55%" }}></div>
+            <div className="estado texto-izquierda">
+                <div className="esqueleto esqueleto-linea media"></div>
+                <div className="esqueleto esqueleto-linea larga"></div>
+                <div className="esqueleto esqueleto-linea corta"></div>
             </div>
         )
     }
@@ -23,7 +23,7 @@ const Estado = ({ tipo, mensaje, accion, onAccion }) => {
         <div className="estado">
             <p className="body-lg">{mensaje}</p>
             {accion && (
-                <button className="boton boton-secundario" style={{ marginTop: "var(--md)" }} onClick={onAccion}>
+                <button className="boton boton-secundario mt-md" onClick={onAccion}>
                     {accion}
                 </button>
             )}

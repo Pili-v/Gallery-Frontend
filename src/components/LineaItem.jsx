@@ -30,27 +30,25 @@ const LineaItem = ({
             <div className="linea-mini">{imagen && <img src={imagen} alt="" />}</div>
 
             <div>
-                <div className="title-work" style={{ fontSize: 17, lineHeight: "24px" }}>
-                    {nombreObra}
-                </div>
+                <div className="title-work mediano">{nombreObra}</div>
                 <div className="cartela-meta">
                     {nombreTamanio}
                     {nombreMarco && " · Marco: " + nombreMarco}
                 </div>
                 {disponibles !== undefined && !aviso && (
-                    <div className="cartela-meta" style={disponibles <= 3 ? { color: "var(--bordo)" } : undefined}>
+                    <div className={"cartela-meta" + (disponibles <= 3 ? " texto-bordo" : "")}>
                         {disponibles === 1 ? "Última unidad disponible" : disponibles + " unidades disponibles"}
                     </div>
                 )}
                 {aviso && (
-                    <div className="body-sm" style={{ color: "var(--error)" }} role="alert">
+                    <div className="body-sm texto-error" role="alert">
                         {aviso}
                         {accionAviso && (
                             <>
                                 {" "}
                                 <a
+                                    className="texto-bordo"
                                     href="#"
-                                    style={{ color: "var(--bordo)" }}
                                     onClick={(e) => {
                                         e.preventDefault()
                                         onAccionAviso(id)
@@ -65,8 +63,7 @@ const LineaItem = ({
                 {editable && (
                     <a
                         href="#"
-                        className="body-sm"
-                        style={{ color: "var(--bordo)" }}
+                        className="body-sm texto-bordo"
                         onClick={(e) => {
                             e.preventDefault()
                             onQuitar(id)
@@ -101,9 +98,7 @@ const LineaItem = ({
                 )}
             </div>
 
-            <div className="price-md" style={{ minWidth: 100, textAlign: "right" }}>
-                {pesos(subtotal)}
-            </div>
+            <div className="price-md linea-importe">{pesos(subtotal)}</div>
         </div>
     )
 }

@@ -17,38 +17,27 @@ const FilaObra = ({
     onAlternar
 }) => {
     return (
-        <tr onClick={onAlternar} style={{ cursor: "pointer" }}>
+        <tr onClick={onAlternar} className="fila-abrible">
             <td>
                 <div className="fila">
-                    <span style={{ color: "var(--bordo)" }}>{abierta ? "▾" : "▸"}</span>
-                    <div
-                        className="linea-mini"
-                        style={{ width: 56, flex: "none", display: "grid", placeItems: "center" }}
-                    >
+                    <span className="texto-bordo">{abierta ? "▾" : "▸"}</span>
+                    <div className="linea-mini chica">
                         {portada && <img src={portada} alt={"Portada de " + nombreObra} />}
-                        {portada === null && (
-                            <span className="cartela-meta" style={{ fontSize: 10, textAlign: "center" }}>
-                                Sin foto
-                            </span>
-                        )}
+                        {portada === null && <span className="cartela-meta sin-foto">Sin foto</span>}
                     </div>
-                    <span className="title-work" style={{ fontSize: 16 }}>
-                        {nombreObra}
-                    </span>
+                    <span className="title-work chico">{nombreObra}</span>
                 </div>
             </td>
             <td className="muted">{estilos}</td>
             <td>
                 {cantidadVariantes}
-                {variantesSinStock > 0 && (
-                    <span style={{ color: "var(--error)" }}> · {variantesSinStock} sin stock</span>
-                )}
+                {variantesSinStock > 0 && <span className="texto-error"> · {variantesSinStock} sin stock</span>}
             </td>
             <td>{enVenta ? "Sí" : "No"}</td>
             <td>
                 <Link
+                    className="texto-bordo"
                     to={"/panel/obras/" + id + "/editar"}
-                    style={{ color: "var(--bordo)" }}
                     onClick={(e) => e.stopPropagation()}
                 >
                     Editar

@@ -2,7 +2,7 @@
 // Solo dibuja: ObraForm guarda cuáles están elegidos.
 const SelectorEstilos = ({ estilos, elegidos, onAlternar }) => {
     return (
-        <div className="fila" style={{ margin: "var(--xs) 0 var(--md)", flexWrap: "wrap" }}>
+        <div className="fila envolver mt-xs mb-md">
             {estilos.length === 0 && <span className="body-sm muted">Todavía no hay estilos cargados.</span>}
             {estilos.map((estilo) => (
                 <button

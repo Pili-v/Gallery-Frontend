@@ -175,7 +175,7 @@ const PanelObras = () => {
                                 />
                                 {abiertas[obra.id] && (
                                     <tr>
-                                        <td colSpan={5} style={{ background: "var(--canvas)" }}>
+                                        <td className="fondo-canvas" colSpan={5}>
                                             {(!entrada || entrada.loading) && <Estado tipo="cargando" />}
                                             {entrada && !entrada.loading && (
                                                 <DetalleObra variantes={entrada.error ? null : entrada.items} />
@@ -203,7 +203,7 @@ const PanelObras = () => {
 
                 {!sinNada && !error && (
                     <form className="filtros" onSubmit={buscar} role="search">
-                        <div style={{ flex: "1 1 240px", maxWidth: 360 }}>
+                        <div className="ancho-buscador">
                             <CampoFormulario
                                 etiqueta="Buscar obra"
                                 placeholder="Nombre de la obra"

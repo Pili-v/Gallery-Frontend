@@ -10,7 +10,6 @@ import CampoFormulario from "../components/CampoFormulario"
 import Estado from "../components/Estado"
 import EstadoEncargo from "../components/EstadoEncargo"
 import { prepararMensaje, prepararCambioEstado } from "../api/encargoDetalleContrato.js"
-import "./encargoDetalle.css"
 
 // El back manda los mensajes del más nuevo al más viejo (para poder cargar la conversación desde lo último), igual
 // para el cliente y para el artista. Acá se leen de arriba hacia abajo, del más viejo al más nuevo, y los que se
@@ -385,7 +384,7 @@ function Detalle({ id, recibidos, base }) {
                     )}
                 </section>
 
-                <div style={{ marginTop: "var(--lg)" }}>
+                <div className="mt-lg">
                     <AcuerdoPrecio
                         estado={encargo.estado_encargo}
                         precio={encargo.precio_acordado}

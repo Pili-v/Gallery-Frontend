@@ -1,5 +1,4 @@
 import { useState } from "react"
-import "./filtroEstilos.css"
 
 // Filtro de estilos de elección múltiple, para el catálogo y la lista de artistas.
 // Un solo botón ("Estilos") abre una lista con casillas; lo elegido queda a la vista como

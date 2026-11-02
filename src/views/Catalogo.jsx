@@ -136,7 +136,6 @@ export default function Catalogo() {
         dispatch(cargarObras({ pagina, size: POR_PAGINA, orden, estiloIds, rango, busqueda }))
     }
 
-
     // La API devuelve ids, no nombres: la vista los traduce
     const armarItem = (obra) => {
         const extra = extras[obra.id]
@@ -220,14 +219,7 @@ export default function Catalogo() {
             />
         )
     } else if (aviso) {
-        resultados = (
-            <Estado
-                tipo="error"
-                mensaje={aviso.mensaje}
-                accion="Reintentar"
-                onAccion={reintentar}
-            />
-        )
+        resultados = <Estado tipo="error" mensaje={aviso.mensaje} accion="Reintentar" onAccion={reintentar} />
     } else if (items.length === 0) {
         resultados = <Estado tipo="vacio" mensaje="Todavía no hay obras publicadas." />
     } else {
@@ -264,14 +256,12 @@ export default function Catalogo() {
                     <p className="catalog-number muted">
                         Actualmente contamos con {cantidadArtistas} Artistas · ENVÍOS A TODO EL PAÍS
                     </p>
-                    <h1 className="display-hero" style={{ marginTop: "var(--sm)" }}>
-                        Obras Originales
-                    </h1>
-                    <p className="body-lg muted" style={{ marginTop: "var(--md)", maxWidth: 460 }}>
+                    <h1 className="display-hero mt-sm">Obras Originales</h1>
+                    <p className="body-lg muted mt-md ancho-texto">
                         Cada pieza se vende en el tamaño y el marco que elijas. Luego tienes la libertad de decidir si
                         lo enviamos a tu domicilio o lo retiras por nuestra sucursal principal.
                     </p>
-                    <div className="fila" style={{ marginTop: "var(--lg)" }}>
+                    <div className="fila mt-lg">
                         <Boton tipo="primario" onClick={quitarFiltros}>
                             Ver todas las obras
                         </Boton>
@@ -296,10 +286,9 @@ export default function Catalogo() {
             <div className="contenido">
                 <section className="seccion-sm">
                     {/* Buscador: nombre de la obra o del artista */}
-                    <form className="fila" style={{ marginBottom: "var(--lg)" }} onSubmit={buscar} role="search">
+                    <form className="fila mb-lg" onSubmit={buscar} role="search">
                         <input
-                            className="input"
-                            style={{ maxWidth: 420 }}
+                            className="input ancho-buscador"
                             type="search"
                             placeholder="Buscar por obra o por artista"
                             aria-label="Buscar por obra o por artista"
@@ -312,11 +301,10 @@ export default function Catalogo() {
                     </form>
 
                     {/* Precio y estilos (salen de la API; se pueden elegir varios): los filtros quedan siempre visibles. */}
-                    <div className="fila" style={{ marginBottom: "var(--sm)", flexWrap: "wrap" }}>
+                    <div className="fila mb-sm envolver">
                         <span className="cartela-meta">PRECIO</span>
                         <input
-                            className="input"
-                            style={{ width: 120 }}
+                            className="input campo-precio"
                             type="number"
                             min="0"
                             placeholder="Mínimo"
@@ -325,8 +313,7 @@ export default function Catalogo() {
                         />
                         <span className="muted">—</span>
                         <input
-                            className="input"
-                            style={{ width: 120 }}
+                            className="input campo-precio"
                             type="number"
                             min="0"
                             placeholder="Máximo"
@@ -343,21 +330,16 @@ export default function Catalogo() {
                             </Boton>
                         )}
                     </div>
-                    {errorPrecio && (
-                        <p className="campo-error body-sm" style={{ marginBottom: "var(--sm)" }}>
-                            {errorPrecio}
-                        </p>
-                    )}
+                    {errorPrecio && <p className="campo-error body-sm mb-sm">{errorPrecio}</p>}
 
                     <hr className="divisor" />
 
-                    <div className="entre" style={{ margin: "var(--lg) 0" }}>
+                    <div className="entre my-lg">
                         <span className="catalog-number muted">
                             {hayFiltros ? "Resultados" : "Todas las obras"} — {totalObras} resultados
                         </span>
                         <select
-                            className="select"
-                            style={{ width: 200 }}
+                            className="select campo-orden"
                             value={orden}
                             onChange={(e) => elegirOrden(e.target.value)}
                             aria-label="Ordenar obras"
@@ -378,10 +360,8 @@ export default function Catalogo() {
 
             <section className="seccion-oscura centro">
                 <h2 className="headline-md">¿Buscás algo que todavía no existe?</h2>
-                <p className="body-lg muted" style={{ marginTop: "var(--sm)" }}>
-                    Pedile un encargo a un artista: elegís tamaño, lienzo y marco.
-                </p>
-                <div style={{ marginTop: "var(--lg)" }}>
+                <p className="body-lg muted mt-sm">Pedile un encargo a un artista: elegís tamaño, lienzo y marco.</p>
+                <div className="mt-lg">
                     <Link to="/encargos/nuevo">
                         <Boton tipo="primario">Pedir un encargo</Boton>
                     </Link>

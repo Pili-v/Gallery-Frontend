@@ -283,14 +283,7 @@ const MiCuenta = () => {
 
                 {errorGeneral && <Estado tipo="error" mensaje={errorGeneral} />}
 
-                <form
-                    className="cartela"
-                    style={{
-                        padding: "var(--lg)",
-                        marginTop: errorGeneral ? "var(--md)" : 0
-                    }}
-                    onSubmit={handleSubmit}
-                >
+                <form className={"cartela pad-lg" + (errorGeneral ? " mt-md" : "")} onSubmit={handleSubmit}>
                     <div className="fila-campos">
                         <CampoFormulario
                             etiqueta="Nombre"
@@ -337,11 +330,7 @@ const MiCuenta = () => {
                         error={errores.telefono_usuario}
                     />
 
-                    {mensaje && (
-                        <p className="body-sm" style={{ marginBottom: "var(--md)" }}>
-                            {mensaje}
-                        </p>
-                    )}
+                    {mensaje && <p className="body-sm mb-md">{mensaje}</p>}
 
                     <Boton tipo={guardando ? "deshabilitado" : "primario"} bloque type="submit">
                         {guardando ? "Guardando..." : "Guardar cambios"}
@@ -349,17 +338,8 @@ const MiCuenta = () => {
                 </form>
 
                 {tieneArtista && (
-                    <form
-                        className="cartela"
-                        style={{
-                            padding: "var(--lg)",
-                            marginTop: "var(--xl)"
-                        }}
-                        onSubmit={handleArtista}
-                    >
-                        <h2 className="headline-sm" style={{ marginBottom: "var(--md)" }}>
-                            Perfil de artista
-                        </h2>
+                    <form className="cartela mt-xl pad-lg" onSubmit={handleArtista}>
+                        <h2 className="headline-sm mb-md">Perfil de artista</h2>
 
                         <CampoFormulario
                             etiqueta="Nombre artístico"
@@ -370,7 +350,7 @@ const MiCuenta = () => {
                             error={errorNombreArtistico}
                         />
 
-                        <label className="body-sm" style={{ display: "block", marginBottom: "var(--xs)" }}>
+                        <label className="body-sm mb-xs bloque">
                             <input
                                 type="checkbox"
                                 checked={artista.acepta_encargos}
@@ -379,16 +359,12 @@ const MiCuenta = () => {
                             Quiero recibir encargos de obras a medida
                         </label>
 
-                        <p className="body-sm muted" style={{ marginBottom: "var(--md)" }}>
+                        <p className="body-sm muted mb-md">
                             Si lo desactivás, no vas a figurar como disponible para encargos nuevos. Los encargos que ya
                             tenés en curso los podés seguir gestionando y cerrando.
                         </p>
 
-                        {mensajeArtista && (
-                            <p className="body-sm" style={{ marginBottom: "var(--md)" }}>
-                                {mensajeArtista}
-                            </p>
-                        )}
+                        {mensajeArtista && <p className="body-sm mb-md">{mensajeArtista}</p>}
 
                         <Boton tipo={guardandoArtista ? "deshabilitado" : "primario"} bloque type="submit">
                             {guardandoArtista ? "Guardando..." : "Guardar perfil de artista"}
@@ -396,17 +372,8 @@ const MiCuenta = () => {
                     </form>
                 )}
 
-                <form
-                    className="cartela"
-                    style={{
-                        padding: "var(--lg)",
-                        marginTop: "var(--xl)"
-                    }}
-                    onSubmit={handleCambioContrasenia}
-                >
-                    <h2 className="headline-sm" style={{ marginBottom: "var(--md)" }}>
-                        Cambiar contraseña
-                    </h2>
+                <form className="cartela mt-xl pad-lg" onSubmit={handleCambioContrasenia}>
+                    <h2 className="headline-sm mb-md">Cambiar contraseña</h2>
 
                     <CampoFormulario
                         etiqueta="Contraseña actual"
@@ -426,11 +393,7 @@ const MiCuenta = () => {
                         error={erroresContrasenia.contrasenia_nueva}
                     />
 
-                    {mensajeContrasenia && (
-                        <p className="body-sm" style={{ marginBottom: "var(--md)" }}>
-                            {mensajeContrasenia}
-                        </p>
-                    )}
+                    {mensajeContrasenia && <p className="body-sm mb-md">{mensajeContrasenia}</p>}
 
                     <Boton tipo={cambiandoContrasenia ? "deshabilitado" : "secundario"} bloque type="submit">
                         {cambiandoContrasenia ? "Cambiando..." : "Cambiar contraseña"}
