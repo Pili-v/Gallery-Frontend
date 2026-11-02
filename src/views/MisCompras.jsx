@@ -1,26 +1,20 @@
 // Mis compras — Área 4 · Compra
 // Historial del usuario logueado. Esta pantalla solo lee: no modifica nada.
-// Los filtros (cómo se entregó y de cuándo es la compra) los aplica el back: cada vez que cambian se pide la
-// lista de nuevo con los parámetros correspondientes.
+// Las compras viven en el estado global (comprasSlice): la pantalla despacha la acción y se suscribe al
+// resultado. Los filtros (cómo se entregó y de cuándo es la compra) los aplica el back: cada vez que cambian
+// se despacha de nuevo con los parámetros correspondientes.
 
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
+import { cargarCompras } from "../redux/comprasSlice"
 import { pesos, fecha } from "../api/formato"
-import { PERIODOS, desdeDelPeriodo, parametrosDeFiltros } from "../api/filtros"
+import { PERIODOS } from "../api/filtros"
 
 import Boton from "../components/Boton"
 import CampoFormulario from "../components/CampoFormulario"
 import Indicador from "../components/Indicador"
 import Estado from "../components/Estado"
-
-// Una lista vacía no es una falla: el backend la informa con 404 o con 409
-// según el endpoint. En los dos casos devolvemos [].
-const listaVacia = (promesa) =>
-    promesa.catch((e) => {
-        if (e.status === 404 || e.status === 409) return []
-        throw e
-    })
 
 // Cómo se entregó una compra. Las de encargos no tienen tipo de entrega: no se envían.
 const tipoDeEntrega = (compra) => {
@@ -36,39 +30,21 @@ const TEXTO_ENTREGA = {
 }
 
 const MisCompras = () => {
-    const [compras, setCompras] = useState([])
-    const [cargando, setCargando] = useState(true)
-    const [error, setError] = useState(null)
+    // Los filtros son preferencias de ESTA pantalla: quedan en estado local.
+    // Las compras vienen del back y las consumen otras pantallas: van al estado global.
     const [filtroDeEntrega, setFiltroDeEntrega] = useState("todas")
     const [filtroDePeriodo, setFiltroDePeriodo] = useState("0")
 
+    const dispatch = useDispatch()
+    const { items: compras, loading: cargando, error } = useSelector((state) => state.compras)
+
     const hayFiltros = filtroDeEntrega !== "todas" || filtroDePeriodo !== "0"
 
-    // El backend saca el usuario del token, por eso no hace falta mandarle el id. Se vuelve a pedir cada vez que
-    // cambia un filtro; si se cambia otro antes de que llegue la respuesta, la vieja se descarta.
+    // Se despacha al montar y cada vez que cambia un filtro. Si se cambia otro antes de que llegue la
+    // respuesta, el slice descarta la vieja comparando el requestId.
     useEffect(() => {
-        let vigente = true
-
-        const filtros = {
-            entrega: filtroDeEntrega === "todas" ? "" : filtroDeEntrega,
-            desde: desdeDelPeriodo(filtroDePeriodo)
-        }
-
-        listaVacia(api.get("/api/compras/me?" + parametrosDeFiltros(filtros).substring(1)))
-            .then((misCompras) => {
-                if (vigente) setCompras(lista(misCompras))
-            })
-            .catch((fallo) => {
-                if (vigente) setError(fallo.message)
-            })
-            .finally(() => {
-                if (vigente) setCargando(false)
-            })
-
-        return () => {
-            vigente = false
-        }
-    }, [filtroDeEntrega, filtroDePeriodo])
+        dispatch(cargarCompras({ entrega: filtroDeEntrega, periodo: filtroDePeriodo }))
+    }, [dispatch, filtroDeEntrega, filtroDePeriodo])
 
     const quitarFiltros = () => {
         setFiltroDeEntrega("todas")
