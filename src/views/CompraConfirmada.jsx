@@ -1,48 +1,29 @@
 // Compra confirmada — Área 4 · Compra
 // Es la pantalla donde se ve lo que hace el checkout por dentro: una sola
 // compra, pero una factura por cada artista que vendió algo.
+// Los datos viven en el estado global (compraDetalleSlice): la pantalla despacha
+// la acción con el id de la URL y se suscribe al resultado.
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
+import { cargarCompra } from "../redux/compraDetalleSlice"
 import { pesos, fecha } from "../api/formato"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
 
 const CompraConfirmada = () => {
-    const [compra, setCompra] = useState(null)
-    const [facturas, setFacturas] = useState([])
-    const [cargando, setCargando] = useState(true)
-    const [error, setError] = useState("")
-
     // El id viene de la URL: /compra/12 -> id = "12"
     const { id } = useParams()
     const navegar = useNavigate()
 
-    useEffect(() => {
-        api.get("/api/compras/" + id)
-            .then((laCompra) => {
-                setCompra(laCompra)
-                return api.get("/api/facturas/compra/" + id)
-            })
-            .then((respuesta) => {
-                const susFacturas = lista(respuesta)
+    const dispatch = useDispatch()
+    const { compra, facturas, loading: cargando, error } = useSelector((state) => state.compraDetalle)
 
-                // Cada factura trae el id del artista, no su nombre. Los pedimos
-                // todos juntos con Promise.all, porque no dependen entre si:
-                // uno atras del otro tardaria mas sin ninguna ventaja.
-                return Promise.all(
-                    susFacturas.map((factura) =>
-                        api
-                            .get("/api/artistas/" + factura.artista_id)
-                            .then((artista) => ({ ...factura, nombre_artistico: artista.nombre_artistico }))
-                    )
-                )
-            })
-            .then((facturasConNombre) => setFacturas(facturasConNombre))
-            .catch((e) => setError(e.message))
-            .finally(() => setCargando(false))
-    }, [id])
+    // Depende del id: si se navega a otra compra, se vuelve a despachar.
+    useEffect(() => {
+        dispatch(cargarCompra(id))
+    }, [dispatch, id])
 
     if (cargando)
         return (
