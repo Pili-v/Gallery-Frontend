@@ -9,7 +9,9 @@ import { useState } from "react"
 //   estilos      : lista de estilos de la API ({ id, nombre_estilo })
 //   seleccionados: ids elegidos (array; vacío = todos)
 //   onCambiar    : recibe el array nuevo de ids. La pantalla es la que vuelve a pedir al back.
-const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
+//   conEtiquetas : si los elegidos se muestran como etiquetas al lado del botón (por defecto sí). El catálogo no las
+//                  muestra acá porque tiene su propia fila de filtros aplicados.
+const FiltroEstilos = ({ estilos, seleccionados, onCambiar, conEtiquetas = true }) => {
     const [abierto, setAbierto] = useState(false)
 
     if (estilos.length === 0) return null
@@ -39,7 +41,6 @@ const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
                     onClick={() => setAbierto(!abierto)}
                 >
                     <span>Estilos{seleccionados.length > 0 ? " (" + seleccionados.length + ")" : ""}</span>
-                    <span aria-hidden="true">▾</span>
                 </button>
 
                 {abierto && (
@@ -73,17 +74,18 @@ const FiltroEstilos = ({ estilos, seleccionados, onCambiar }) => {
                 )}
             </div>
 
-            {elegidos.map((estilo) => (
-                <button
-                    type="button"
-                    key={estilo.id}
-                    className="chip activo"
-                    onClick={() => alternar(estilo.id)}
-                    aria-label={"Quitar el estilo " + estilo.nombre_estilo}
-                >
-                    {estilo.nombre_estilo} ✕
-                </button>
-            ))}
+            {conEtiquetas &&
+                elegidos.map((estilo) => (
+                    <button
+                        type="button"
+                        key={estilo.id}
+                        className="chip activo"
+                        onClick={() => alternar(estilo.id)}
+                        aria-label={"Quitar el estilo " + estilo.nombre_estilo}
+                    >
+                        {estilo.nombre_estilo} ✕
+                    </button>
+                ))}
         </div>
     )
 }
