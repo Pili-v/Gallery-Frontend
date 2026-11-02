@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom"
 import { pesos } from "../api/formato"
 
-// La ficha de la publicación: número, obra, vendedor, medidas, precio y stock.
-// Es la pieza que da identidad al sitio y aparece en toda pantalla con una obra.
+// La ficha de la publicación, debajo de la imagen: el nombre de la obra, quién la hizo y en qué tamaño, el precio y,
+// si hace falta, un aviso de disponibilidad (sin stock o última unidad). Texto simple, sin recuadro: la imagen es la
+// protagonista. Aparece en el catálogo, en el perfil del artista y en las obras relacionadas.
 // Cada dato llega en su propia prop (no como objetos obra y variante): id, nombreObra, estilo, artistaId,
 // nombreArtistico, nombreTamanio, precio, porcentajeDescuento y stock. Los de la variante pueden faltar.
 
@@ -20,49 +21,38 @@ export default function FichaObra({
     const precioFinal = descuento ? precio * (1 - descuento / 100) : precio
 
     return (
-        <div className="cartela">
-            <div className="cartela-fila">
-                <span className="cartela-meta">{estilo ?? ""}</span>
-            </div>
+        <div className="ficha-obra">
+            <Link to={`/obra/${id}`} className="title-work ficha-obra-titulo">
+                {nombreObra}
+            </Link>
 
-            <div className="cartela-fila bloque">
-                <Link to={`/obra/${id}`} className="title-work sin-subrayado bloque color-heredado">
-                    {nombreObra}
-                </Link>
-
+            <p className="ficha-obra-meta">
+                {/* Sin artistaId (por ejemplo, en el propio perfil del artista) no tiene sentido linkear a sí mismo. */}
                 {artistaId ? (
-                    <Link to={`/artista/${artistaId}`} className="vendedor mt-xs sin-subrayado">
-                        <span className="avatar">{(nombreArtistico ?? "A")[0]}</span>
-                        <span className="cartela-artist">{nombreArtistico ?? "Artista"}</span>
-                    </Link>
+                    <Link to={`/artista/${artistaId}`}>{nombreArtistico || "Artista"}</Link>
                 ) : (
-                    // Sin artistaId (por ejemplo, en el propio perfil del artista) no tiene
-                    // sentido linkear a sí mismo: se muestra como texto plano, no como link.
-                    <div className="vendedor mt-xs">
-                        <span className="avatar">{(nombreArtistico ?? "A")[0]}</span>
-                        <span className="cartela-artist">{nombreArtistico ?? "Artista"}</span>
-                    </div>
+                    <span>{nombreArtistico || "Artista"}</span>
                 )}
-            </div>
+                {nombreTamanio && " · " + nombreTamanio}
+                {estilo && " · " + estilo}
+            </p>
 
-            <div className="cartela-fila">
-                <span className="cartela-meta">{nombreTamanio ?? ""}</span>
-                <span className="price-md">
-                    {descuento > 0 && <span className="precio-tachado cartela-meta">{pesos(precio)}</span>}
+            {precio != null && (
+                <p className="price-md ficha-obra-precio">
+                    {descuento > 0 && <span className="precio-tachado">{pesos(precio)}</span>}
                     {pesos(precioFinal)}
-                </span>
-            </div>
+                </p>
+            )}
 
-            <div className="cartela-fila">
-                <Disponibilidad stock={stock} />
-            </div>
+            <Disponibilidad stock={stock} />
         </div>
     )
 }
 
+// Solo se avisa lo que cambia la decisión de compra: sin stock, la última unidad o que todavía no tiene tamaños.
 function Disponibilidad({ stock }) {
-    if (stock == null) return <span className="cartela-meta">Sin tamaños cargados</span>
-    if (stock === 0) return <span className="cartela-meta">Sin stock</span>
-    if (stock === 1) return <span className="cartela-meta disponible poco">Última unidad</span>
-    return <span className="cartela-meta disponible">{stock} disponibles</span>
+    if (stock == null) return <p className="cartela-meta">Sin tamaños cargados</p>
+    if (stock === 0) return <p className="cartela-meta">Sin stock</p>
+    if (stock === 1) return <p className="cartela-meta disponible poco">Última unidad</p>
+    return null
 }

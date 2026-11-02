@@ -1,7 +1,7 @@
 // Catálogo — Área 3 · Catálogo
 // Todo lo que viene del backend pasa por Redux: esta pantalla solo despacha acciones y lee el estado.
 // Estilos y artistas se piden una sola vez (se comparten con las demás pantallas). Las obras se piden de a una
-// PÁGINA (9) cada vez que cambia un filtro o la página; de esas obras se traen sus variantes e imágenes.
+// PÁGINA (12) cada vez que cambia un filtro o la página; de esas obras se traen sus variantes e imágenes.
 // Si el filtro no devuelve nada (lista vacía: 204) o es inválido (400), la pantalla avisa DENTRO de la zona de
 // resultados, deja los filtros a la vista y ofrece un botón para quitarlos (no vuelve sola).
 
@@ -16,10 +16,13 @@ import Estado from "../components/Estado"
 import Boton from "../components/Boton"
 import Paginador from "../components/Paginador"
 import FiltroEstilos from "../components/FiltroEstilos"
+import FiltroPrecio from "../components/FiltroPrecio"
+import FiltrosAplicados from "../components/FiltrosAplicados"
+import InvitacionEncargo from "../components/InvitacionEncargo"
 import { pesos, optimizada } from "../api/formato"
 
 const SIN_RANGO = { min: "", max: "" }
-const POR_PAGINA = 3
+const POR_PAGINA = 12
 
 export default function Catalogo() {
     const dispatch = useDispatch()
@@ -51,8 +54,6 @@ export default function Catalogo() {
     const [orden, setOrden] = useState("recientes")
     const [texto, setTexto] = useState("")
     const [busqueda, setBusqueda] = useState("")
-
-    const hayFiltros = estiloIds.length > 0 || rango.min !== "" || rango.max !== "" || busqueda !== ""
 
     // Estilos y artistas: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir)
     useEffect(() => {
@@ -119,13 +120,30 @@ export default function Catalogo() {
 
         if ((min !== "" && Number(min) < 0) || (max !== "" && Number(max) < 0)) {
             setErrorPrecio("Los precios no pueden ser negativos.")
-            return
+            return false
         }
         if (min !== "" && max !== "" && Number(min) > Number(max)) {
             setErrorPrecio("El mínimo no puede ser mayor que el máximo.")
-            return
+            return false
         }
         setRango({ min, max })
+        setPagina(0)
+        return true
+    }
+
+    // Quitar un filtro desde su etiqueta (debajo de la barra): la búsqueda, un estilo o el rango de precio.
+    const quitarFiltro = (clave) => {
+        if (clave === "busqueda") {
+            setTexto("")
+            setBusqueda("")
+        } else if (clave === "precio") {
+            setPrecioMin("")
+            setPrecioMax("")
+            setRango({ ...SIN_RANGO })
+            setErrorPrecio("")
+        } else {
+            setEstiloIds(estiloIds.filter((id) => "estilo" + id !== clave))
+        }
         setPagina(0)
     }
 
@@ -205,6 +223,17 @@ export default function Catalogo() {
         return "No hay obras " + partes.join(" ") + "."
     }
 
+    // Los filtros aplicados, como etiquetas que se quitan de a una
+    const filtrosAplicados = []
+    if (busqueda !== "") filtrosAplicados.push({ clave: "busqueda", texto: "“" + busqueda + "”" })
+    estilos.items
+        .filter((e) => estiloIds.includes(e.id))
+        .forEach((e) => filtrosAplicados.push({ clave: "estilo" + e.id, texto: e.nombre_estilo }))
+    if (rango.min !== "" && rango.max !== "")
+        filtrosAplicados.push({ clave: "precio", texto: pesos(Number(rango.min)) + " – " + pesos(Number(rango.max)) })
+    else if (rango.min !== "") filtrosAplicados.push({ clave: "precio", texto: "Desde " + pesos(Number(rango.min)) })
+    else if (rango.max !== "") filtrosAplicados.push({ clave: "precio", texto: "Hasta " + pesos(Number(rango.max)) })
+
     // Lo que va en la zona de resultados
     let resultados
     if (cargandoObras) {
@@ -224,7 +253,7 @@ export default function Catalogo() {
         resultados = <Estado tipo="vacio" mensaje="Todavía no hay obras publicadas." />
     } else {
         resultados = (
-            <div className="grilla-obras">
+            <div className="grilla-obras cuatro">
                 {items.map((item) => {
                     const variante = item.variante || {}
                     return (
@@ -265,8 +294,8 @@ export default function Catalogo() {
                         <Boton tipo="primario" onClick={quitarFiltros}>
                             Ver todas las obras
                         </Boton>
-                        <Link to="/encargos/nuevo">
-                            <Boton tipo="secundario">Pedir un encargo</Boton>
+                        <Link to="/encargos/nuevo" className="boton boton-secundario">
+                            Pedir un encargo
                         </Link>
                     </div>
                 </div>
@@ -285,10 +314,10 @@ export default function Catalogo() {
 
             <div className="contenido">
                 <section className="seccion-sm">
-                    {/* Buscador: nombre de la obra o del artista */}
-                    <form className="fila mb-lg" onSubmit={buscar} role="search">
+                    {/* Barra de filtros: buscador (obra o artista), estilos, precio y orden, en una sola línea. */}
+                    <form className="barra-filtros" onSubmit={buscar} role="search">
                         <input
-                            className="input ancho-buscador"
+                            className="input barra-filtros-buscador"
                             type="search"
                             placeholder="Buscar por obra o por artista"
                             aria-label="Buscar por obra o por artista"
@@ -298,48 +327,23 @@ export default function Catalogo() {
                         <button type="submit" className="boton boton-secundario">
                             Buscar
                         </button>
-                    </form>
-
-                    {/* Precio y estilos (salen de la API; se pueden elegir varios): los filtros quedan siempre visibles. */}
-                    <div className="fila mb-sm envolver">
-                        <span className="cartela-meta">PRECIO</span>
-                        <input
-                            className="input campo-precio"
-                            type="number"
-                            min="0"
-                            placeholder="Mínimo"
-                            value={precioMin}
-                            onChange={(e) => setPrecioMin(e.target.value)}
+                        <FiltroEstilos
+                            estilos={estilos.items}
+                            seleccionados={estiloIds}
+                            onCambiar={cambiarEstilos}
+                            conEtiquetas={false}
                         />
-                        <span className="muted">—</span>
-                        <input
-                            className="input campo-precio"
-                            type="number"
-                            min="0"
-                            placeholder="Máximo"
-                            value={precioMax}
-                            onChange={(e) => setPrecioMax(e.target.value)}
+                        <FiltroPrecio
+                            min={precioMin}
+                            max={precioMax}
+                            aplicado={rango}
+                            error={errorPrecio}
+                            onCambiarMin={setPrecioMin}
+                            onCambiarMax={setPrecioMax}
+                            onAplicar={aplicarFiltroPrecio}
                         />
-                        <Boton tipo="secundario" onClick={aplicarFiltroPrecio}>
-                            Aplicar
-                        </Boton>
-                        <FiltroEstilos estilos={estilos.items} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
-                        {hayFiltros && (
-                            <Boton tipo="secundario" onClick={quitarFiltros}>
-                                Quitar filtros
-                            </Boton>
-                        )}
-                    </div>
-                    {errorPrecio && <p className="campo-error body-sm mb-sm">{errorPrecio}</p>}
-
-                    <hr className="divisor" />
-
-                    <div className="entre my-lg">
-                        <span className="catalog-number muted">
-                            {hayFiltros ? "Resultados" : "Todas las obras"} — {totalObras} resultados
-                        </span>
                         <select
-                            className="select campo-orden"
+                            className="select barra-filtros-orden"
                             value={orden}
                             onChange={(e) => elegirOrden(e.target.value)}
                             aria-label="Ordenar obras"
@@ -348,25 +352,23 @@ export default function Catalogo() {
                             <option value="menor-precio">Menor precio</option>
                             <option value="mayor-precio">Mayor precio</option>
                         </select>
-                    </div>
+                    </form>
+
+                    <FiltrosAplicados
+                        cantidad={totalObras + (totalObras === 1 ? " obra" : " obras")}
+                        filtros={filtrosAplicados}
+                        onQuitar={quitarFiltro}
+                        onQuitarTodo={quitarFiltros}
+                    />
 
                     {resultados}
 
                     {!cargandoObras && !aviso && (
                         <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />
                     )}
+                    <InvitacionEncargo />
                 </section>
             </div>
-
-            <section className="seccion-oscura centro">
-                <h2 className="headline-md">¿Buscás algo que todavía no existe?</h2>
-                <p className="body-lg muted mt-sm">Pedile un encargo a un artista: elegís tamaño, lienzo y marco.</p>
-                <div className="mt-lg">
-                    <Link to="/encargos/nuevo">
-                        <Boton tipo="primario">Pedir un encargo</Boton>
-                    </Link>
-                </div>
-            </section>
         </div>
     )
 }

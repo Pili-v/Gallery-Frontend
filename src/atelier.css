@@ -270,6 +270,13 @@ body {
   color: var(--ink); font-family: inherit; font-size: 14px;
 }
 .input, .select, .desplegable-boton { height: var(--alto-control); }
+/* El selector dibuja su propia flecha (la del navegador queda pegada al borde y cambia según el sistema): a 14 px del
+   borde, con lugar para el texto, y del mismo trazo que la del desplegable. */
+.select, .desplegable-boton {
+  appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23574144' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
 .input:hover, .select:hover, .textarea:hover, .desplegable-boton:hover { border-color: #CFC9C1; }
 .input:focus, .select:focus, .textarea:focus, .desplegable-boton:focus-visible {
   outline: none; border-color: var(--bordo); box-shadow: var(--anillo-foco);
@@ -388,9 +395,28 @@ body {
 .sello-terminado { color: var(--carbon-text); border-color: var(--carbon); background: var(--carbon); }
 .sello-cancelado { color: var(--gray-badge); border-color: var(--border); background: var(--canvas); }
 
-/* ---------- Componente: SeccionOscura ---------- */
-.seccion-oscura { background: var(--carbon); color: var(--carbon-text); padding: var(--xxl) 0; }
-.seccion-oscura .muted { color: rgba(243,240,235,.7); }
+/* ---------- Componente: InvitacionEncargo (al final del catálogo) ----------
+   Del ancho del contenido, en el bordó suave: a la izquierda qué es y el botón; a la derecha los tres pasos. */
+.invitacion-encargo {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--xl); align-items: center;
+  margin-top: var(--xxl); padding: var(--xl); border-radius: calc(var(--radio) * 2);
+  background: var(--bordo-suave); color: var(--bordo-dark);
+}
+.invitacion-encargo-pasos { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--md); }
+.invitacion-encargo-pasos li {
+  background: var(--surface); border-radius: var(--radio); padding: var(--md);
+  color: var(--ink); font-size: 14px; line-height: 20px;
+}
+.invitacion-encargo-numero {
+  display: grid; place-items: center; width: 28px; height: 28px; margin-bottom: var(--sm);
+  border-radius: 50%; background: var(--bordo); color: var(--surface); font-weight: 500;
+}
+@media (max-width: 900px) {
+  .invitacion-encargo { grid-template-columns: 1fr; padding: var(--lg); gap: var(--lg); }
+}
+@media (max-width: 600px) {
+  .invitacion-encargo-pasos { grid-template-columns: 1fr; }
+}
 
 /* ---------- Componente: HiloMensajes ---------- */
 .mensaje { background: var(--surface); border: 1px solid var(--border); border-radius: calc(var(--radio) * 2); padding: var(--md); margin-bottom: var(--sm); }
@@ -497,10 +523,13 @@ body {
 .mini-hero { background: var(--border); }
 
 /* ---------- Hero editorial del catalogo ---------- */
-.hero { display: grid; grid-template-columns: 1fr 46%; align-items: center; }
-.hero-texto { padding: var(--xxl) var(--xl); display: flex; flex-direction: column; justify-content: center; }
-@media (min-width: 1200px) { .hero-texto { padding-left: 64px; } }
-.hero-obra { position: relative; aspect-ratio: 1 / 1; align-self: center; border-radius: var(--radio); overflow: hidden; }
+.hero {
+  display: grid; grid-template-columns: 1fr minmax(0, 40%); gap: var(--xl); align-items: center;
+  max-width: 1440px; margin: 0 auto; padding: var(--xl) var(--xxl) 0;
+}
+.hero-texto { display: flex; flex-direction: column; justify-content: center; }
+/* Compacto: la obra del héroe es una banda apaisada, así el catálogo empieza enseguida. */
+.hero-obra { position: relative; aspect-ratio: 4 / 3; max-height: 340px; width: 100%; border-radius: var(--radio); overflow: hidden; }
 /* La imagen llena la caja de la obra (que es cuadrada en escritorio y una banda en pantallas angostas), sea cual sea su
    tamaño original: se recorta para cubrirla en lugar de mostrarse a su tamaño natural. */
 .hero-obra .pintura, .hero-obra img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -512,8 +541,8 @@ body {
 .hero-regla { height: 3px; background: var(--bordo); width: 56px; margin-bottom: var(--md); }
 /* En una sola columna la obra es una banda del ancho de la pantalla (si no, el cuadrado se ensancha hasta el alto). */
 @media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; }
-  .hero-obra { width: 100%; height: 380px; aspect-ratio: auto; }
+  .hero { grid-template-columns: 1fr; gap: var(--lg); padding: var(--lg) 20px 0; }
+  .hero-obra { height: 240px; aspect-ratio: auto; }
 }
 
 /* Primera obra de la grilla, a lo ancho de dos columnas */
@@ -887,3 +916,33 @@ body {
   .encargo-nuevo .fila-campos { grid-template-columns: 1fr; gap: 0; }
   .encargo-formulario { padding: var(--md); }
 }
+
+/* ---------- Barra de filtros (Catálogo) ----------
+   Buscador, desplegables y orden en una sola línea, con forma de píldora; debajo, la cantidad y los filtros aplicados. */
+.barra-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sm); margin-bottom: var(--md); }
+.barra-filtros-buscador { flex: 1 1 260px; max-width: 420px; }
+.barra-filtros .desplegable-boton, .barra-filtros-orden { border-radius: var(--radio-pildora); min-width: 0; width: auto; padding-left: var(--md); }
+.barra-filtros .filtro-estilos { flex-wrap: nowrap; }
+.barra-filtros-orden { margin-left: auto; cursor: pointer; }
+@media (max-width: 720px) {
+  .barra-filtros-buscador { flex-basis: 100%; max-width: none; }
+  .barra-filtros-orden { margin-left: 0; }
+}
+/* Un control con desplegable propio (el panel se ubica debajo de él). */
+.desplegable-control { position: relative; }
+.panel-precio { width: 280px; padding: var(--md); }
+.panel-precio .fila { gap: var(--sm); }
+.panel-precio .input { min-width: 0; }
+.panel-precio .campo-error { margin-top: var(--sm); }
+.filtros-aplicados { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sm); min-height: 32px; margin-bottom: var(--lg); }
+.chip-chico { padding: 3px 12px; font-size: 13px; }
+
+/* ---------- Componente: FichaObra (debajo de la imagen de una obra) ---------- */
+.ficha-obra { padding-top: var(--md); }
+.ficha-obra p { margin: 0; }
+.ficha-obra-titulo { display: block; color: inherit; text-decoration: none; font-size: 19px; line-height: 26px; }
+.ficha-obra-titulo:hover { color: var(--bordo); }
+.ficha-obra-meta { font-size: 13px; line-height: 20px; color: var(--ink-muted); }
+.ficha-obra-meta a { color: inherit; text-decoration: none; }
+.ficha-obra-meta a:hover { color: var(--bordo); text-decoration: underline; text-underline-offset: 3px; }
+.ficha-obra .ficha-obra-precio { margin-top: var(--xs); }
