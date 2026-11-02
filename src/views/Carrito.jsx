@@ -1,13 +1,22 @@
 // Tu carrito — Área 4 · Compra
 // Muestra los ítems del carrito del usuario logueado, deja cambiar cantidades, quitar ítems y vaciarlo, y elegir
 // cómo se recibe la compra (envío o retiro, con la dirección). El botón lleva directo al pago.
+// El carrito y sus ítems viven en el estado global (carritoSlice): la pantalla despacha acciones y se suscribe.
 // Los ítems se piden al entrar y cada vez que se vuelve a la pantalla después de haberla dejado (otra pestaña u otra
-// ventana): así se ve enseguida si algo dejó de estar disponible. Cada cambio de cantidad actualiza la lista que ya está
-// en pantalla con lo que responde el back. Mientras haya ítems sin disponibilidad no se puede ir al pago.
+// ventana): así se ve enseguida si algo dejó de estar disponible. Mientras haya ítems sin disponibilidad no se puede
+// ir al pago.
 
 import { useState, useEffect } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
+import {
+    cargarCarrito,
+    recargarItems,
+    cambiarCantidad,
+    quitarItem,
+    vaciarCarrito,
+    guardarDireccion
+} from "../redux/carritoSlice"
 import { getUsuario } from "../api/sesion"
 import { optimizada, portadaDe } from "../api/formato"
 import { ENVIO_DOMICILIO, costoDeEnvio } from "../api/entrega"
@@ -17,67 +26,34 @@ import EntregaCompra from "../components/EntregaCompra"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
 
-// Una lista vacía no es una falla. El backend la informa de dos maneras según
-// el endpoint: 404 (no hay registros) o 409 (el carrito existe pero está vacío).
-// En los dos casos acá devolvemos [] y la pantalla muestra su estado vacío.
-const listaVacia = (promesa) =>
-    promesa.catch((e) => {
-        if (e.status === 404 || e.status === 409) return []
-        throw e
-    })
-
-// Los ítems del carrito (con su disponibilidad de hoy) y las portadas de sus obras, en un solo pedido cada uno.
-const pedirItemsConPortadas = (idDelCarrito) =>
-    listaVacia(api.get("/api/carritos/" + idDelCarrito + "/items")).then((susItems) => {
-        const items = lista(susItems)
-        // Solo las portadas de las obras que hay en el carrito, en un solo pedido
-        if (items.length === 0) return { items, imagenes: [] }
-
-        return listaVacia(
-            api.get("/api/imagenes?portada=true&" + items.map((item) => "obraId=" + item.obra_id).join("&"))
-        ).then((imagenes) => ({ items, imagenes: lista(imagenes) }))
-    })
-
 const Carrito = () => {
-    // Estados locales de la pantalla.
-    const [carrito, setCarrito] = useState(null)
-    const [items, setItems] = useState([])
-    const [imagenes, setImagenes] = useState([])
+    // Decisiones de esta pantalla: quedan en estado local, no las consume nadie más.
     const [tipoEntrega, setTipoEntrega] = useState(ENVIO_DOMICILIO)
     const [direccion, setDireccion] = useState("")
     const [errorDireccion, setErrorDireccion] = useState("")
     const [yendo, setYendo] = useState(false)
-    // El cambio de cantidad que hay que mandarle al back: { itemId, varianteId, marcoId, cantidad }. Null si no hay ninguno.
-    const [cambio, setCambio] = useState(null)
-    const [cargando, setCargando] = useState(true)
-    const [error, setError] = useState("")
 
     const usuario = getUsuario()
     const navegar = useNavigate()
     const ubicacion = useLocation()
 
+    const dispatch = useDispatch()
+    const { carrito, items, imagenes, loading: cargando, error } = useSelector((state) => state.carrito)
+
     // Si el pago volvió acá porque algo ya no estaba disponible, trae el aviso del back (los ítems afectados se
     // marcan solos: la lista se acaba de pedir de nuevo y cada ítem trae su disponibilidad).
     const avisoDelPago = ubicacion.state ? ubicacion.state.sinDisponibilidad : null
 
-    // Trae el carrito del usuario y después sus ítems (y las portadas de sus obras).
-    // El id del usuario sale de la sesión, no de la URL: así nadie
-    // puede mirar el carrito de otro cambiando un número a mano.
-    // useEffect con [] vacío: se ejecuta una sola vez, cuando la pantalla aparece.
+    // Carga inicial: una sola vez, cuando la pantalla aparece.
     useEffect(() => {
-        api.get("/api/usuarios/" + usuario.id + "/carrito")
-            .then((miCarrito) => {
-                setCarrito(miCarrito)
-                setDireccion(miCarrito.direccion_cliente || "")
-                return pedirItemsConPortadas(miCarrito.id)
-            })
-            .then((resultado) => {
-                setItems(resultado.items)
-                setImagenes(resultado.imagenes)
-            })
-            .catch((e) => setError(e.message))
-            .finally(() => setCargando(false))
-    }, [])
+        dispatch(cargarCarrito(usuario.id))
+    }, [dispatch, usuario.id])
+
+    // La dirección guardada se copia al campo cuando llega el carrito. Depende del id y no del objeto entero
+    // para que no se pise lo que la persona está escribiendo cada vez que el carrito cambia.
+    useEffect(() => {
+        if (carrito) setDireccion(carrito.direccion_cliente || "")
+    }, [carrito?.id])
 
     // Al volver a la pantalla después de haberla dejado (otra pestaña u otra ventana) se piden de nuevo los ítems: así
     // se ve enseguida si mientras tanto una obra se quedó sin stock o salió de la venta. Solo en ese momento, sin
@@ -87,80 +63,45 @@ const Carrito = () => {
 
         const alVolver = () => {
             if (document.visibilityState !== "visible") return
-
-            pedirItemsConPortadas(carrito.id)
-                .then((resultado) => {
-                    setItems(resultado.items)
-                    setImagenes(resultado.imagenes)
-                })
-                .catch(() => {})
+            dispatch(recargarItems(carrito.id))
         }
 
         document.addEventListener("visibilitychange", alVolver)
         return () => document.removeEventListener("visibilitychange", alVolver)
-    }, [carrito])
+    }, [dispatch, carrito])
 
     // Cambiar la cantidad de un ítem. No baja de 1: un ítem se saca con "Quitar" (la fila deshabilita el "−").
     // La fila avisa con el id del ítem; los demás datos (variante y marco) salen de la lista de ítems.
-    // Acá solo se anota el cambio: el pedido al back lo hace el useEffect de abajo cuando cambia "cambio".
-    const cambiarCantidad = (itemId, nuevaCantidad) => {
+    // El pedido al back lo hace el thunk: acá solo se despacha.
+    const alCambiarCantidad = (itemId, nuevaCantidad) => {
         if (nuevaCantidad < 1) return
 
         const item = items.find((otro) => otro.id === itemId)
-        setError("")
-        setCambio({ itemId, varianteId: item.variante_id, marcoId: item.marco_id, cantidad: nuevaCantidad })
+        dispatch(
+            cambiarCantidad({
+                carritoId: carrito.id,
+                itemId,
+                varianteId: item.variante_id,
+                marcoId: item.marco_id,
+                cantidad: nuevaCantidad
+            })
+        )
     }
-
-    // Se ejecuta cada vez que hay un cambio de cantidad nuevo (el segundo argumento es [cambio, carrito]).
-    // El back responde con el ítem ya actualizado (cantidad y subtotal): ese reemplaza al de la lista.
-    // "vigente" descarta la respuesta si mientras tanto se pidió otro cambio (por ejemplo, dos clicks seguidos):
-    // queda lo último que se pidió.
-    useEffect(() => {
-        if (cambio === null) return
-
-        let vigente = true
-
-        api.put("/api/items-carrito/" + cambio.itemId, {
-            carrito_id: carrito.id,
-            variante_id: cambio.varianteId,
-            marco_id: cambio.marcoId,
-            cantidad: cambio.cantidad
-        })
-            .then((actualizado) => {
-                if (vigente)
-                    setItems((previos) => previos.map((otro) => (otro.id === cambio.itemId ? actualizado : otro)))
-            })
-            .catch((e) => {
-                if (vigente) setError(e.message)
-            })
-
-        return () => {
-            vigente = false
-        }
-    }, [cambio, carrito])
 
     // Ajusta un ítem a las unidades que quedan (cuando se pidieron más de las que hay).
     const ajustarCantidad = (itemId) => {
         const item = items.find((otro) => otro.id === itemId)
-        cambiarCantidad(itemId, item.stock_disponible)
+        alCambiarCantidad(itemId, item.stock_disponible)
     }
 
-    const quitarItem = (itemId) => {
-        setError("")
-        api.delete("/api/items-carrito/" + itemId)
-            .then(() => setItems((previos) => previos.filter((otro) => otro.id !== itemId)))
-            .catch((e) => setError(e.message))
-    }
+    const alQuitarItem = (itemId) => dispatch(quitarItem(itemId))
 
-    const vaciarCarrito = () => {
-        setError("")
-        api.delete("/api/carritos/" + carrito.id + "/items")
-            .then(() => setItems([]))
-            .catch((e) => setError(e.message))
-    }
+    const alVaciarCarrito = () => dispatch(vaciarCarrito(carrito.id))
 
     // Guarda la dirección en el carrito y pasa al pago. El tipo de entrega y los ítems viajan a la pantalla
     // siguiente, que es la que hace el POST /api/checkout (así no vuelve a pedir lo que ya se sabe).
+    // unwrap() convierte el resultado del dispatch en una promesa común: resuelve si la acción terminó en
+    // fulfilled y corta si terminó en rejected.
     const irAlPago = () => {
         if (yendo || hayNoDisponibles) return
 
@@ -170,13 +111,10 @@ const Carrito = () => {
         }
 
         setYendo(true)
-        setError("")
-        api.put("/api/carritos/" + carrito.id, { direccion_cliente: direccion })
+        dispatch(guardarDireccion({ carritoId: carrito.id, direccion }))
+            .unwrap()
             .then(() => navegar("/checkout/pago", { state: { tipoEntrega, items } }))
-            .catch((e) => {
-                setError(e.message)
-                setYendo(false)
-            })
+            .catch(() => setYendo(false))
     }
 
     // La miniatura: el ítem trae el obra_id y la foto sale de la lista de imágenes (su portada).
@@ -255,14 +193,14 @@ const Carrito = () => {
                                     }
                                     maximo={item.stock_disponible}
                                     disponibles={item.stock_disponible}
-                                    onCambiarCantidad={cambiarCantidad}
-                                    onQuitar={quitarItem}
+                                    onCambiarCantidad={alCambiarCantidad}
+                                    onQuitar={alQuitarItem}
                                     onAccionAviso={ajustarCantidad}
                                 />
-                            ))}
+                                                        ))}
 
                             <div className="fila mt-md">
-                                <Boton tipo="secundario" onClick={vaciarCarrito}>
+                                <Boton tipo="secundario" onClick={alVaciarCarrito}>
                                     Vaciar carrito
                                 </Boton>
                                 <a

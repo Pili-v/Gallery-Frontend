@@ -2,14 +2,15 @@
 // La consigna pide simular el pago: el formulario es la tarjeta misma (ver FormularioPago). Nada de lo
 // que se escribe en ella se guarda ni se envía. Lo que sí es real es el POST /api/checkout,
 // que descuenta el stock y emite una factura por cada artista.
-// Los ítems y el tipo de entrega llegan desde el carrito (por el estado de la navegación): no se vuelven a pedir.
-// Solo si alguien entra directo por la URL se piden acá.
+// Los ítems salen del estado global: los dejó ahí la pantalla del carrito, así que no se vuelven a pedir.
+// Solo si alguien entra directo por la URL (el store todavía vacío) se piden acá.
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
+import { cargarCarrito, confirmarCompra } from "../redux/carritoSlice"
 import { getUsuario } from "../api/sesion"
-import { costoDeEnvio } from "../api/entrega"
+import { costoDeEnvio, ENVIO_DOMICILIO } from "../api/entrega"
 import FormularioPago from "../components/FormularioPago"
 import Estado from "../components/Estado"
 
@@ -18,43 +19,34 @@ const Pago = () => {
     const navegar = useNavigate()
     const ubicacion = useLocation()
 
-    // Lo que mandó el carrito. Si no hay nada (entrada directa por la URL), hay que pedirlo.
-    const itemsRecibidos = ubicacion.state ? ubicacion.state.items : null
+    const dispatch = useDispatch()
+    const { carrito, items, loading: cargando, error } = useSelector((state) => state.carrito)
 
-    const [items, setItems] = useState(itemsRecibidos || [])
-    const [cargando, setCargando] = useState(!itemsRecibidos)
-    const [error, setError] = useState("")
-
-    // El tipo de entrega lo eligió la pantalla anterior y viajó hasta acá.
-    // Si alguien entra directo por la URL, se asume envío a domicilio.
-    const tipoEntrega = ubicacion.state?.tipoEntrega || "ENVIO_DOMICILIO"
+    // El tipo de entrega lo eligió la pantalla anterior y viajó hasta acá por el router: es una decisión de
+    // esa pantalla, no un dato del back. Si alguien entra directo por la URL, se asume envío a domicilio.
+    const tipoEntrega = ubicacion.state?.tipoEntrega || ENVIO_DOMICILIO
 
     const envio = costoDeEnvio(tipoEntrega)
 
-    // El primer .then() devuelve el pedido siguiente: los items necesitan el
-    // id que trajo el carrito, asi que uno espera al otro.
+    // Entrada directa por la URL: el store todavía no tiene el carrito, así que se pide.
+    // Viniendo del carrito no se despacha nada: los ítems ya están en el estado global.
     useEffect(() => {
-        if (itemsRecibidos) return
-
-        api.get("/api/usuarios/" + usuario.id + "/carrito")
-            .then((miCarrito) => api.get("/api/carritos/" + miCarrito.id + "/items"))
-            .then((susItems) => setItems(lista(susItems)))
-            .catch((e) => setError(e.message))
-            .finally(() => setCargando(false))
-    }, [])
+        if (carrito === null) dispatch(cargarCarrito(usuario.id))
+    }, [dispatch, carrito, usuario.id])
 
     // Quién compra sale del token, igual que en el backend.
-    // Si el back rechaza la compra porque algo ya no está disponible (alguien compró lo último mientras tanto), vuelve al
-    // carrito con el aviso: el carrito se pide de nuevo y marca cuáles son los ítems.
+    // Si el back rechaza la compra porque algo ya no está disponible (alguien compró lo último mientras tanto),
+    // responde 409 y se vuelve al carrito con el aviso: el carrito se pide de nuevo y marca cuáles son los ítems.
+    // unwrap() convierte el resultado del dispatch en una promesa común, para poder navegar o avisar.
     const pagar = () =>
-        api
-            .post("/api/checkout", { tipo_entrega: tipoEntrega })
+        dispatch(confirmarCompra(tipoEntrega))
+            .unwrap()
             .then((compra) => navegar("/compra/" + compra.id))
-            .catch((e) => {
-                if (e.status === 409 && e.detalle && e.detalle.items) {
-                    navegar("/carrito", { state: { sinDisponibilidad: e.detalle.mensaje } })
+            .catch((fallo) => {
+                if (fallo.code === "409") {
+                    navegar("/carrito", { state: { sinDisponibilidad: fallo.message } })
                 }
-                throw e
+                throw fallo
             })
 
     const subtotal = items.reduce((suma, item) => suma + item.precio_unitario * item.cantidad, 0)
@@ -81,7 +73,7 @@ const Pago = () => {
             onPagar={pagar}
             textoVolver="Volver"
             onVolver={() => navegar("/carrito")}
-            pista={tipoEntrega === "ENVIO_DOMICILIO" ? "Envío a domicilio" : "Retiro por el local"}
+            pista={tipoEntrega === ENVIO_DOMICILIO ? "Envío a domicilio" : "Retiro por el local"}
             errorCarga={error}
         />
     )
