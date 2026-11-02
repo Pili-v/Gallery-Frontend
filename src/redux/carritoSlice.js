@@ -61,6 +61,14 @@ export const guardarDireccion = createAsyncThunk("carrito/guardarDireccion", asy
     return direccion
 })
 
+// Convierte el carrito en una compra. El back saca el usuario del token y, en una sola transacción, crea la
+// compra, agrupa por artista, emite una factura por cada uno, descuenta el stock y vacía el carrito.
+export const confirmarCompra = createAsyncThunk("carrito/confirmarCompra", async (tipoEntrega) => {
+    const { data: compra } = await http.post("/api/checkout", { tipo_entrega: tipoEntrega })
+    return compra
+})
+
+
 const carritoSlice = createSlice({
     name: "carrito",
     initialState: {
@@ -152,6 +160,20 @@ const carritoSlice = createSlice({
             .addCase(guardarDireccion.rejected, (state, action) => {
                 state.error = action.error.message
             })
+
+                        // --- Confirmar la compra (checkout) ---
+            .addCase(confirmarCompra.pending, (state) => {
+                state.error = null
+            })
+            .addCase(confirmarCompra.fulfilled, (state) => {
+                // El back vació el carrito al cobrarlo: el estado global tiene que reflejarlo.
+                state.items = []
+                state.imagenes = []
+            })
+            .addCase(confirmarCompra.rejected, (state, action) => {
+                state.error = action.error.message
+            })
+
     }
 })
 
