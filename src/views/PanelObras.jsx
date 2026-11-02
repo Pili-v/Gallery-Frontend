@@ -2,12 +2,15 @@
 // Las obras del artista logueado, con su estilo, sus variantes y el stock. Esta pantalla solo lee.
 // La lista llega paginada y cada obra trae lo que se ve en su fila (estilos, portada y cantidad de
 // variantes). El detalle de las variantes se pide recién cuando se abre la obra.
+// Los datos del back viven en Redux (misObrasSlice y estilosSlice); acá quedan los filtros, la página y qué
+// obras están abiertas, que son cosas de esta pantalla.
 
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { api, lista } from "../api/cliente"
+import { useDispatch, useSelector } from "react-redux"
 import { optimizada } from "../api/formato"
-import { parametrosDeFiltros } from "../api/filtros"
+import { fetchEstilos } from "../redux/estilosSlice"
+import { fetchMisObras, fetchVariantesDeObra, olvidarVariantes } from "../redux/misObrasSlice"
 
 import Boton from "../components/Boton"
 import CampoFormulario from "../components/CampoFormulario"
@@ -22,16 +25,21 @@ const POR_PAGINA = 10
 
 const PanelObras = () => {
     const navegar = useNavigate()
+    const dispatch = useDispatch()
 
-    const [obras, setObras] = useState([])
-    const [estilos, setEstilos] = useState([])
-    const [cargando, setCargando] = useState(true)
-    const [error, setError] = useState(null)
+    // Lo que viene del backend (Redux)
+    const {
+        items: obras,
+        totalPaginas,
+        totalObras,
+        loading: cargando,
+        error,
+        variantes
+    } = useSelector((state) => state.misObras)
+    const { items: estilos } = useSelector((state) => state.estilos)
 
-    // La página que se está viendo (empieza en 0, como en el back) y cuánto hay en total.
+    // La página que se está viendo (empieza en 0, como en el back).
     const [pagina, setPagina] = useState(0)
-    const [totalPaginas, setTotalPaginas] = useState(1)
-    const [totalObras, setTotalObras] = useState(0)
 
     // Los filtros: los aplica el back y la lista vuelve paginada. "texto" es lo que se está escribiendo y "busqueda"
     // lo que se buscó (se aplica al apretar Buscar o Enter); los demás se aplican apenas se eligen.
@@ -46,58 +54,32 @@ const PanelObras = () => {
     // Qué obras están abiertas, por id de obra. Puede haber varias a la vez.
     const [abiertas, setAbiertas] = useState({})
 
-    // Las variantes de cada obra abierta, por id de obra: sin entrada es que nunca se abrió, {} que
-    // se está pidiendo, { variantes } lo que llegó y { error: true } que falló (al abrirla de nuevo se reintenta).
-    const [variantes, setVariantes] = useState({})
-
-    // La lista de estilos se pide una sola vez: las obras traen solo los ids.
+    // Al entrar: los estilos (una sola vez para toda la app; las obras traen solo los ids) y se olvidan las variantes
+    // que quedaron de otra visita, porque pudieron cambiar.
     useEffect(() => {
-        api.get("/api/estilos")
-            .then((respuesta) => setEstilos(lista(respuesta)))
-            .catch(() => {})
-    }, [])
+        dispatch(fetchEstilos())
+        dispatch(olvidarVariantes())
+    }, [dispatch])
 
-    // El backend saca el artista del token, por eso no hace falta mandarle el id.
+    // Las obras: se vuelven a pedir cuando cambia un filtro o la página. Si llega una respuesta vieja (de un filtro o una
+    // página anterior), el slice la descarta.
     useEffect(() => {
-        let vigente = true
-
         const filtros = {
             nombreObra: nombreBuscado,
             enVenta: estadoDeVenta === "si" ? "true" : estadoDeVenta === "no" ? "false" : "",
             sinStock: estadoDeStock === "sin" ? "true" : "",
             estiloId: estiloIds
         }
-
-        api.get("/api/artistas/me/obras?page=" + pagina + "&size=" + POR_PAGINA + parametrosDeFiltros(filtros))
-            .then((respuesta) => {
-                if (!vigente) return
-                setObras(lista(respuesta))
-                setTotalPaginas(respuesta && respuesta.totalPages ? respuesta.totalPages : 1)
-                setTotalObras(respuesta && respuesta.totalElements ? respuesta.totalElements : 0)
-            })
-            .catch((e) => {
-                // Sin obras el back responde 204 y lista() deja []; un 404 tampoco se muestra como falla.
-                if (vigente && e.status !== 404) setError(e.message)
-            })
-            .finally(() => {
-                if (vigente) setCargando(false)
-            })
-
-        // Si se cambia de página o de filtro antes de que llegue la respuesta, la vieja se descarta.
-        return () => {
-            vigente = false
-        }
-    }, [pagina, nombreBuscado, estadoDeVenta, estadoDeStock, estiloIds])
+        dispatch(fetchMisObras({ pagina, size: POR_PAGINA, filtros }))
+    }, [dispatch, pagina, nombreBuscado, estadoDeVenta, estadoDeStock, estiloIds])
 
     const cambiarPagina = (nueva) => {
-        setCargando(true)
         setPagina(nueva)
     }
 
     // Con otro filtro vuelve a la primera página: la que se estaba viendo puede no existir con menos resultados.
     const cambiarFiltro = (actualizarFiltro, valorNuevo) => {
         actualizarFiltro(valorNuevo)
-        setCargando(true)
         setPagina(0)
     }
 
@@ -112,32 +94,18 @@ const PanelObras = () => {
         setEstadoDeVenta("todas")
         setEstadoDeStock("todas")
         setEstiloIds([])
-        setCargando(true)
         setPagina(0)
     }
 
     // Sin obras y sin filtros no hay nada que filtrar: solo se invita a publicar. Con filtros se mantienen a la vista.
     const sinNada = !cargando && !error && obras.length === 0 && !hayFiltros
 
-    // Abre o cierra una obra. Las variantes se piden la primera vez que se abre.
+    // Abre o cierra una obra. Las variantes se piden la primera vez que se abre (el thunk no repite el pedido si ya
+    // llegaron; si había fallado, reintenta). Una obra sin variantes llega como lista vacía.
     const alternar = (obra) => {
         const abriendo = !abiertas[obra.id]
         setAbiertas((previas) => ({ ...previas, [obra.id]: abriendo }))
-
-        const entrada = variantes[obra.id]
-        if (!abriendo || (entrada && !entrada.error)) return
-
-        setVariantes((previas) => ({ ...previas, [obra.id]: {} }))
-
-        api.get("/api/variantes?obraId=" + obra.id)
-            .then((respuesta) => {
-                setVariantes((previas) => ({ ...previas, [obra.id]: { variantes: lista(respuesta) } }))
-            })
-            .catch((e) => {
-                // Una obra sin variantes responde 204 (lista() la deja en []); el 404 también se toma como vacía.
-                const vacia = e.status === 404
-                setVariantes((previas) => ({ ...previas, [obra.id]: vacia ? { variantes: [] } : { error: true } }))
-            })
+        if (abriendo) dispatch(fetchVariantesDeObra(obra.id))
     }
 
     // El back manda los estilos de la obra como ids: los nombres salen de la lista de estilos.
@@ -208,12 +176,9 @@ const PanelObras = () => {
                                 {abiertas[obra.id] && (
                                     <tr>
                                         <td colSpan={5} style={{ background: "var(--canvas)" }}>
-                                            {entrada && entrada.variantes && (
-                                                <DetalleObra variantes={entrada.variantes} />
-                                            )}
-                                            {entrada && entrada.error && <DetalleObra variantes={null} />}
-                                            {(!entrada || (!entrada.variantes && !entrada.error)) && (
-                                                <Estado tipo="cargando" />
+                                            {(!entrada || entrada.loading) && <Estado tipo="cargando" />}
+                                            {entrada && !entrada.loading && (
+                                                <DetalleObra variantes={entrada.error ? null : entrada.items} />
                                             )}
                                         </td>
                                     </tr>
