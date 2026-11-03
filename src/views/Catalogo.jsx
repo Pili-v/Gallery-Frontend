@@ -4,6 +4,8 @@
 // PÁGINA (12) cada vez que cambia un filtro o la página; de esas obras se traen sus variantes e imágenes.
 // Si el filtro no devuelve nada (lista vacía: 204) o es inválido (400), la pantalla avisa DENTRO de la zona de
 // resultados, deja los filtros a la vista y ofrece un botón para quitarlos (no vuelve sola).
+// La portada ocupa toda la pantalla al entrar (los filtros quedan debajo); "Ver todas las obras" es un enlace a #obras
+// que baja hasta la barra de filtros: lo resuelve el navegador, sin mover el scroll desde el código.
 
 import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
@@ -13,7 +15,6 @@ import { fetchArtistas } from "../redux/artistasSlice"
 import { cargarObras } from "../redux/obrasSlice"
 import TarjetaObra from "../components/TarjetaObra"
 import Estado from "../components/Estado"
-import Boton from "../components/Boton"
 import Paginador from "../components/Paginador"
 import FiltroEstilos from "../components/FiltroEstilos"
 import FiltroPrecio from "../components/FiltroPrecio"
@@ -21,7 +22,10 @@ import FiltrosAplicados from "../components/FiltrosAplicados"
 import InvitacionEncargo from "../components/InvitacionEncargo"
 import { pesos, optimizada } from "../api/formato"
 
+// Sin filtros: siempre los mismos valores (no copias), así quitar filtros cuando no hay ninguno no cambia el estado ni
+// vuelve a pedir las obras.
 const SIN_RANGO = { min: "", max: "" }
+const SIN_ESTILOS = []
 const POR_PAGINA = 12
 
 export default function Catalogo() {
@@ -46,10 +50,10 @@ export default function Catalogo() {
     const [pagina, setPagina] = useState(0)
 
     // Filtros: lo que se escribe, y lo que está aplicado
-    const [estiloIds, setEstiloIds] = useState([]) // varios estilos: se muestran las obras de ALGUNO de ellos
+    const [estiloIds, setEstiloIds] = useState(SIN_ESTILOS) // varios estilos: se muestran las obras de ALGUNO de ellos
     const [precioMin, setPrecioMin] = useState("")
     const [precioMax, setPrecioMax] = useState("")
-    const [rango, setRango] = useState({ ...SIN_RANGO })
+    const [rango, setRango] = useState(SIN_RANGO)
     const [errorPrecio, setErrorPrecio] = useState("")
     const [orden, setOrden] = useState("recientes")
     const [texto, setTexto] = useState("")
@@ -103,10 +107,10 @@ export default function Catalogo() {
 
     // El orden no es un filtro: queda como está al quitar filtros.
     const quitarFiltros = () => {
-        setEstiloIds([])
+        setEstiloIds(SIN_ESTILOS)
         setPrecioMin("")
         setPrecioMax("")
-        setRango({ ...SIN_RANGO })
+        setRango(SIN_RANGO)
         setErrorPrecio("")
         setTexto("")
         setBusqueda("")
@@ -139,7 +143,7 @@ export default function Catalogo() {
         } else if (clave === "precio") {
             setPrecioMin("")
             setPrecioMax("")
-            setRango({ ...SIN_RANGO })
+            setRango(SIN_RANGO)
             setErrorPrecio("")
         } else {
             setEstiloIds(estiloIds.filter((id) => "estilo" + id !== clave))
@@ -291,9 +295,9 @@ export default function Catalogo() {
                         lo enviamos a tu domicilio o lo retiras por nuestra sucursal principal.
                     </p>
                     <div className="fila mt-lg">
-                        <Boton tipo="primario" onClick={quitarFiltros}>
+                        <a href="#obras" className="boton boton-primario" onClick={quitarFiltros}>
                             Ver todas las obras
-                        </Boton>
+                        </a>
                         <Link to="/encargos/nuevo" className="boton boton-secundario">
                             Pedir un encargo
                         </Link>
@@ -313,7 +317,7 @@ export default function Catalogo() {
             </section>
 
             <div className="contenido">
-                <section className="seccion-sm">
+                <section className="seccion-sm catalogo-obras" id="obras">
                     {/* Barra de filtros: buscador (obra o artista), estilos, precio y orden, en una sola línea. */}
                     <form className="barra-filtros" onSubmit={buscar} role="search">
                         <input

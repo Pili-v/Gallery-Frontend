@@ -24,6 +24,7 @@
 
   /* El alto de todo control de formulario de una línea (campo, selector, desplegable y botón de una fila de filtros). */
   --alto-control: 40px;
+  --alto-cabecera: 60px; /* el header (la barra bordó) cerrado, en escritorio y en celular */
 
   /* Revamp (dirección mixta): esquinas apenas redondeadas, píldoras para filtros y chips, sombras cortas y suaves. */
   --radio: 6px;
@@ -65,7 +66,7 @@ body {
 }
 
 /* ---------- Tipografia ---------- */
-.display-hero  { font-family: "EB Garamond", Georgia, serif; font-size: 56px; line-height: 64px; letter-spacing: -.02em; }
+.display-hero  { font-family: "EB Garamond", Georgia, serif; font-size: 80px; line-height: 84px; letter-spacing: -.02em; }
 .headline-lg   { font-family: "EB Garamond", Georgia, serif; font-size: 40px; line-height: 48px; letter-spacing: -.015em; }
 .headline-md   { font-family: "EB Garamond", Georgia, serif; font-size: 28px; line-height: 36px; letter-spacing: -.01em; }
 .headline-sm   { font-family: "EB Garamond", Georgia, serif; font-size: 22px; line-height: 30px; }
@@ -83,7 +84,7 @@ body {
 .price-lg { font-size: 18px; line-height: 24px; font-weight: 500; }
 
 @media (max-width: 720px) {
-  .display-hero { font-size: 36px; line-height: 44px; }
+  .display-hero { font-size: 48px; line-height: 54px; }
   .headline-lg  { font-size: 28px; line-height: 36px; }
 }
 
@@ -91,7 +92,9 @@ body {
 .pagina { background: var(--canvas); height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
 .pagina > .cabecera { flex: none; }
 /* La zona que scrollea: todo lo que está debajo del header (la vista y el footer). */
-.desplazable { flex: 1; min-height: 0; overflow-y: scroll; display: flex; flex-direction: column; }
+.desplazable { flex: 1; min-height: 0; overflow-y: scroll; display: flex; flex-direction: column; scroll-behavior: smooth; }
+/* Los enlaces a una parte de la página (por ejemplo, #obras en el catálogo) bajan suave, salvo que se pida menos movimiento. */
+@media (prefers-reduced-motion: reduce) { .desplazable { scroll-behavior: auto; } }
 /* Si el contenido es corto, el footer queda pegado abajo; si es largo, lo empuja. */
 .desplazable > .footer { margin-top: auto; flex: none; }
 /* Cada pantalla ocupa al menos todo el alto de la zona que scrollea: el footer queda justo fuera de la vista y
@@ -551,14 +554,25 @@ body {
 .obra-imagen, .linea-mini, .mini-hero { overflow: hidden; }
 .mini-hero { background: var(--border); }
 
-/* ---------- Hero editorial del catalogo ---------- */
+/* ---------- Hero editorial del catalogo ----------
+   Ocupa toda la pantalla debajo del header: al entrar se ve solo la portada y los filtros quedan más abajo. */
 .hero {
-  display: grid; grid-template-columns: 1fr minmax(0, 40%); gap: var(--xl); align-items: center;
-  max-width: 1440px; margin: 0 auto; padding: var(--xl) var(--xxl) 0;
+  display: grid; grid-template-columns: 1fr minmax(0, 50%); gap: var(--xxl); align-items: center;
+  max-width: 1440px; margin: 0 auto; padding: var(--xl) var(--xxl);
+  min-height: calc(100dvh - var(--alto-cabecera));
 }
+/* Al bajar con "Ver todas las obras", arriba queda la barra de filtros: se descuenta el aire de arriba de la sección
+   (.seccion-sm) para que quede a un margen chico del header. */
+.catalogo-obras { scroll-margin-top: calc(var(--md) - var(--xl)); }
 .hero-texto { display: flex; flex-direction: column; justify-content: center; }
-/* Compacto: la obra del héroe es una banda apaisada, así el catálogo empieza enseguida. */
-.hero-obra { position: relative; aspect-ratio: 4 / 3; max-height: 340px; width: 100%; border-radius: var(--radio); overflow: hidden; }
+/* Los dos botones de la portada: si no entran en un renglón, el segundo baja (sin partir el texto). */
+.hero-texto .fila { flex-wrap: wrap; }
+.hero-texto .boton { white-space: nowrap; }
+/* La obra llena el alto de la portada (menos su aire arriba y abajo), con un tope para pantallas muy altas. */
+.hero-obra {
+  position: relative; width: 100%; height: min(calc(100dvh - var(--alto-cabecera) - 2 * var(--xl)), 760px);
+  border-radius: var(--radio); overflow: hidden;
+}
 /* La imagen llena la caja de la obra (que es cuadrada en escritorio y una banda en pantallas angostas), sea cual sea su
    tamaño original: se recorta para cubrirla en lugar de mostrarse a su tamaño natural. */
 .hero-obra .pintura, .hero-obra img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -570,8 +584,8 @@ body {
 .hero-regla { height: 3px; background: var(--bordo); width: 56px; margin-bottom: var(--md); }
 /* En una sola columna la obra es una banda del ancho de la pantalla (si no, el cuadrado se ensancha hasta el alto). */
 @media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; gap: var(--lg); padding: var(--lg) 20px 0; }
-  .hero-obra { height: 240px; aspect-ratio: auto; }
+  .hero { grid-template-columns: 1fr; gap: var(--lg); padding: var(--lg) 20px; align-content: center; }
+  .hero-obra { height: min(50dvh, 420px); }
 }
 
 /* Primera obra de la grilla, a lo ancho de dos columnas */
