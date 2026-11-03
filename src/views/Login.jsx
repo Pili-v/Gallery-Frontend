@@ -86,7 +86,7 @@ const Login = () => {
 
     return (
         <div className="seccion">
-            <div className="contenido col-angosta">
+            <div className="contenido col-acceso">
                 <h1 className="headline-lg centro">Ingresar</h1>
 
                 <p className="body-lg muted centro">Entrá para comprar o para publicar tu obra.</p>

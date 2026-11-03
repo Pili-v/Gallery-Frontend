@@ -102,6 +102,8 @@ body {
 .seccion-sm { padding: var(--xl) 0; }
 .col-angosta { max-width: 460px; margin: 0 auto; }
 .col-media   { max-width: 760px; margin: 0 auto; }
+/* Ingresar y Crear cuenta: la tarjeta de 560 px (más el margen del contenido), la misma en las dos. */
+.col-acceso  { max-width: calc(560px + 2 * var(--xxl)); margin: 0 auto; }
 
 /* ---------- Encabezado de una pantalla ----------
    El mismo espacio en todas, sin estilos sueltos en cada vista: 40 px sobre el título (el padding de .seccion) y
@@ -329,6 +331,16 @@ body {
    scrollea. En los navegadores que no lo soportan queda del alto de sus renglones (rows), también con scroll. */
 .textarea { min-height: 96px; max-height: 320px; resize: none; field-sizing: content; overflow-y: auto; }
 .campo-error { color: var(--error); margin-top: var(--xs); }
+/* Contraseña con el botón Mostrar / Ocultar dentro del campo, a la derecha. */
+.campo-clave { position: relative; }
+.campo-clave .input { padding-right: 84px; }
+.campo-clave-boton {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  padding: 4px 8px; border: 0; border-radius: var(--radio); background: transparent;
+  color: var(--bordo); font: inherit; font-size: 13px; cursor: pointer;
+}
+.campo-clave-boton:hover { background: var(--bordo-suave); }
+.campo-clave-boton:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
 .input.con-error { border-color: var(--error); }
 .fila-campos { display: grid; grid-template-columns: 1fr 1fr; gap: var(--md); }
 /* Campos que se acomodan solos en columnas de al menos 150 px (por ejemplo, los de una variante). */
