@@ -33,7 +33,7 @@ const LineaItem = ({
                 <div className="title-work mediano">{nombreObra}</div>
                 <div className="cartela-meta">
                     {nombreTamanio}
-                    {nombreMarco && " · Marco: " + nombreMarco}
+                    {nombreMarco ? " · Marco: " + nombreMarco : " · Sin marco"}
                 </div>
                 {disponibles !== undefined && !aviso && (
                     <div className={"cartela-meta" + (disponibles <= 3 ? " texto-bordo" : "")}>

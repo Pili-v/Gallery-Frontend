@@ -256,7 +256,6 @@ body {
   border-radius: var(--radio);
 }
 
-.obra-imagen.sin-stock img { filter: grayscale(.85); opacity: .75; }
 .grilla-obras { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--xl) var(--lg); }
 .grilla-obras.cuatro { grid-template-columns: repeat(4, 1fr); gap: var(--lg); }
 @media (max-width: 900px) { .grilla-obras, .grilla-obras.cuatro { grid-template-columns: repeat(2, 1fr); gap: var(--lg); } }
@@ -636,7 +635,7 @@ body {
 }
 /* Sobre la pared, la obra deja un margen alrededor y lleva paspartú (borde claro) y sombra corta. */
 .obra-imagen img {
-  max-width: 82%; max-height: 82%;
+  max-width: 82%; max-height: 82%; box-sizing: content-box; /* el paspartú (o el marco) se suma por fuera de la obra */
   border: 5px solid var(--surface); box-shadow: var(--sombra-suave);
 }
 .linea-mini img { max-width: 84%; max-height: 84%; border: 2px solid var(--surface); }
@@ -656,7 +655,7 @@ body {
 
 .visor-miniaturas {
   display: flex; flex-direction: column; gap: var(--sm);
-  width: 64px; flex-shrink: 0; max-height: 560px; overflow-y: auto;
+  width: 64px; flex-shrink: 0; max-height: clamp(320px, calc(100dvh - 260px), 560px); overflow-y: auto;
 }
 .visor-miniatura {
   position: relative; flex-shrink: 0;
@@ -692,20 +691,11 @@ body {
   .visor-miniaturas { flex-direction: row; width: 100%; max-height: none; overflow-x: auto; overflow-y: hidden; }
 }
 
-/* Con marco elegido, el marco es el único marco: se saca el marco negro de la tarjeta y la
-   imagen pasa a ocupar su lugar normal, así la caja siempre se ajusta a la obra. */
-.visor-principal .obra-imagen:has(img.con-marco, img.con-marco-imagen) {
-  border: 0; padding: 0; box-shadow: none;
-  background: transparent; overflow: visible;
-  aspect-ratio: auto;
-  display: flex; justify-content: center; align-items: center;
-}
-.visor-principal .obra-imagen img.con-marco,
-.visor-principal .obra-imagen img.con-marco-imagen {
-  position: static; inset: auto; margin: 0;
-  width: auto; height: auto;
-  max-width: 100%; max-height: 80vh;
-}
+/* La caja de la obra en el detalle tiene un alto fijo (según la pantalla): no cambia al pasar de foto ni al elegir un
+   marco. La obra (con su paspartú o con el marco elegido, que reemplaza al paspartú) se acomoda adentro, centrada y
+   del mismo tamaño máximo: elegir otro marco cambia solo el borde. */
+.visor-principal .obra-imagen { aspect-ratio: auto; height: clamp(320px, calc(100dvh - 260px), 560px); }
+@media (max-width: 720px) { .visor-principal .obra-imagen { height: 380px; } }
 
 /* ---------- Imagen ampliada ---------- */
 .lightbox {
@@ -760,6 +750,9 @@ body {
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, .25));
 }
 .lightbox > img.con-marco-imagen { border-width: 54px; border-image-width: 54px; background: transparent; }
+/* En la caja de la obra el marco se dibuja por fuera de la imagen (como el paspartú): la obra queda siempre del mismo
+   tamaño y elegir otro marco cambia solo el borde. */
+.obra-imagen img.con-marco, .obra-imagen img.con-marco-imagen { box-sizing: content-box; }
 
 /* ---------- Autocompletado de dirección ---------- */
 .autocompletar { position: relative; }
@@ -946,3 +939,27 @@ body {
 .ficha-obra-meta a { color: inherit; text-decoration: none; }
 .ficha-obra-meta a:hover { color: var(--bordo); text-decoration: underline; text-underline-offset: 3px; }
 .ficha-obra .ficha-obra-precio { margin-top: var(--xs); }
+
+/* ---------- Pantalla: Detalle de obra ----------
+   La obra y su descripción a la izquierda; la tarjeta de compra a la derecha, pegada arriba mientras se scrollea. */
+.detalle-obra { grid-template-columns: minmax(0, 1fr) 400px; }
+.detalle-descripcion { margin-top: var(--lg); max-width: 680px; }
+.detalle-descripcion h2 { margin-bottom: var(--sm); }
+.detalle-precio { display: flex; flex-direction: column; gap: 2px; margin: var(--lg) 0; padding: var(--md) 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.detalle-precio-total { font-size: 28px; line-height: 34px; font-weight: 500; }
+.detalle-opcion { display: flex; flex-direction: column; gap: var(--sm); margin-top: var(--md); }
+.detalle-opcion b { color: var(--ink); font-weight: 500; }
+/* Un marco para elegir: su muestra (foto o color) y cuánto suma. */
+.chip-marco { padding-left: 8px; }
+/* Un marquito: un cuadrado con el borde del color del marco y el centro claro, como la obra enmarcada. */
+.muestra-marco {
+  width: 18px; height: 18px; flex: none; border: 5px solid; border-radius: 2px;
+  background: var(--surface); box-shadow: 0 0 0 1px rgb(28 28 25 / 15%);
+}
+/* Sin marco: el cuadrado vacío, con borde punteado. */
+.muestra-marco.vacia { border: 1px dashed var(--ink-muted); box-shadow: none; }
+@media (max-width: 1100px) { .detalle-obra { grid-template-columns: minmax(0, 1fr) 340px; } }
+@media (max-width: 900px) {
+  .detalle-obra { grid-template-columns: 1fr; }
+  .detalle-compra.pegado-arriba { position: static; }
+}
