@@ -863,7 +863,24 @@ body {
 .detalle-volver { display: inline-block; color: var(--bordo); margin-bottom: var(--lg); text-underline-offset: 3px; }
 .detalle-cabecera { align-items: flex-start; }
 .detalle-cabecera > div { min-width: 0; }
-.detalle-cabecera .sello { flex-shrink: 0; margin-top: var(--md); white-space: nowrap; }
+/* El pedido y los mensajes a la izquierda; a la derecha una tarjeta fija con el estado, el precio y las acciones (como la
+   compra en el detalle de obra). En una columna, la tarjeta va arriba de los mensajes. */
+.encargo-cuerpo { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--xl); align-items: start; }
+.encargo-lateral p { margin-top: 0; }
+/* El precio va dentro de la tarjeta lateral: sin un recuadro propio. */
+.encargo-lateral .detalle-ficha { border: 0; padding: 0; background: none; margin-top: var(--md); }
+.encargo-lateral .detalle-controles .campo { flex: 1; min-width: 0; margin-bottom: 0; }
+.encargo-lateral .detalle-controles { align-items: flex-end; }
+.encargo-lateral .aviso { margin-top: var(--lg); }
+/* En la tarjeta, el cambio de estado va en dos renglones (la etiqueta arriba, el selector y el botón abajo) y los botones
+   de una sola acción ocupan todo el ancho. */
+.encargo-lateral .detalle-estado { flex-direction: column; align-items: stretch; gap: var(--sm); }
+.encargo-lateral .detalle-controles .select { flex: 1; width: auto; min-width: 0; }
+.encargo-lateral .detalle-ficha > .boton, .encargo-lateral > .boton { width: 100%; margin-top: var(--sm); }
+@media (max-width: 900px) {
+  .encargo-cuerpo { grid-template-columns: minmax(0, 1fr); gap: var(--lg); }
+  .encargo-lateral { order: -1; }
+}
 .detalle-aviso { margin-top: var(--md); }
 .detalle-texto { margin-top: var(--xs); }
 .detalle-ficha { padding: var(--lg); }
@@ -877,6 +894,12 @@ body {
 .detalle-intro { margin: var(--sm) 0 var(--md); }
 .detalle-hilo { list-style: none; margin: 0; padding: 0; }
 .detalle-hilo .mensaje { margin-bottom: 0; min-width: 0; }
+/* La conversación en una caja de alto fijo con scroll propio. column-reverse hace que el scroll arranque abajo, en el
+   último mensaje (como un chat), sin mover nada con código; los mensajes siguen en su orden dentro de la lista. */
+.detalle-conversacion {
+  display: flex; flex-direction: column-reverse; overflow-y: auto; max-height: min(480px, 60dvh);
+  padding: var(--md); background: var(--canvas); border: 1px solid var(--border); border-radius: var(--radio);
+}
 .detalle-editor { align-items: flex-end; }
 .detalle-editor .campo { flex: 1; min-width: 0; margin-bottom: 0; }
 .detalle-enviar { margin-top: var(--md); }
@@ -886,7 +909,6 @@ body {
 .encargo-detalle :focus-visible { outline: 2px solid var(--bordo); outline-offset: 3px; }
 @media (max-width: 600px) {
   .detalle-cabecera { flex-wrap: wrap; }
-  .detalle-cabecera .sello { margin-top: 0; }
   .detalle-ficha { padding: var(--md); }
   .detalle-controles { width: 100%; }
   .detalle-controles .select { flex: 1; min-width: 0; }
