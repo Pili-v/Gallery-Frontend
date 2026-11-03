@@ -2,10 +2,11 @@ import { useEffect, useState } from "react"
 
 import { api, lista } from "../api/cliente"
 import { getUsuario } from "../api/sesion"
-import { fecha } from "../api/formato"
+import { fecha, normalizarNombre } from "../api/formato"
 
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
+import Paginador from "../components/Paginador"
 
 const ROLES = ["CLIENTE", "ARTISTA", "ARTISTA_CLIENTE", "ADMIN"]
 
@@ -88,12 +89,14 @@ const AdminUsuarios = () => {
             return true
         }
 
+        // Sin distinguir mayúsculas ni tildes: "ana" encuentra a "Ana Bosch" y "lucia" a "Lucía".
+        const buscado = normalizarNombre(busqueda)
         const nombreCompleto = usuario.nombre_persona + " " + usuario.apellido_persona
 
         return (
-            nombreCompleto.includes(busqueda) ||
-            usuario.email_usuario.includes(busqueda) ||
-            usuario.nombre_usuario?.includes(busqueda)
+            normalizarNombre(nombreCompleto).includes(buscado) ||
+            normalizarNombre(usuario.email_usuario).includes(buscado) ||
+            normalizarNombre(usuario.nombre_usuario ?? "").includes(buscado)
         )
     })
 
@@ -102,18 +105,6 @@ const AdminUsuarios = () => {
     const inicio = (paginaActual - 1) * USUARIOS_POR_PAGINA
 
     const usuariosPagina = usuariosFiltrados.slice(inicio, inicio + USUARIOS_POR_PAGINA)
-
-    const paginaAnterior = () => {
-        if (paginaActual > 1) {
-            setPaginaActual(paginaActual - 1)
-        }
-    }
-
-    const paginaSiguiente = () => {
-        if (paginaActual < totalPaginas) {
-            setPaginaActual(paginaActual + 1)
-        }
-    }
 
     if (cargando) {
         return (
@@ -136,14 +127,19 @@ const AdminUsuarios = () => {
                     </div>
                 )}
 
-                <div className="mb-md">
+                {/* El buscador en la misma barra que el catálogo, con la cantidad de usuarios que se ven. */}
+                <div className="barra-filtros">
                     <input
-                        className="input"
-                        type="text"
-                        placeholder="Buscar usuario..."
+                        className="input barra-filtros-buscador"
+                        type="search"
+                        placeholder="Buscar por nombre, usuario o email"
+                        aria-label="Buscar usuario"
                         value={busqueda}
                         onChange={handleBusqueda}
                     />
+                    <span className="muted">
+                        {usuariosFiltrados.length === 1 ? "1 usuario" : usuariosFiltrados.length + " usuarios"}
+                    </span>
                 </div>
 
                 {usuariosFiltrados.length === 0 ? (
@@ -164,6 +160,8 @@ const AdminUsuarios = () => {
                             <tbody>
                                 {usuariosPagina.map((usuario) => {
                                     const esUsuarioActual = usuarioActual?.id === usuario.id
+                                    // El botón de guardar aparece solo si se eligió otro rol: así no hay un botón por fila.
+                                    const rolCambiado = roles[usuario.id] !== usuario.rol_usuario
 
                                     return (
                                         <tr key={usuario.id}>
@@ -191,11 +189,10 @@ const AdminUsuarios = () => {
                                             </td>
 
                                             <td>
-                                                {esUsuarioActual ? (
-                                                    <Boton tipo="deshabilitado">Sos vos</Boton>
-                                                ) : (
+                                                {esUsuarioActual && <span className="cartela-meta">Sos vos</span>}
+                                                {!esUsuarioActual && rolCambiado && (
                                                     <Boton
-                                                        tipo={guardando === usuario.id ? "deshabilitado" : "secundario"}
+                                                        tipo={guardando === usuario.id ? "deshabilitado" : "primario"}
                                                         onClick={() => guardarRol(usuario.id)}
                                                     >
                                                         {guardando === usuario.id ? "Guardando..." : "Guardar"}
@@ -208,22 +205,12 @@ const AdminUsuarios = () => {
                             </tbody>
                         </table>
 
-                        <div className="fila centrada mt-lg">
-                            <Boton tipo={paginaActual === 1 ? "deshabilitado" : "secundario"} onClick={paginaAnterior}>
-                                Anterior
-                            </Boton>
-
-                            <span className="body-sm muted">
-                                Página {paginaActual} de {totalPaginas}
-                            </span>
-
-                            <Boton
-                                tipo={paginaActual === totalPaginas ? "deshabilitado" : "secundario"}
-                                onClick={paginaSiguiente}
-                            >
-                                Siguiente
-                            </Boton>
-                        </div>
+                        {/* El paginador de toda la app (empieza en 0; esta pantalla cuenta desde 1). */}
+                        <Paginador
+                            pagina={paginaActual - 1}
+                            totalPaginas={totalPaginas}
+                            onCambiar={(nueva) => setPaginaActual(nueva + 1)}
+                        />
                     </>
                 )}
 

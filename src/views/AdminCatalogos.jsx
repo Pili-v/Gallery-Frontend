@@ -494,24 +494,27 @@ const AdminCatalogos = () => {
                                     value={nuevoTamanio.nombre_tamanio}
                                     onChange={handleTamanio}
                                 />
-                                <CampoFormulario
-                                    etiqueta="Ancho (cm)"
-                                    tipo="number"
-                                    name="ancho_lienzo"
-                                    min="0.01"
-                                    step="0.01"
-                                    value={nuevoTamanio.ancho_lienzo}
-                                    onChange={handleTamanio}
-                                />
-                                <CampoFormulario
-                                    etiqueta="Largo (cm)"
-                                    tipo="number"
-                                    name="largo_lienzo"
-                                    min="0.01"
-                                    step="0.01"
-                                    value={nuevoTamanio.largo_lienzo}
-                                    onChange={handleTamanio}
-                                />
+                                {/* Ancho y largo en el mismo renglón: son las dos medidas del lienzo. */}
+                                <div className="fila-campos">
+                                    <CampoFormulario
+                                        etiqueta="Ancho (cm)"
+                                        tipo="number"
+                                        name="ancho_lienzo"
+                                        min="0.01"
+                                        step="0.01"
+                                        value={nuevoTamanio.ancho_lienzo}
+                                        onChange={handleTamanio}
+                                    />
+                                    <CampoFormulario
+                                        etiqueta="Largo (cm)"
+                                        tipo="number"
+                                        name="largo_lienzo"
+                                        min="0.01"
+                                        step="0.01"
+                                        value={nuevoTamanio.largo_lienzo}
+                                        onChange={handleTamanio}
+                                    />
+                                </div>
 
                                 {errorFormulario && <p className="campo-error body-sm mb-md">{errorFormulario}</p>}
 
