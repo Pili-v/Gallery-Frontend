@@ -325,7 +325,9 @@ body {
   display: block; width: 100%; padding: var(--sm) var(--md); background: none; border: 0; border-top: 1px solid var(--border);
   color: var(--bordo); cursor: pointer; font: inherit; font-size: 14px; text-align: left; text-decoration: underline;
 }
-.textarea { min-height: 96px; resize: vertical; }
+/* Sin tirador para agrandarlo a mano: crece solo a medida que se escribe (field-sizing), hasta un tope, y después
+   scrollea. En los navegadores que no lo soportan queda del alto de sus renglones (rows), también con scroll. */
+.textarea { min-height: 96px; max-height: 320px; resize: none; field-sizing: content; overflow-y: auto; }
 .campo-error { color: var(--error); margin-top: var(--xs); }
 .input.con-error { border-color: var(--error); }
 .fila-campos { display: grid; grid-template-columns: 1fr 1fr; gap: var(--md); }
@@ -919,12 +921,26 @@ body {
 }
 
 /* ---------- Pantalla: Pedir un encargo ---------- */
+/* El formulario a la izquierda y, a la derecha, una tarjeta fija con el pedido como va quedando, cómo sigue y el botón.
+   En una columna, la tarjeta va debajo del formulario. */
+.encargo-pedido { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--xl); align-items: start; margin-top: var(--lg); }
+.encargo-resumen p { margin: 0; }
+.encargo-resumen-titulo { margin: var(--xs) 0; font-size: 22px; line-height: 28px; }
+.encargo-resumen .boton { margin-top: var(--md); }
+.encargo-pasos { list-style: none; display: grid; gap: var(--sm); margin: var(--lg) 0 0; padding: var(--md) 0 0; border-top: 1px solid var(--border); }
+.encargo-pasos li { display: flex; gap: var(--sm); align-items: flex-start; font-size: 14px; line-height: 22px; }
+.encargo-pasos-numero {
+  display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--bordo-suave); color: var(--bordo-dark); font-size: 12px; font-weight: 500;
+}
+@media (max-width: 900px) { .encargo-pedido { grid-template-columns: minmax(0, 1fr); gap: var(--lg); } }
+/* Con el título oculto (escritorio), el formulario va justo debajo de Volver. */
+@media (min-width: 1001px) { .encargo-pedido { margin-top: 0; } }
 .encargo-volver { display: inline-block; color: var(--bordo); margin-bottom: var(--lg); }
 .encargo-aviso { margin: var(--lg) 0; }
 .encargo-formulario { padding: var(--lg); }
 .encargo-obligatorios { margin-bottom: var(--lg); }
 .encargo-contador { margin: calc(-1 * var(--sm)) 0 var(--lg); }
-.encargo-formulario .boton { margin-top: var(--md); }
 .encargo-formulario .con-error { border-color: var(--error); }
 .encargo-nuevo :focus-visible { outline: 2px solid var(--bordo); outline-offset: 3px; }
 @media (max-width: 600px) {
