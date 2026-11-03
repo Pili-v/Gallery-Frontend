@@ -6,6 +6,7 @@ import { pesos } from "../api/formato"
 // protagonista. Aparece en el catálogo, en el perfil del artista y en las obras relacionadas.
 // Cada dato llega en su propia prop (no como objetos obra y variante): id, nombreObra, estilo, artistaId,
 // nombreArtistico, nombreTamanio, precio, porcentajeDescuento y stock. Los de la variante pueden faltar.
+// Con conArtista en false no se nombra al artista (en su propio perfil ya está arriba).
 
 export default function FichaObra({
     id,
@@ -16,8 +17,10 @@ export default function FichaObra({
     nombreTamanio,
     precio,
     porcentajeDescuento: descuento,
-    stock
+    stock,
+    conArtista = true
 }) {
+    const detalle = [nombreTamanio, estilo].filter(Boolean)
     const precioFinal = descuento ? precio * (1 - descuento / 100) : precio
 
     return (
@@ -27,14 +30,14 @@ export default function FichaObra({
             </Link>
 
             <p className="ficha-obra-meta">
-                {/* Sin artistaId (por ejemplo, en el propio perfil del artista) no tiene sentido linkear a sí mismo. */}
-                {artistaId ? (
-                    <Link to={`/artista/${artistaId}`}>{nombreArtistico || "Artista"}</Link>
-                ) : (
-                    <span>{nombreArtistico || "Artista"}</span>
-                )}
-                {nombreTamanio && " · " + nombreTamanio}
-                {estilo && " · " + estilo}
+                {/* Sin artistaId no se linkea: queda el nombre como texto. */}
+                {conArtista &&
+                    (artistaId ? (
+                        <Link to={`/artista/${artistaId}`}>{nombreArtistico || "Artista"}</Link>
+                    ) : (
+                        <span>{nombreArtistico || "Artista"}</span>
+                    ))}
+                {detalle.length > 0 && (conArtista ? " · " : "") + detalle.join(" · ")}
             </p>
 
             {precio != null && (
