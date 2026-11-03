@@ -6,7 +6,15 @@ import Estado from "../components/Estado"
 import EstadoEncargo from "../components/EstadoEncargo"
 import Boton from "../components/Boton"
 import BuscadorArtista from "../components/BuscadorArtista"
+import CampoFormulario from "../components/CampoFormulario"
+import Indicador from "../components/Indicador"
 import { normalizarNombre } from "../api/formato"
+
+// Los estados en el orden en que avanza un encargo: así se listan en el filtro.
+const ORDEN_ESTADOS = ["PENDIENTE", "APROBADO", "EN_PROCESO", "TERMINADO", "PAGADO", "CANCELADO"]
+
+// Disposición (como Mis obras, Mis ventas y Mis compras): a la izquierda una columna fija con el botón para pedir, la
+// vista (los que pedí o los que me pidieron), el total y el filtro por estado; a la derecha la tabla.
 
 export default function Encargos() {
     const [parametros, setParametros] = useSearchParams()
@@ -54,6 +62,7 @@ function ListaEncargos({
     const [artistas, setArtistas] = useState([])
     const [busquedaArtista, setBusquedaArtista] = useState("")
     const [artistaElegido, setArtistaElegido] = useState("")
+    const [filtroEstado, setFiltroEstado] = useState("")
 
     useEffect(() => {
         let activo = true
@@ -91,13 +100,22 @@ function ListaEncargos({
             .filter((artista) => normalizarNombre(artista.nombre).includes(normalizarNombre(busquedaArtista)))
             .map((artista) => String(artista.id))
     )
-    const encargos = esAdmin
+    const deLosArtistas = esAdmin
         ? datos.items.filter((encargo) =>
               artistaElegido
                   ? String(encargo.artista_id) === artistaElegido
                   : !busquedaArtista.trim() || idsArtistas.has(String(encargo.artista_id))
           )
         : datos.items
+    // El filtro por estado se aplica sobre lo que ya llegó: no hace falta pedir de nuevo.
+    const encargos = filtroEstado
+        ? deLosArtistas.filter((encargo) => encargo.estado_encargo === filtroEstado)
+        : deLosArtistas
+
+    // Solo se ofrecen los estados que tienen algún encargo, con el nombre que manda el back.
+    const estados = ORDEN_ESTADOS.map((estado) => datos.items.find((encargo) => encargo.estado_encargo === estado))
+        .filter(Boolean)
+        .map((encargo) => ({ valor: encargo.estado_encargo, nombre: encargo.nombre_estado }))
 
     function cambiarVista(recibir) {
         const siguientes = new URLSearchParams(parametros)
@@ -106,143 +124,191 @@ function ListaEncargos({
         setParametros(siguientes)
     }
 
+    const tabla = (
+        <div className="encargos-tabla" role="region" aria-label="Listado de encargos" tabIndex={0}>
+            <table className="tabla">
+                <caption className="solo-lectores">
+                    {esAdmin
+                        ? "Todos los encargos"
+                        : verRecibidos
+                          ? "Encargos recibidos de clientes"
+                          : "Encargos pedidos a artistas"}
+                </caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Nº</th>
+                        <th scope="col">{verRecibidos ? "Cliente" : "Artista"}</th>
+                        <th scope="col">Obra</th>
+                        <th scope="col">Pedido</th>
+                        <th scope="col">Estado</th>
+                        <th scope="col">
+                            <span className="solo-lectores">Acciones</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {encargos.map((encargo) => {
+                        const persona = verRecibidos ? encargo.nombre_cliente : encargo.nombre_artista
+                        const accion =
+                            verRecibidos && ["PENDIENTE", "EN_PROCESO"].includes(encargo.estado_encargo)
+                                ? "Responder"
+                                : "Ver"
+                        return (
+                            <tr key={encargo.id}>
+                                <td>{String(encargo.id).padStart(3, "0")}</td>
+                                <td>{persona}</td>
+                                {/* Pintura y lienzo en una frase, como en el título del detalle: "Óleo sobre lienzo". */}
+                                <td>
+                                    {encargo.nombre_tipo_pintura} sobre{" "}
+                                    {(encargo.nombre_tipo_lienzo ?? "").toLowerCase()}
+                                </td>
+                                <td>{new Date(encargo.fecha_creacion_encargo).toLocaleDateString("es-AR")}</td>
+                                <td>
+                                    <EstadoEncargo estado={encargo.estado_encargo} nombre={encargo.nombre_estado} />
+                                </td>
+                                <td>
+                                    <a
+                                        href="#"
+                                        aria-label={`${accion} encargo ${encargo.id}`}
+                                        onClick={(evento) => {
+                                            evento.preventDefault()
+                                            navigate(`${base}/${encargo.id}${verRecibidos ? "?recibidos" : ""}`)
+                                        }}
+                                    >
+                                        {accion}
+                                    </a>
+                                </td>
+                            </tr>
+                        )
+                    })}
+                </tbody>
+            </table>
+        </div>
+    )
+
+    let cuerpo
+    if (cargando) {
+        cuerpo = <Estado tipo="cargando" />
+    } else if (datos.error) {
+        cuerpo = (
+            <div className="apilado">
+                <Estado tipo="error" mensaje={datos.error} />
+                <Boton tipo="secundario" onClick={reintentar}>
+                    Reintentar
+                </Boton>
+            </div>
+        )
+    } else if (encargos.length === 0 && filtroEstado) {
+        cuerpo = (
+            <Estado
+                tipo="vacio"
+                mensaje="No hay encargos en ese estado."
+                accion="Quitar filtro"
+                onAccion={() => setFiltroEstado("")}
+            />
+        )
+    } else if (encargos.length === 0) {
+        cuerpo = (
+            <Estado
+                tipo="vacio"
+                mensaje={
+                    esAdmin
+                        ? busquedaArtista
+                            ? "No hay encargos para los artistas que coinciden con tu búsqueda."
+                            : "Todavía no hay encargos registrados."
+                        : verRecibidos
+                          ? "Todavía no recibiste encargos."
+                          : "Todavía no hiciste encargos."
+                }
+            />
+        )
+    } else {
+        cuerpo = tabla
+    }
+
     return (
         <main className="seccion encargos-pagina">
             <div className="contenido">
                 <h1 className="headline-lg titulo-oculto">Encargos</h1>
-                {esAdmin && (
-                    <div className="encargos-buscador mb-lg">
-                        <BuscadorArtista
-                            artistas={artistas}
-                            value={artistaElegido}
-                            onChange={setArtistaElegido}
-                            onSearch={setBusquedaArtista}
-                            required={false}
-                            disabled={cargando || Boolean(datos.error)}
-                        />
-                    </div>
-                )}
-                {encargoCreado && (
-                    <p className="aviso encargos-nota" role="status">
-                        El encargo Nº {encargoCreado} se envió al artista.
-                    </p>
-                )}
-                {!esAdmin && (
-                    <div className="encargos-barra">
-                        <nav className="pestanias encargos-pestanias" aria-label="Vista de encargos">
-                            <button
-                                disabled={!puedePedir}
-                                type="button"
-                                className={`pestania${verRecibidos ? "" : " activa"}`}
-                                aria-pressed={!verRecibidos}
-                                onClick={() => cambiarVista(false)}
-                            >
-                                Los que pedí
-                            </button>
-                            {puedeRecibir && (
+                <div className="panel-lista">
+                    <aside className="cartela pad-lg pegado-arriba panel-lateral">
+                        {puedePedir && !verRecibidos && (
+                            <Boton onClick={() => navigate(`${base}/nuevo`)}>Pedir un encargo</Boton>
+                        )}
+
+                        {/* Qué encargos se ven: los que pidió o los que le pidieron (si además es artista). */}
+                        {!esAdmin && puedeRecibir && (
+                            <div className="panel-lateral-vista" role="group" aria-label="Vista de encargos">
+                                <p className="catalog-number muted">Vista</p>
+                                {puedePedir && (
+                                    <button
+                                        type="button"
+                                        className={"chip" + (verRecibidos ? "" : " activo")}
+                                        aria-pressed={!verRecibidos}
+                                        onClick={() => cambiarVista(false)}
+                                    >
+                                        Los que pedí
+                                    </button>
+                                )}
                                 <button
                                     type="button"
-                                    className={`pestania${verRecibidos ? " activa" : ""}`}
+                                    className={"chip" + (verRecibidos ? " activo" : "")}
                                     aria-pressed={verRecibidos}
                                     onClick={() => cambiarVista(true)}
                                 >
                                     Los que me pidieron
                                 </button>
-                            )}
-                        </nav>
-                        {puedePedir && !verRecibidos && (
-                            <Boton onClick={() => navigate(`${base}/nuevo`)}>Pedir un encargo</Boton>
+                            </div>
                         )}
+
+                        <div className="panel-lateral-totales">
+                            <Indicador titulo="Encargos" valor={cargando || datos.error ? "—" : encargos.length} />
+                        </div>
+
+                        <div className="panel-lateral-filtros">
+                            {esAdmin && (
+                                <BuscadorArtista
+                                    artistas={artistas}
+                                    value={artistaElegido}
+                                    onChange={setArtistaElegido}
+                                    onSearch={setBusquedaArtista}
+                                    required={false}
+                                    disabled={cargando || Boolean(datos.error)}
+                                />
+                            )}
+
+                            <CampoFormulario
+                                tipo="select"
+                                etiqueta="Estado"
+                                value={filtroEstado}
+                                disabled={cargando || Boolean(datos.error)}
+                                onChange={(evento) => setFiltroEstado(evento.target.value)}
+                            >
+                                <option value="">Todos</option>
+                                {estados.map((estado) => (
+                                    <option key={estado.valor} value={estado.valor}>
+                                        {estado.nombre}
+                                    </option>
+                                ))}
+                            </CampoFormulario>
+
+                            {filtroEstado && (
+                                <button type="button" className="boton-texto" onClick={() => setFiltroEstado("")}>
+                                    Quitar filtro
+                                </button>
+                            )}
+                        </div>
+                    </aside>
+
+                    <div className="min-ancho-0">
+                        {encargoCreado && (
+                            <p className="aviso mb-lg" role="status">
+                                El encargo Nº {encargoCreado} se envió al artista.
+                            </p>
+                        )}
+                        {cuerpo}
                     </div>
-                )}
-                {cargando ? (
-                    <Estado tipo="cargando" />
-                ) : datos.error ? (
-                    <div className="apilado">
-                        <Estado tipo="error" mensaje={datos.error} />
-                        <Boton tipo="secundario" onClick={reintentar}>
-                            Reintentar
-                        </Boton>
-                    </div>
-                ) : encargos.length === 0 ? (
-                    <Estado
-                        tipo="vacio"
-                        mensaje={
-                            esAdmin
-                                ? busquedaArtista
-                                    ? "No hay encargos para los artistas que coinciden con tu búsqueda."
-                                    : "Todavía no hay encargos registrados."
-                                : verRecibidos
-                                  ? "Todavía no recibiste encargos."
-                                  : "Todavía no hiciste encargos."
-                        }
-                    />
-                ) : (
-                    <div className="encargos-tabla" role="region" aria-label="Listado de encargos" tabIndex={0}>
-                        <table className="tabla">
-                            <caption className="encargos-solo-lectores">
-                                {esAdmin
-                                    ? "Todos los encargos"
-                                    : verRecibidos
-                                      ? "Encargos recibidos de clientes"
-                                      : "Encargos pedidos a artistas"}
-                            </caption>
-                            <thead>
-                                <tr>
-                                    <th scope="col">Nº</th>
-                                    <th scope="col">{verRecibidos ? "Cliente" : "Artista"}</th>
-                                    <th scope="col">Pintura</th>
-                                    <th scope="col">Lienzo</th>
-                                    <th scope="col">Pedido</th>
-                                    <th scope="col">Estado</th>
-                                    <th scope="col">
-                                        <span className="encargos-solo-lectores">Acciones</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {encargos.map((encargo) => {
-                                    const persona = verRecibidos ? encargo.nombre_cliente : encargo.nombre_artista
-                                    const accion =
-                                        verRecibidos && ["PENDIENTE", "EN_PROCESO"].includes(encargo.estado_encargo)
-                                            ? "Responder"
-                                            : "Ver"
-                                    return (
-                                        <tr key={encargo.id}>
-                                            <td>{String(encargo.id).padStart(3, "0")}</td>
-                                            <td>{persona}</td>
-                                            <td>{encargo.nombre_tipo_pintura}</td>
-                                            <td>{encargo.nombre_tipo_lienzo}</td>
-                                            <td>
-                                                {new Date(encargo.fecha_creacion_encargo).toLocaleDateString("es-AR")}
-                                            </td>
-                                            <td>
-                                                <EstadoEncargo
-                                                    estado={encargo.estado_encargo}
-                                                    nombre={encargo.nombre_estado}
-                                                />
-                                            </td>
-                                            <td>
-                                                <a
-                                                    href="#"
-                                                    aria-label={`${accion} encargo ${encargo.id}`}
-                                                    onClick={(evento) => {
-                                                        evento.preventDefault()
-                                                        navigate(
-                                                            `${base}/${encargo.id}${verRecibidos ? "?recibidos" : ""}`
-                                                        )
-                                                    }}
-                                                >
-                                                    {accion}
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                </div>
             </div>
         </main>
     )
