@@ -9,8 +9,7 @@
 // Props:
 //   imagenes : lista de direcciones de imagen (ya armadas, en el orden en que se muestran)
 //   alt      : texto alternativo (el nombre de la obra)
-//   atenuada : true para mostrarla en gris (obra sin stock)
-//   conMarco : true si hay un marco elegido; se dibuja pegado alrededor de la imagen
+//   conMarco : true si hay un marco elegido; se dibuja pegado alrededor de la portada (la primera imagen)
 //   urlMarco : la foto del marco (si tiene) y colorMarco el color del marco: cada dato del marco en su prop
 //   children : lo que va encima de la imagen, por ejemplo los Badge
 //
@@ -23,7 +22,6 @@ import { optimizada } from "../api/formato"
 export default function VisorImagenes({
     imagenes,
     alt,
-    atenuada = false,
     conMarco = false,
     urlMarco = null,
     colorMarco = null,
@@ -32,6 +30,9 @@ export default function VisorImagenes({
     const [actual, setActual] = useState(0)
     const [ampliada, setAmpliada] = useState(false)
     const [toqueX, setToqueX] = useState(null)
+    // Las imágenes que ya terminaron de cargar (por url). El marco se dibuja recién cuando la imagen está: si no,
+    // mientras carga se ve un marco chico envolviendo nada.
+    const [cargadas, setCargadas] = useState({})
 
     const total = imagenes.length
     const indice = Math.min(actual, Math.max(total - 1, 0))
@@ -72,12 +73,17 @@ export default function VisorImagenes({
     // Si el marco tiene foto (url, un PNG con fondo y centro transparentes, en Cloudinary) se usa
     // como borde; si no, se pinta con el color del marco (colorMarco). La foto del marco no se transforma:
     // tiene que seguir siendo un PNG con transparencia.
+    const srcPrincipal = total > 0 ? optimizada(imagenes[indice], 1200) : null
+    // Mientras la imagen carga no se dibuja el marco.
+    // Solo la portada (la primera foto) lleva el marco: las demás son detalles de la obra y enmarcadas no
+    // mostrarían cómo queda. Mientras la imagen carga tampoco se dibuja.
+    const enmarcar = conMarco && indice === 0 && cargadas[srcPrincipal] === true
     let claseMarco = ""
     let estiloMarco
-    if (conMarco && urlMarco) {
+    if (enmarcar && urlMarco) {
         claseMarco = "con-marco-imagen"
         estiloMarco = { borderImageSource: 'url("' + urlMarco + '")' }
-    } else if (conMarco) {
+    } else if (enmarcar) {
         claseMarco = "con-marco"
         estiloMarco = { "--color-marco": colorDeMarco(colorMarco) }
     }
@@ -112,13 +118,14 @@ export default function VisorImagenes({
                 onTouchStart={alTocar}
                 onTouchEnd={alSoltar}
             >
-                <div className={"obra-imagen" + (atenuada ? " sin-stock" : "")}>
+                <div className="obra-imagen">
                     {total > 0 ? (
                         <img
                             className={claseMarco}
                             style={estiloMarco}
-                            src={optimizada(imagenes[indice], 1200)}
+                            src={srcPrincipal}
                             alt={descripcion}
+                            onLoad={() => setCargadas((previas) => ({ ...previas, [srcPrincipal]: true }))}
                             onClick={() => setAmpliada(true)}
                             draggable={false}
                         />
