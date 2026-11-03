@@ -359,6 +359,10 @@ body {
 /* Lo que el resumen muestra entre el total y el botón (en el carrito, cómo se recibe la compra). */
 .resumen-extra { border-top: 1px solid var(--border); margin-top: var(--md); padding-top: var(--md); }
 
+/* ---------- Pantalla: Carrito ---------- */
+.carrito-obras h2 { margin-bottom: var(--xs); }
+.carrito-obras .linea-item:last-of-type { border-bottom: 0; }
+
 /* ---------- Componente: TablaSimple ---------- */
 /* border-collapse: separate para que el borde redondeado funcione; las líneas entre filas las ponen las celdas. */
 .tabla {
@@ -449,6 +453,8 @@ body {
 .min-ancho-0 { min-width: 0; }
 /* Una columna que acompaña al contenido mientras se scrollea (por ejemplo, el resumen de una compra). */
 .pegado-arriba { position: sticky; top: var(--md); }
+/* En una sola columna (pantallas angostas) ya no acompaña: queda en su lugar, debajo del contenido. */
+@media (max-width: 900px) { .pegado-arriba { position: static; } }
 .bloque { display: block; }
 .oculto { display: none; }
 .texto-bordo { color: var(--bordo); }
@@ -961,5 +967,4 @@ body {
 @media (max-width: 1100px) { .detalle-obra { grid-template-columns: minmax(0, 1fr) 340px; } }
 @media (max-width: 900px) {
   .detalle-obra { grid-template-columns: 1fr; }
-  .detalle-compra.pegado-arriba { position: static; }
 }

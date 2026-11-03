@@ -24,7 +24,6 @@ import LineaItem from "../components/LineaItem"
 import ResumenTotales from "../components/ResumenTotales"
 import EntregaCompra from "../components/EntregaCompra"
 import Estado from "../components/Estado"
-import Boton from "../components/Boton"
 
 const Carrito = () => {
     // Decisiones de esta pantalla: quedan en estado local, no las consume nadie más.
@@ -144,6 +143,8 @@ const Carrito = () => {
     return (
         <div className="seccion">
             <div className="contenido">
+                <h1 className="headline-lg titulo-oculto">Tu carrito</h1>
+
                 {avisoDelPago && (
                     <p className="aviso mb-md" role="alert">
                         No se pudo completar la compra. {avisoDelPago} Las obras afectadas están marcadas abajo.
@@ -158,7 +159,6 @@ const Carrito = () => {
 
                 {items.length === 0 ? (
                     <>
-                        <h1 className="headline-lg titulo-oculto">Tu carrito</h1>
                         <Estado
                             tipo="vacio"
                             mensaje="Todavía no agregaste ninguna obra."
@@ -168,9 +168,11 @@ const Carrito = () => {
                     </>
                 ) : (
                     <div className="dos-columnas">
-                        {/* El título y el subtítulo van arriba de la lista; el resumen arranca a su misma altura. */}
-                        <div>
-                            <h1 className="headline-lg titulo-oculto">Tu carrito</h1>
+                        {/* Las obras en una tarjeta; a la derecha el resumen, con la entrega, que acompaña el scroll. */}
+                        <section className="cartela pad-lg carrito-obras">
+                            <h2 className="catalog-number muted">
+                                Tus obras ({items.reduce((suma, item) => suma + item.cantidad, 0)})
+                            </h2>
 
                             {items.map((item) => (
                                 <LineaItem
@@ -197,57 +199,48 @@ const Carrito = () => {
                                     onQuitar={alQuitarItem}
                                     onAccionAviso={ajustarCantidad}
                                 />
-                                                        ))}
+                            ))}
 
-                            <div className="fila mt-md">
-                                <Boton tipo="secundario" onClick={alVaciarCarrito}>
-                                    Vaciar carrito
-                                </Boton>
-                                <a
-                                    href="#"
-                                    className="body-sm texto-bordo"
-                                    onClick={(e) => {
-                                        e.preventDefault()
-                                        navegar("/")
-                                    }}
-                                >
+                            <div className="entre mt-md">
+                                <button type="button" className="boton-texto body-sm" onClick={() => navegar("/")}>
                                     Seguir mirando obras
-                                </a>
+                                </button>
+                                <button type="button" className="boton-texto peligro body-sm" onClick={alVaciarCarrito}>
+                                    Vaciar carrito
+                                </button>
                             </div>
+                        </section>
 
-                            <p className="body-sm muted mt-md">
-                                Esta compra genera una factura por cada artista involucrado.
-                            </p>
+                        <div className="pegado-arriba">
+                            <ResumenTotales
+                                subtotal={subtotal}
+                                marcos={marcos}
+                                envio={envio}
+                                total={total}
+                                boton={yendo ? "Guardando..." : "Ir al pago"}
+                                onBoton={irAlPago}
+                                botonDeshabilitado={hayNoDisponibles}
+                                nota={
+                                    hayNoDisponibles
+                                        ? "Hay obras que ya no están disponibles: quitalas o ajustá la cantidad para poder pagar."
+                                        : "Se emite una factura por cada artista."
+                                }
+                            >
+                                <EntregaCompra
+                                    tipoEntrega={tipoEntrega}
+                                    direccion={direccion}
+                                    error={errorDireccion}
+                                    onTipoEntrega={(tipo) => {
+                                        setTipoEntrega(tipo)
+                                        setErrorDireccion("")
+                                    }}
+                                    onDireccion={(texto) => {
+                                        setDireccion(texto)
+                                        setErrorDireccion("")
+                                    }}
+                                />
+                            </ResumenTotales>
                         </div>
-
-                        <ResumenTotales
-                            subtotal={subtotal}
-                            marcos={marcos}
-                            envio={envio}
-                            total={total}
-                            boton={yendo ? "Guardando..." : "Ir al pago"}
-                            onBoton={irAlPago}
-                            botonDeshabilitado={hayNoDisponibles}
-                            nota={
-                                hayNoDisponibles
-                                    ? "Hay obras que ya no están disponibles: quitalas o ajustá la cantidad para poder pagar."
-                                    : undefined
-                            }
-                        >
-                            <EntregaCompra
-                                tipoEntrega={tipoEntrega}
-                                direccion={direccion}
-                                error={errorDireccion}
-                                onTipoEntrega={(tipo) => {
-                                    setTipoEntrega(tipo)
-                                    setErrorDireccion("")
-                                }}
-                                onDireccion={(texto) => {
-                                    setDireccion(texto)
-                                    setErrorDireccion("")
-                                }}
-                            />
-                        </ResumenTotales>
                     </div>
                 )}
             </div>
