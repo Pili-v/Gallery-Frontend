@@ -932,6 +932,11 @@ body {
   .detalle-editor .boton { width: 100%; }
 }
 
+/* ---------- Pantalla: Mi cuenta ----------
+   El menú de secciones a la izquierda (.panel-lista) y la sección elegida a la derecha, sin estirarse de más. El bloque
+   entero va centrado: así el margen a la izquierda del menú es el mismo que a la derecha del formulario. */
+.cuenta-panel { max-width: calc(260px + var(--xl) + 720px); margin: 0 auto; }
+
 /* ---------- Pantalla: Pedir un encargo ---------- */
 /* El formulario a la izquierda y, a la derecha, una tarjeta fija con el pedido como va quedando, cómo sigue y el botón.
    En una columna, la tarjeta va debajo del formulario. */
