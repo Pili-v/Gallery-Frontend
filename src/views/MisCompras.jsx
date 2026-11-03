@@ -3,6 +3,7 @@
 // Las compras viven en el estado global (comprasSlice): la pantalla despacha la acción y se suscribe al
 // resultado. Los filtros (cómo se entregó y de cuándo es la compra) los aplica el back: cada vez que cambian
 // se despacha de nuevo con los parámetros correspondientes.
+// Disposición: los totales y los filtros en una columna fija a la izquierda; la tabla a la derecha.
 
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
@@ -11,7 +12,6 @@ import { cargarCompras } from "../redux/comprasSlice"
 import { pesos, fecha } from "../api/formato"
 import { PERIODOS } from "../api/filtros"
 
-import Boton from "../components/Boton"
 import CampoFormulario from "../components/CampoFormulario"
 import Indicador from "../components/Indicador"
 import Estado from "../components/Estado"
@@ -59,6 +59,55 @@ const MisCompras = () => {
 
     // Sin compras y sin filtros no hay nada que filtrar: solo se avisa. Con filtros se mantienen a la vista.
     const sinNada = !cargando && !error && compras.length === 0 && !hayFiltros
+    const conLateral = !sinNada && !error
+
+    // Lo que viene del back espera; los filtros y los totales quedan a la vista.
+    let cuerpo
+    if (cargando) {
+        cuerpo = <Estado tipo="cargando" />
+    } else if (error) {
+        cuerpo = <Estado tipo="error" mensaje={error} />
+    } else if (compras.length === 0 && hayFiltros) {
+        cuerpo = (
+            <Estado
+                tipo="vacio"
+                mensaje="No hay compras con esos filtros."
+                accion="Quitar filtros"
+                onAccion={quitarFiltros}
+            />
+        )
+    } else if (compras.length === 0) {
+        cuerpo = <Estado tipo="vacio" mensaje="Todavía no hiciste ninguna compra." />
+    } else {
+        cuerpo = (
+            <table className="tabla">
+                <thead>
+                    <tr>
+                        <th>Compra</th>
+                        <th>Fecha</th>
+                        <th>Entrega</th>
+                        <th>Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {compras.map((compra) => (
+                        <tr key={compra.id}>
+                            <td>Nº {String(compra.id).padStart(6, "0")}</td>
+                            <td>{fecha(compra.fecha_compra)}</td>
+                            <td>{TEXTO_ENTREGA[tipoDeEntrega(compra)]}</td>
+                            <td className="price-md">{pesos(compra.total_compra)}</td>
+                            <td>
+                                <Link className="texto-bordo" to={"/compra/" + compra.id}>
+                                    Ver detalle
+                                </Link>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        )
+    }
 
     return (
         <div className="seccion">
@@ -66,96 +115,53 @@ const MisCompras = () => {
                 <h1 className="headline-lg titulo-oculto">Mis compras</h1>
                 <p className="body-lg muted titulo-oculto">Las compras que hiciste.</p>
 
-                {!cargando && !sinNada && !error && (
-                    <div className="filtros">
-                        <CampoFormulario
-                            tipo="select"
-                            etiqueta="Entrega"
-                            value={filtroDeEntrega}
-                            onChange={(evento) => setFiltroDeEntrega(evento.target.value)}
-                        >
-                            <option value="todas">Todas</option>
-                            <option value="envio">{TEXTO_ENTREGA.envio}</option>
-                            <option value="retiro">{TEXTO_ENTREGA.retiro}</option>
-                            <option value="encargo">{TEXTO_ENTREGA.encargo}</option>
-                        </CampoFormulario>
+                {conLateral ? (
+                    <div className="panel-lista">
+                        <aside className="cartela pad-lg pegado-arriba panel-lateral">
+                            {/* Lo gastado y la cantidad de compras, igual que en Mis ventas (valen para lo filtrado). */}
+                            <div className="panel-lateral-totales">
+                                <Indicador titulo="Gastado" valor={pesos(gastado)} />
+                                <Indicador titulo="Compras" valor={compras.length} />
+                            </div>
 
-                        <CampoFormulario
-                            tipo="select"
-                            etiqueta="Período"
-                            value={filtroDePeriodo}
-                            onChange={(evento) => setFiltroDePeriodo(evento.target.value)}
-                        >
-                            {PERIODOS.map((periodoPosible) => (
-                                <option key={periodoPosible.valor} value={periodoPosible.valor}>
-                                    {periodoPosible.texto}
-                                </option>
-                            ))}
-                        </CampoFormulario>
+                            <div className="panel-lateral-filtros">
+                                <CampoFormulario
+                                    tipo="select"
+                                    etiqueta="Entrega"
+                                    value={filtroDeEntrega}
+                                    onChange={(evento) => setFiltroDeEntrega(evento.target.value)}
+                                >
+                                    <option value="todas">Todas</option>
+                                    <option value="envio">{TEXTO_ENTREGA.envio}</option>
+                                    <option value="retiro">{TEXTO_ENTREGA.retiro}</option>
+                                    <option value="encargo">{TEXTO_ENTREGA.encargo}</option>
+                                </CampoFormulario>
 
-                        {hayFiltros && (
-                            <Boton type="button" tipo="secundario" onClick={quitarFiltros}>
-                                Quitar filtros
-                            </Boton>
-                        )}
+                                <CampoFormulario
+                                    tipo="select"
+                                    etiqueta="Período"
+                                    value={filtroDePeriodo}
+                                    onChange={(evento) => setFiltroDePeriodo(evento.target.value)}
+                                >
+                                    {PERIODOS.map((periodoPosible) => (
+                                        <option key={periodoPosible.valor} value={periodoPosible.valor}>
+                                            {periodoPosible.texto}
+                                        </option>
+                                    ))}
+                                </CampoFormulario>
 
-                        {/* Lo gastado y la cantidad de compras, a la derecha, igual que en Mis ventas (valen para lo filtrado). */}
-                        <div className="filtros-totales">
-                            <Indicador titulo="Gastado" valor={pesos(gastado)} />
-                            <Indicador titulo="Compras" valor={compras.length} />
-                        </div>
+                                {hayFiltros && (
+                                    <button type="button" className="boton-texto" onClick={quitarFiltros}>
+                                        Quitar filtros
+                                    </button>
+                                )}
+                            </div>
+                        </aside>
+
+                        <div className="min-ancho-0">{cuerpo}</div>
                     </div>
-                )}
-
-                {/* El título está siempre; solo lo que viene del back espera. */}
-                {cargando ? (
-                    <div>
-                        <Estado tipo="cargando" />
-                    </div>
-                ) : error ? (
-                    <div>
-                        <Estado tipo="error" mensaje={error} />
-                    </div>
-                ) : compras.length === 0 ? (
-                    hayFiltros ? (
-                        <Estado
-                            tipo="vacio"
-                            mensaje="No hay compras con esos filtros."
-                            accion="Quitar filtros"
-                            onAccion={quitarFiltros}
-                        />
-                    ) : (
-                        <div>
-                            <Estado tipo="vacio" mensaje="Todavía no hiciste ninguna compra." />
-                        </div>
-                    )
                 ) : (
-                    <table className="tabla">
-                        <thead>
-                            <tr>
-                                <th>Compra</th>
-                                <th>Fecha</th>
-                                <th>Entrega</th>
-                                <th>Total</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {compras.map((compra) => (
-                                <tr key={compra.id}>
-                                    <td>Nº {String(compra.id).padStart(6, "0")}</td>
-                                    <td>{fecha(compra.fecha_compra)}</td>
-                                    <td>{TEXTO_ENTREGA[tipoDeEntrega(compra)]}</td>
-                                    <td className="price-md">{pesos(compra.total_compra)}</td>
-                                    <td>
-                                        <Link className="texto-bordo" to={"/compra/" + compra.id}>
-                                            Ver detalle
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    cuerpo
                 )}
             </div>
         </div>
