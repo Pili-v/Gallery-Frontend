@@ -72,7 +72,6 @@ const PagoEncargo = () => {
     return (
         <FormularioPago
             titulo="Pago del encargo"
-            subtitulo="Último paso. Al confirmar, el encargo queda pagado."
             subtotal={precio}
             etiquetaSubtotal={"Encargo Nº " + String(encargo.id).padStart(3, "0")}
             marcos={0}
@@ -81,7 +80,6 @@ const PagoEncargo = () => {
             onPagar={pagar}
             textoVolver="Volver al encargo"
             onVolver={volver}
-            pista="Encargo a medida"
         />
     )
 }
