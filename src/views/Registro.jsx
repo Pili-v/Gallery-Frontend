@@ -131,7 +131,7 @@ const Registro = () => {
 
     return (
         <div className="seccion">
-            <div className="contenido col-media">
+            <div className="contenido col-acceso">
                 <h1 className="headline-lg centro">Crear cuenta</h1>
 
                 <p className="body-lg muted centro">Completá tus datos para registrarte.</p>
