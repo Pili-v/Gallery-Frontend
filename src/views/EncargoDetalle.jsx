@@ -273,11 +273,11 @@ function Detalle({ id, recibidos, base }) {
 
     return (
         <main className="seccion encargo-detalle">
-            <div className="contenido col-media">
+            <div className="contenido">
                 <Link to={volver} className="detalle-volver body-sm">
                     ← Volver a encargos
                 </Link>
-                <div className="encabezado detalle-cabecera">
+                <div className="detalle-cabecera mb-lg">
                     <div>
                         <p className="catalog-number cartela-num">Encargo Nº {String(encargo.id).padStart(3, "0")}</p>
                         <h1 className="headline-lg">
@@ -293,201 +293,224 @@ function Detalle({ id, recibidos, base }) {
                             </time>
                         </p>
                     </div>
-                    <EstadoEncargo estado={encargo.estado_encargo} nombre={encargo.nombre_estado} />
                 </div>
-                <div className="aviso detalle-aviso">
-                    <span className="catalog-number cartela-num">
-                        Vista de {esAdmin ? "administración" : esArtista ? "artista" : "cliente"}
-                    </span>
-                    <p className="body-sm detalle-texto">
-                        {esAdmin
-                            ? "Consulta de solo lectura. Los mensajes son privados de los participantes."
-                            : esArtista
-                              ? "Sos el artista de este encargo: proponés el precio y actualizás su estado."
-                              : "Podés escribir mensajes, aceptar el precio que proponga el artista y pagar cuando el encargo esté terminado."}
-                    </p>
-                </div>
-                <hr className="divisor" />
-                <section className="cartela detalle-ficha" aria-labelledby="descripcion-pedido">
-                    <h2 id="descripcion-pedido" className="catalog-number muted">
-                        Descripción del pedido
-                    </h2>
-                    <p className="body-lg detalle-texto detalle-contenido">{encargo.descripcion_encargo}</p>
-                    <div className="fila detalle-chips">
-                        <span className="chip">{pintura}</span>
-                        <span className="chip">{lienzo}</span>
-                        <span className="chip">{tamanio}</span>
-                        <span className="chip">{marco}</span>
-                    </div>
-                    <hr className="divisor" />
-                    {esArtista && estadosSiguientes.length > 0 ? (
-                        <form onSubmit={guardarEstado}>
-                            <div className="entre detalle-estado">
-                                <label htmlFor="estado-encargo" className="muted">
-                                    Cambiar el estado del encargo
-                                </label>
-                                <div className="fila detalle-controles">
-                                    <select
-                                        id="estado-encargo"
-                                        className="select"
-                                        value={nuevoEstado}
-                                        aria-invalid={Boolean(errorEstado)}
-                                        aria-describedby={errorEstado ? "estado-error" : undefined}
-                                        onChange={(evento) => {
-                                            setNuevoEstado(evento.target.value)
-                                            setErrorEstado("")
-                                            setAviso("")
-                                        }}
-                                    >
-                                        <option value="">{encargo.nombre_estado} (actual)</option>
-                                        {estadosSiguientes.map((estado) => (
-                                            <option key={estado.valor} value={estado.valor}>
-                                                {estado.nombre}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <Boton
-                                        type="submit"
-                                        tipo={nuevoEstado && !guardando ? "primario" : "deshabilitado"}
-                                    >
-                                        {guardando ? "Guardando..." : "Guardar"}
-                                    </Boton>
-                                </div>
+
+                {/* El pedido y la conversación a la izquierda; el estado, el precio y lo que se puede hacer en una
+                    tarjeta fija a la derecha (en una columna, va arriba). */}
+                <div className="encargo-cuerpo">
+                    <div className="min-ancho-0">
+                        <section className="cartela detalle-ficha" aria-labelledby="descripcion-pedido">
+                            <h2 id="descripcion-pedido" className="catalog-number muted">
+                                Descripción del pedido
+                            </h2>
+                            <p className="body-lg detalle-texto detalle-contenido">{encargo.descripcion_encargo}</p>
+                            <div className="fila detalle-chips">
+                                <span className="chip">{pintura}</span>
+                                <span className="chip">{lienzo}</span>
+                                <span className="chip">{tamanio}</span>
+                                <span className="chip">{marco}</span>
                             </div>
-                            {errorEstado && (
-                                <p id="estado-error" className="campo-error body-sm" role="alert">
-                                    {errorEstado}
+                        </section>
+
+                        {permisos.puedeVerMensajes && (
+                            <section className="detalle-mensajes" aria-labelledby="titulo-mensajes">
+                                <h2 id="titulo-mensajes" className="headline-md">
+                                    Mensajes
+                                </h2>
+                                <p className="body-lg muted detalle-intro">
+                                    Para coordinar. La descripción original del pedido se mantiene sin cambios.
                                 </p>
-                            )}
-                        </form>
-                    ) : (
-                        <>
-                            <div className="entre detalle-estado">
-                                <span className="muted">Estado del encargo</span>
-                                <EstadoEncargo estado={encargo.estado_encargo} nombre={encargo.nombre_estado} />
-                            </div>
-                            <p className="body-sm muted detalle-texto">
-                                {esAdmin
-                                    ? "Consulta de solo lectura."
-                                    : permisos.puedeCancelar
-                                      ? "El artista avanza el estado del encargo; vos podés cancelarlo mientras esté pendiente: una vez que aceptás el precio ya no se cancela."
-                                      : estadosSiguientes.length === 0
-                                        ? "No hay cambios de estado disponibles desde esta pantalla."
-                                        : "Solo el artista puede cambiar el estado."}
-                            </p>
-                            {permisos.puedeCancelar && (
-                                <Boton tipo="secundario" onClick={() => setCancelando(true)}>
-                                    Cancelar encargo
-                                </Boton>
-                            )}
-                        </>
-                    )}
-                </section>
-
-                <div className="mt-lg">
-                    <AcuerdoPrecio
-                        estado={encargo.estado_encargo}
-                        precio={encargo.precio_acordado}
-                        esCliente={permisos.esCliente}
-                        esArtista={permisos.esArtista}
-                        puedeDefinir={permisos.puedeDefinirPrecio}
-                        puedeAceptar={permisos.puedeAceptarPrecio}
-                        puedePagar={permisos.puedePagar}
-                        ocupado={trabajando}
-                        error={errorPrecio}
-                        aviso={avisoPrecio}
-                        onDefinir={definirPrecio}
-                        onAceptar={aceptarPrecio}
-                        onPagar={() => navegar(`/encargos/${encargo.id}/pagar`)}
-                    />
-                </div>
-
-                {permisos.puedeVerMensajes && (
-                    <section className="detalle-mensajes" aria-labelledby="titulo-mensajes">
-                        <h2 id="titulo-mensajes" className="headline-md">
-                            Mensajes
-                        </h2>
-                        <p className="body-lg muted detalle-intro">
-                            Para coordinar. La descripción original del pedido se mantiene sin cambios.
-                        </p>
-                        {encargo.mensajes.length === 0 ? (
-                            <Estado
-                                tipo="vacio"
-                                mensaje="Todavía no hay mensajes. Escribí el primero para empezar a coordinar."
-                            />
-                        ) : (
-                            <ol className="hilo detalle-hilo" aria-label="Conversación del encargo">
-                                {encargo.mensajes.map((item) => (
-                                    <li
-                                        key={item.id}
-                                        className={`mensaje ${item.usuario_emisor_id === usuario?.id ? "propio" : "ajeno"}`}
-                                    >
-                                        <p className="cartela-artist">
-                                            {item.usuario_emisor_id === usuario?.id
-                                                ? "Vos"
-                                                : item.usuario_emisor_id === encargo.usuario_id
-                                                  ? cliente.nombre
-                                                  : item.usuario_emisor_id === artista?.usuario_id
-                                                    ? artista.nombre
-                                                    : `Usuario Nº ${item.usuario_emisor_id}`}
-                                            {item.fecha_creacion_mensaje && (
-                                                <time className="cartela-meta" dateTime={item.fecha_creacion_mensaje}>
-                                                    {" · "}
-                                                    {new Date(item.fecha_creacion_mensaje).toLocaleString("es-AR", {
-                                                        day: "2-digit",
-                                                        month: "2-digit",
-                                                        hour: "2-digit",
-                                                        minute: "2-digit"
-                                                    })}
-                                                </time>
-                                            )}
-                                        </p>
-                                        <p className="body-lg detalle-texto detalle-contenido">
-                                            {item.contenido_mensaje}
-                                        </p>
-                                    </li>
-                                ))}
-                            </ol>
-                        )}
-                        {permisos.puedeEscribir && (
-                            <form className="detalle-enviar" onSubmit={enviar} noValidate>
-                                <div className="fila detalle-editor">
-                                    <CampoFormulario
-                                        etiqueta="Tu mensaje"
-                                        aria-label="Tu mensaje"
-                                        placeholder="Escribir un mensaje"
-                                        ref={campoMensaje}
-                                        disabled={enviando}
-                                        value={mensaje}
-                                        maxLength={255}
-                                        required
-                                        aria-invalid={Boolean(errorMensaje)}
-                                        aria-describedby={errorMensaje ? "mensaje-error" : "mensaje-ayuda"}
-                                        onChange={(evento) => {
-                                            setMensaje(evento.target.value)
-                                            setErrorMensaje("")
-                                            setAviso("")
-                                        }}
+                                {encargo.mensajes.length === 0 ? (
+                                    <Estado
+                                        tipo="vacio"
+                                        mensaje="Todavía no hay mensajes. Escribí el primero para empezar a coordinar."
                                     />
-                                    <Boton type="submit" disabled={enviando}>
-                                        {enviando ? "Enviando..." : "Enviar"}
-                                    </Boton>
+                                ) : (
+                                    // La conversación va en una caja de alto fijo con su propio scroll, que arranca en el
+                                    // último mensaje: así el campo para escribir queda siempre a mano, aunque sea larga.
+                                    <div
+                                        className="detalle-conversacion"
+                                        role="region"
+                                        aria-label="Mensajes del encargo"
+                                        tabIndex={0}
+                                    >
+                                        <ol className="hilo detalle-hilo" aria-label="Conversación del encargo">
+                                            {encargo.mensajes.map((item) => (
+                                                <li
+                                                    key={item.id}
+                                                    className={`mensaje ${item.usuario_emisor_id === usuario?.id ? "propio" : "ajeno"}`}
+                                                >
+                                                    <p className="cartela-artist">
+                                                        {item.usuario_emisor_id === usuario?.id
+                                                            ? "Vos"
+                                                            : item.usuario_emisor_id === encargo.usuario_id
+                                                              ? cliente.nombre
+                                                              : item.usuario_emisor_id === artista?.usuario_id
+                                                                ? artista.nombre
+                                                                : `Usuario Nº ${item.usuario_emisor_id}`}
+                                                        {item.fecha_creacion_mensaje && (
+                                                            <time
+                                                                className="cartela-meta"
+                                                                dateTime={item.fecha_creacion_mensaje}
+                                                            >
+                                                                {" · "}
+                                                                {new Date(item.fecha_creacion_mensaje).toLocaleString(
+                                                                    "es-AR",
+                                                                    {
+                                                                        day: "2-digit",
+                                                                        month: "2-digit",
+                                                                        hour: "2-digit",
+                                                                        minute: "2-digit"
+                                                                    }
+                                                                )}
+                                                            </time>
+                                                        )}
+                                                    </p>
+                                                    <p className="body-lg detalle-texto detalle-contenido">
+                                                        {item.contenido_mensaje}
+                                                    </p>
+                                                </li>
+                                            ))}
+                                        </ol>
+                                    </div>
+                                )}
+                                {permisos.puedeEscribir && (
+                                    <form className="detalle-enviar" onSubmit={enviar} noValidate>
+                                        <div className="fila detalle-editor">
+                                            <CampoFormulario
+                                                etiqueta="Tu mensaje"
+                                                aria-label="Tu mensaje"
+                                                placeholder="Escribir un mensaje"
+                                                ref={campoMensaje}
+                                                disabled={enviando}
+                                                value={mensaje}
+                                                maxLength={255}
+                                                required
+                                                aria-invalid={Boolean(errorMensaje)}
+                                                aria-describedby={errorMensaje ? "mensaje-error" : "mensaje-ayuda"}
+                                                onChange={(evento) => {
+                                                    setMensaje(evento.target.value)
+                                                    setErrorMensaje("")
+                                                    setAviso("")
+                                                }}
+                                            />
+                                            <Boton type="submit" disabled={enviando}>
+                                                {enviando ? "Enviando..." : "Enviar"}
+                                            </Boton>
+                                        </div>
+                                        {errorMensaje && (
+                                            <p id="mensaje-error" className="campo-error body-sm" role="alert">
+                                                {errorMensaje}
+                                            </p>
+                                        )}
+                                        <p id="mensaje-ayuda" className="body-sm muted">
+                                            {mensaje.length}/255 caracteres.
+                                        </p>
+                                    </form>
+                                )}
+                                <p className="body-sm detalle-confirmacion" role="status">
+                                    {aviso}
+                                </p>
+                            </section>
+                        )}
+                    </div>
+
+                    <aside className="cartela pad-lg pegado-arriba encargo-lateral">
+                        <div className="entre">
+                            <span className="catalog-number muted">Estado</span>
+                            <EstadoEncargo estado={encargo.estado_encargo} nombre={encargo.nombre_estado} />
+                        </div>
+
+                        <AcuerdoPrecio
+                            estado={encargo.estado_encargo}
+                            precio={encargo.precio_acordado}
+                            esCliente={permisos.esCliente}
+                            esArtista={permisos.esArtista}
+                            puedeDefinir={permisos.puedeDefinirPrecio}
+                            puedeAceptar={permisos.puedeAceptarPrecio}
+                            puedePagar={permisos.puedePagar}
+                            ocupado={trabajando}
+                            error={errorPrecio}
+                            aviso={avisoPrecio}
+                            onDefinir={definirPrecio}
+                            onAceptar={aceptarPrecio}
+                            onPagar={() => navegar(`/encargos/${encargo.id}/pagar`)}
+                        />
+
+                        <hr className="divisor" />
+                        {esArtista && estadosSiguientes.length > 0 ? (
+                            <form onSubmit={guardarEstado}>
+                                <div className="entre detalle-estado">
+                                    <label htmlFor="estado-encargo" className="muted">
+                                        Cambiar el estado del encargo
+                                    </label>
+                                    <div className="fila detalle-controles">
+                                        <select
+                                            id="estado-encargo"
+                                            className="select"
+                                            value={nuevoEstado}
+                                            aria-invalid={Boolean(errorEstado)}
+                                            aria-describedby={errorEstado ? "estado-error" : undefined}
+                                            onChange={(evento) => {
+                                                setNuevoEstado(evento.target.value)
+                                                setErrorEstado("")
+                                                setAviso("")
+                                            }}
+                                        >
+                                            <option value="">{encargo.nombre_estado} (actual)</option>
+                                            {estadosSiguientes.map((estado) => (
+                                                <option key={estado.valor} value={estado.valor}>
+                                                    {estado.nombre}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <Boton
+                                            type="submit"
+                                            tipo={nuevoEstado && !guardando ? "primario" : "deshabilitado"}
+                                        >
+                                            {guardando ? "Guardando..." : "Guardar"}
+                                        </Boton>
+                                    </div>
                                 </div>
-                                {errorMensaje && (
-                                    <p id="mensaje-error" className="campo-error body-sm" role="alert">
-                                        {errorMensaje}
+                                {errorEstado && (
+                                    <p id="estado-error" className="campo-error body-sm" role="alert">
+                                        {errorEstado}
                                     </p>
                                 )}
-                                <p id="mensaje-ayuda" className="body-sm muted">
-                                    {mensaje.length}/255 caracteres.
-                                </p>
                             </form>
+                        ) : (
+                            <>
+                                <p className="body-sm muted detalle-texto">
+                                    {esAdmin
+                                        ? "Consulta de solo lectura."
+                                        : permisos.puedeCancelar
+                                          ? "El artista avanza el estado del encargo; vos podés cancelarlo mientras esté pendiente: una vez que aceptás el precio ya no se cancela."
+                                          : estadosSiguientes.length === 0
+                                            ? "No hay cambios de estado disponibles desde esta pantalla."
+                                            : "Solo el artista puede cambiar el estado."}
+                                </p>
+                                {permisos.puedeCancelar && (
+                                    <Boton tipo="secundario" onClick={() => setCancelando(true)}>
+                                        Cancelar encargo
+                                    </Boton>
+                                )}
+                            </>
                         )}
-                        <p className="body-sm detalle-confirmacion" role="status">
-                            {aviso}
-                        </p>
-                    </section>
-                )}
+
+                        <div className="aviso detalle-aviso">
+                            <span className="catalog-number cartela-num">
+                                Vista de {esAdmin ? "administración" : esArtista ? "artista" : "cliente"}
+                            </span>
+                            <p className="body-sm detalle-texto">
+                                {esAdmin
+                                    ? "Consulta de solo lectura. Los mensajes son privados de los participantes."
+                                    : esArtista
+                                      ? "Sos el artista de este encargo: proponés el precio y actualizás su estado."
+                                      : "Podés escribir mensajes, aceptar el precio que proponga el artista y pagar cuando el encargo esté terminado."}
+                            </p>
+                        </div>
+                    </aside>
+                </div>
                 {cancelando && (
                     <Confirmacion
                         titulo="¿Cancelar el encargo?"
