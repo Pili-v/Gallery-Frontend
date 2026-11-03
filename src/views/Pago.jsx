@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { cargarCarrito, confirmarCompra } from "../redux/carritoSlice"
 import { getUsuario } from "../api/sesion"
 import { costoDeEnvio, ENVIO_DOMICILIO } from "../api/entrega"
+import { optimizada, portadaDe } from "../api/formato"
 import FormularioPago from "../components/FormularioPago"
 import Estado from "../components/Estado"
 
@@ -20,7 +21,7 @@ const Pago = () => {
     const ubicacion = useLocation()
 
     const dispatch = useDispatch()
-    const { carrito, items, loading: cargando, error } = useSelector((state) => state.carrito)
+    const { carrito, items, imagenes, loading: cargando, error } = useSelector((state) => state.carrito)
 
     // El tipo de entrega lo eligió la pantalla anterior y viajó hasta acá por el router: es una decisión de
     // esa pantalla, no un dato del back. Si alguien entra directo por la URL, se asume envío a domicilio.
@@ -53,6 +54,22 @@ const Pago = () => {
     const marcos = items.reduce((suma, item) => suma + item.precio_marco * item.cantidad, 0)
     const total = items.reduce((suma, item) => suma + item.subtotal, 0) + envio
 
+    // Las obras que se pagan, con su portada, para el resumen.
+    const lineas = items.map((item) => {
+        const portada = portadaDe(imagenes, item.obra_id)
+        return {
+            id: item.id,
+            nombre: item.nombre_obra,
+            detalle:
+                item.nombre_tamanio +
+                " · " +
+                (item.nombre_marco ? item.nombre_marco : "Sin marco") +
+                (item.cantidad > 1 ? " · ×" + item.cantidad : ""),
+            imagen: portada ? optimizada(portada.url, 120) : null,
+            importe: item.subtotal
+        }
+    })
+
     if (cargando)
         return (
             <div className="seccion">
@@ -65,15 +82,22 @@ const Pago = () => {
     return (
         <FormularioPago
             titulo="Pago"
-            subtitulo="Último paso. Al confirmar se descuenta el stock."
+            lineas={lineas}
+            nota="Se emite una factura por cada artista."
             subtotal={subtotal}
             marcos={marcos}
             envio={envio}
             total={total}
             onPagar={pagar}
-            textoVolver="Volver"
             onVolver={() => navegar("/carrito")}
-            pista={tipoEntrega === ENVIO_DOMICILIO ? "Envío a domicilio" : "Retiro por el local"}
+            textoVolver="Volver al carrito"
+            entrega={
+                tipoEntrega === ENVIO_DOMICILIO
+                    ? carrito && carrito.direccion_cliente
+                        ? "Se entrega en " + carrito.direccion_cliente
+                        : "Envío a domicilio"
+                    : "Retiro en el local, sin cargo"
+            }
             errorCarga={error}
         />
     )

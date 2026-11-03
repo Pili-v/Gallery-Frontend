@@ -622,6 +622,27 @@ body {
 .tarjeta-cvv .tarjeta-input:-webkit-autofill { -webkit-text-fill-color: #14110F; }
 
 
+/* ---------- Pantalla de pago (carrito y encargo) ----------
+   Checkout partido: a la izquierda, en el bordó suave, qué se paga (total, obras, envío); a la derecha la tarjeta con el
+   botón de pagar justo debajo. En una columna, el resumen va arriba. */
+.pago-partido { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; border: 1px solid var(--border); border-radius: calc(var(--radio) * 2); overflow: hidden; background: var(--surface); }
+.pago-resumen { background: var(--bordo-suave); color: var(--bordo-dark); padding: var(--xl); }
+.pago-resumen .cartela-meta { color: var(--bordo-dark); opacity: .8; }
+.pago-total { font-family: "EB Garamond", Georgia, serif; font-size: 40px; line-height: 48px; }
+.pago-desglose { margin-top: var(--lg); padding-top: var(--md); border-top: 1px solid rgb(133 14 53 / 20%); }
+.pago-medio { padding: var(--xl); display: flex; flex-direction: column; }
+/* La tarjeta y el botón con el mismo ancho, centrados en su mitad. */
+.pago-medio > * { width: 100%; max-width: 420px; margin-left: auto; margin-right: auto; }
+@media (max-width: 900px) {
+  .pago-partido { grid-template-columns: minmax(0, 1fr); }
+  .pago-resumen, .pago-medio { padding: var(--lg); }
+}
+/* Las obras que se pagan: miniatura, nombre con su detalle e importe. */
+.resumen-obras { list-style: none; }
+.resumen-obras li { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: var(--sm); align-items: center; padding-bottom: var(--sm); margin-bottom: var(--sm); }
+.resumen-obras .linea-mini { width: 44px; }
+.resumen-obras p { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ===========================================================
    Imágenes de obra — que siempre se vean enteras y nítidas
    =========================================================== */

@@ -1,8 +1,7 @@
 import { useState } from "react"
 
-import ResumenTotales from "./ResumenTotales"
+import { pesos } from "../api/formato"
 import Estado from "./Estado"
-import Boton from "./Boton"
 
 // Cada marca agrupa los digitos distinto y pide un codigo de distinto largo.
 // Amex son 15 numeros en grupos de 4-6-5 y el codigo es de 4.
@@ -69,15 +68,17 @@ const numeroValido = (numero, marca) => {
 
 // La pantalla de pago completa: la tarjeta que se escribe encima, la validación y el resumen con el botón.
 // La usan el pago del carrito y el de un encargo: lo único que cambia es lo que se paga, que llega por props.
-//   titulo, subtitulo: encabezado de la pantalla.
-//   subtotal, etiquetaSubtotal, marcos, envio, total, nota: lo que muestra el resumen.
+//   titulo: el título de la pantalla (no se ve en escritorio).
+//   lineas (opcional): lo que se paga, cada uno { id, nombre, detalle, imagen, importe }, con su miniatura.
+//   subtotal, etiquetaSubtotal, marcos, envio, total, nota: los importes del resumen y una nota debajo del botón.
 //   onPagar: se llama cuando la tarjeta es válida y tiene que devolver la promesa del pedido al back.
 //            Si falla, se muestra el mensaje acá; si sale bien, quien la usa navega a otra pantalla.
-//   textoVolver, onVolver, pista: el botón para volver y el texto que va al lado.
+//   textoVolver, onVolver: el link para volver (arriba a la izquierda).
+//   entrega (opcional): cómo se recibe la compra (por ejemplo, "Envío a domicilio · Calle 123"), en el resumen.
 //   errorCarga: un error de lo que cargó la pantalla que lo usa, para mostrarlo junto al pago.
 const FormularioPago = ({
     titulo,
-    subtitulo,
+    lineas = [],
     subtotal,
     etiquetaSubtotal,
     marcos,
@@ -87,7 +88,7 @@ const FormularioPago = ({
     onPagar,
     textoVolver,
     onVolver,
-    pista,
+    entrega,
     errorCarga
 }) => {
     const [marca, setMarca] = useState("Visa")
@@ -161,11 +162,61 @@ const FormularioPago = ({
     return (
         <div className="seccion">
             <div className="contenido">
-                <h1 className="headline-lg">{titulo}</h1>
-                <p className="body-lg muted">{subtitulo}</p>
+                {/* Como en las demás pantallas, el título no se ve en escritorio: así el resumen con el botón de pagar
+                    arranca a la altura de la barra. */}
+                <h1 className="headline-lg titulo-oculto">{titulo}</h1>
 
-                <div className="dos-columnas">
-                    <div>
+                {/* Checkout partido: a la izquierda qué se paga; a la derecha cómo, con el botón debajo de la tarjeta. */}
+                <div className="pago-partido">
+                    <aside className="pago-resumen">
+                        <button type="button" className="boton-texto body-sm" onClick={onVolver}>
+                            ← {textoVolver}
+                        </button>
+
+                        <p className="body-sm mt-lg">Total a pagar</p>
+                        <p className="pago-total">{pesos(total)}</p>
+
+                        {lineas.length > 0 && (
+                            <ul className="resumen-obras mt-lg">
+                                {lineas.map((linea) => (
+                                    <li key={linea.id}>
+                                        <div className="linea-mini">
+                                            {linea.imagen && <img src={linea.imagen} alt="" />}
+                                        </div>
+                                        <div className="min-ancho-0">
+                                            <p className="title-work chico">{linea.nombre}</p>
+                                            <p className="cartela-meta">{linea.detalle}</p>
+                                        </div>
+                                        <span>{pesos(linea.importe)}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        <div className="pago-desglose">
+                            <div className="resumen-fila">
+                                <span>{etiquetaSubtotal || "Obras"}</span>
+                                <span>{pesos(subtotal)}</span>
+                            </div>
+                            {marcos > 0 && (
+                                <div className="resumen-fila">
+                                    <span>Marcos</span>
+                                    <span>{pesos(marcos)}</span>
+                                </div>
+                            )}
+                            {envio > 0 && (
+                                <div className="resumen-fila">
+                                    <span>Envío a domicilio</span>
+                                    <span>{pesos(envio)}</span>
+                                </div>
+                            )}
+                            {entrega && <p className="body-sm mt-sm">{entrega}</p>}
+                        </div>
+                    </aside>
+
+                    <section className="pago-medio">
+                        <h2 className="catalog-number muted mb-md">Pagá con tarjeta</h2>
+
                         {/* La tarjeta se dibuja con lo que hay en el estado y es el
                             formulario: los campos están encima. Girada muestra el dorso,
                             que es donde va el código en una tarjeta de verdad. */}
@@ -280,24 +331,16 @@ const FormularioPago = ({
                             </div>
                         )}
 
-                        <div className="fila">
-                            <Boton tipo="secundario" onClick={onVolver}>
-                                {textoVolver}
-                            </Boton>
-                            <span className="cartela-meta">{pista}</span>
-                        </div>
-                    </div>
-
-                    <ResumenTotales
-                        subtotal={subtotal}
-                        etiquetaSubtotal={etiquetaSubtotal}
-                        marcos={marcos}
-                        envio={envio}
-                        total={total}
-                        boton={pagando ? "Confirmando..." : "Pagar y confirmar"}
-                        onBoton={pagando ? undefined : pagar}
-                        nota={nota}
-                    />
+                        <button
+                            type="button"
+                            className="boton boton-primario boton-bloque"
+                            disabled={pagando}
+                            onClick={pagar}
+                        >
+                            {pagando ? "Confirmando…" : "Pagar " + pesos(total)}
+                        </button>
+                        {nota && <p className="body-sm muted mt-sm centro">{nota}</p>}
+                    </section>
                 </div>
             </div>
         </div>
