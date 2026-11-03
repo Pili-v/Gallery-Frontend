@@ -26,10 +26,37 @@ export const obtenerPagina = async (ruta, { sin404 = true } = {}) => {
     }
 }
 
-// De cada obra se trae su variante (la primera con stock, o la primera) y su portada.
+// El descuento de una variante solo vale hasta su fecha (descuento_hasta, inclusive): la misma regla que usa el back para
+// ordenar y para el filtro de precio. Las fechas llegan como "AAAA-MM-DD", así que se comparan como texto.
+const descuentoVigente = (variante) => {
+    const hoy = new Date().toLocaleDateString("en-CA") // AAAA-MM-DD en la hora local
+    const vigente = !variante.descuento_hasta || variante.descuento_hasta >= hoy
+    return vigente ? Number(variante.porcentaje_descuento || 0) : 0
+}
+const precioVigente = (variante) => Number(variante.precio_variante) * (1 - descuentoVigente(variante) / 100)
+
+// La variante que se muestra de una obra: la más barata con stock (la que define el orden "menor precio") y, con un rango
+// de precio aplicado, la más barata con stock DENTRO del rango, así el precio que se ve es el que se filtró. Si ninguna
+// tiene stock, la más barata igual. Su descuento llega ya resuelto: 0 si venció.
+const varianteAMostrar = (variantes, rango) => {
+    const enRango = variantes.filter((variante) => {
+        const precio = precioVigente(variante)
+        return (rango.min === "" || precio >= Number(rango.min)) && (rango.max === "" || precio <= Number(rango.max))
+    })
+    const candidatas = enRango.length > 0 ? enRango : variantes
+    const conStock = candidatas.filter((variante) => variante.stock_variante > 0)
+    const opciones = conStock.length > 0 ? conStock : candidatas
+    if (opciones.length === 0) return null
+
+    const masBarata = [...opciones].sort((a, b) => precioVigente(a) - precioVigente(b))[0]
+    return { ...masBarata, porcentaje_descuento: descuentoVigente(masBarata) }
+}
+
+// De cada obra se trae la variante que se muestra (ver varianteAMostrar) y su portada.
 // Las portadas de todas las obras van en un solo pedido (portada=true); las variantes, de a una obra.
+// rango es el filtro de precio del catálogo ({ min, max }, "" = sin límite); las demás pantallas no lo mandan.
 // Devuelve [{ id, variante, imagenes }] en el mismo orden que las obras.
-export const extrasDeObras = async (obras) => {
+export const extrasDeObras = async (obras, rango = { min: "", max: "" }) => {
     if (obras.length === 0) return []
 
     const [portadas, variantes] = await Promise.all([
@@ -39,7 +66,7 @@ export const extrasDeObras = async (obras) => {
 
     return obras.map((obra, i) => ({
         id: obra.id,
-        variante: variantes[i].find((v) => v.stock_variante > 0) ?? variantes[i][0] ?? null,
+        variante: varianteAMostrar(variantes[i], rango),
         imagenes: portadas.filter((p) => p.obra_id === obra.id)
     }))
 }

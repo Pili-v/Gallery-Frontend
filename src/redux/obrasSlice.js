@@ -19,7 +19,8 @@ export const cargarObras = createAsyncThunk("obras/cargarObras", async ({ pagina
     const { items, totalPaginas, totalElementos } = await obtenerPagina("/api/obras?" + partes.join("&"), {
         sin404: false
     })
-    const datos = await extrasDeObras(items)
+    // Con un rango de precio, cada tarjeta muestra el tamaño que entra en el rango.
+    const datos = await extrasDeObras(items, rango)
 
     return { obras: items, datos, totalPaginas, totalElementos }
 })
