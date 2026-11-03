@@ -114,13 +114,27 @@ body {
 .encabezado h1.headline-lg, .encabezado h1.headline-lg:has(+ p) { margin-bottom: 0; }
 .encabezado h1.headline-lg + p { margin: var(--xs) 0 0; }
 .encabezado > :last-child { margin-left: auto; }
-/* Fila de filtros arriba de una lista (campos con etiqueta, botones y un contador): todos alineados por abajo. */
-.filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--md); margin-bottom: var(--lg); }
-.filtros .campo { margin-bottom: 0; min-width: 200px; }
-.filtros > .boton { height: var(--alto-control); padding-top: 0; padding-bottom: 0; } /* la misma altura que un campo */
-/* Totales a la derecha de la fila de filtros: tarjetas compactas, del alto de un filtro con su etiqueta. */
-.filtros-totales { display: flex; gap: var(--md); margin-left: auto; align-self: stretch; }
-.filtros-totales .cartela { display: flex; flex-direction: column; justify-content: center; padding: 0 var(--md); }
+/* ---------- Listas del panel (Mis obras, Mis ventas, Mis compras) ----------
+   A la izquierda una columna fija con la acción principal, los totales y los filtros (uno debajo del otro, con su
+   etiqueta); a la derecha la tabla. En una columna, la de filtros va arriba. */
+.panel-lista { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--xl); align-items: start; }
+.panel-lateral { display: flex; flex-direction: column; gap: var(--md); }
+.panel-lateral .campo { margin-bottom: 0; }
+.panel-lateral .boton { width: 100%; }
+.panel-lateral .filtro-estilos-control { flex: 1 1 100%; }
+.panel-lateral .desplegable-boton { width: 100%; min-width: 0; }
+.panel-lateral-totales { display: flex; flex-direction: column; gap: var(--sm); padding-bottom: var(--md); border-bottom: 1px solid var(--border); }
+.panel-lateral-filtros { display: flex; flex-direction: column; gap: var(--md); }
+.panel-lateral-filtros .boton-texto { align-self: flex-start; }
+/* El buscador con su botón al lado, alineados por abajo. */
+.panel-lateral-busqueda { display: flex; gap: var(--sm); align-items: flex-end; }
+.panel-lateral-busqueda .campo { flex: 1; min-width: 0; }
+/* Botón cuadrado, del alto de un campo, con una lupa dibujada con el trazo del texto. */
+.boton.boton-lupa { width: var(--alto-control); height: var(--alto-control); flex: none; padding: 0; display: inline-grid; place-items: center; }
+.boton-lupa svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+@media (max-width: 900px) { .panel-lista { grid-template-columns: minmax(0, 1fr); gap: var(--lg); } }
+/* Un total de la lista (lo que se mide arriba, el valor abajo). */
+.indicador p { margin: 0; }
 /* En las pantallas del menú el título no se ve en escritorio: la barra de arriba ya marca dónde estás. Sigue en el
    HTML (lo leen los lectores de pantalla) y se muestra en pantallas angostas, donde el menú queda escondido. */
 @media (min-width: 1001px) {
@@ -466,7 +480,6 @@ body {
 .boton-texto:disabled { color: var(--ink-muted); cursor: not-allowed; }
 /* Anchos máximos de texto y de campos sueltos. */
 .ancho-texto { max-width: 460px; }
-.ancho-buscador { flex: 1 1 280px; max-width: 420px; }
 
 /* ===========================================================
    AGREGADOS — devoluciones de la profe

@@ -33,7 +33,11 @@ const FilaObra = ({
                 {cantidadVariantes}
                 {variantesSinStock > 0 && <span className="texto-error"> · {variantesSinStock} sin stock</span>}
             </td>
-            <td>{enVenta ? "Sí" : "No"}</td>
+            <td>
+                <span className={"sello " + (enVenta ? "sello-proceso" : "sello-pendiente")}>
+                    {enVenta ? "En venta" : "No en venta"}
+                </span>
+            </td>
             <td>
                 <Link
                     className="texto-bordo"

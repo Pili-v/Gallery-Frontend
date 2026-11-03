@@ -4,6 +4,7 @@
 // variantes). El detalle de las variantes se pide recién cuando se abre la obra.
 // Los datos del back viven en Redux (misObrasSlice y estilosSlice); acá quedan los filtros, la página y qué
 // obras están abiertas, que son cosas de esta pantalla.
+// Disposición: el botón de publicar, el total y los filtros en una columna fija a la izquierda; la tabla a la derecha.
 
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
@@ -99,6 +100,7 @@ const PanelObras = () => {
 
     // Sin obras y sin filtros no hay nada que filtrar: solo se invita a publicar. Con filtros se mantienen a la vista.
     const sinNada = !cargando && !error && obras.length === 0 && !hayFiltros
+    const conLateral = !sinNada && !error
 
     // Abre o cierra una obra. Las variantes se piden la primera vez que se abre (el thunk no repite el pedido si ya
     // llegaron; si había fallado, reintenta). Una obra sin variantes llega como lista vacía.
@@ -152,7 +154,7 @@ const PanelObras = () => {
                             <th>Obra</th>
                             <th>Estilo</th>
                             <th>Variantes</th>
-                            <th>En venta</th>
+                            <th>Estado</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -196,66 +198,84 @@ const PanelObras = () => {
     return (
         <div className="seccion">
             <div className="contenido">
-                <div className="encabezado">
-                    <h1 className="headline-lg titulo-oculto">Mis obras</h1>
-                    <Boton onClick={() => navegar("/panel/obras/nueva")}>Publicar obra</Boton>
-                </div>
+                {conLateral ? (
+                    <>
+                        <h1 className="headline-lg titulo-oculto">Mis obras</h1>
+                        <div className="panel-lista">
+                            <aside className="cartela pad-lg pegado-arriba panel-lateral">
+                                <Boton onClick={() => navegar("/panel/obras/nueva")}>Publicar obra</Boton>
 
-                {!sinNada && !error && (
-                    <form className="filtros" onSubmit={buscar} role="search">
-                        <div className="ancho-buscador">
-                            <CampoFormulario
-                                etiqueta="Buscar obra"
-                                placeholder="Nombre de la obra"
-                                value={textoEscrito}
-                                onChange={(evento) => setTextoEscrito(evento.target.value)}
-                            />
+                                {/* El total de obras (las que cumplen los filtros), como en Mis ventas y Mis compras. */}
+                                <div className="panel-lateral-totales">
+                                    <Indicador titulo="Obras" valor={totalObras} />
+                                </div>
+
+                                <form className="panel-lateral-filtros" onSubmit={buscar} role="search">
+                                    <div className="panel-lateral-busqueda">
+                                        <CampoFormulario
+                                            etiqueta="Buscar obra"
+                                            placeholder="Nombre de la obra"
+                                            value={textoEscrito}
+                                            onChange={(evento) => setTextoEscrito(evento.target.value)}
+                                        />
+                                        {/* Un botón cuadrado con la lupa, así el campo usa casi todo el ancho. */}
+                                        <button type="submit" className="boton boton-secundario boton-lupa">
+                                            <svg viewBox="0 0 20 20" aria-hidden="true">
+                                                <circle cx="8.5" cy="8.5" r="5.5" />
+                                                <path d="M12.5 12.5L17 17" />
+                                            </svg>
+                                            <span className="solo-lectores">Buscar</span>
+                                        </button>
+                                    </div>
+
+                                    <CampoFormulario
+                                        tipo="select"
+                                        etiqueta="En venta"
+                                        value={estadoDeVenta}
+                                        onChange={(evento) => cambiarFiltro(setEstadoDeVenta, evento.target.value)}
+                                    >
+                                        <option value="todas">Todas</option>
+                                        <option value="si">En venta</option>
+                                        <option value="no">No en venta</option>
+                                    </CampoFormulario>
+
+                                    <CampoFormulario
+                                        tipo="select"
+                                        etiqueta="Stock"
+                                        value={estadoDeStock}
+                                        onChange={(evento) => cambiarFiltro(setEstadoDeStock, evento.target.value)}
+                                    >
+                                        <option value="todas">Todas</option>
+                                        <option value="sin">Con variantes sin stock</option>
+                                    </CampoFormulario>
+
+                                    <FiltroEstilos
+                                        estilos={estilos}
+                                        seleccionados={estiloIds}
+                                        onCambiar={(ids) => cambiarFiltro(setEstiloIds, ids)}
+                                    />
+
+                                    {hayFiltros && (
+                                        <button type="button" className="boton-texto" onClick={quitarFiltros}>
+                                            Quitar filtros
+                                        </button>
+                                    )}
+                                </form>
+                            </aside>
+
+                            <div className="min-ancho-0">{cuerpo}</div>
                         </div>
-                        <button type="submit" className="boton boton-secundario">
-                            Buscar
-                        </button>
-
-                        <CampoFormulario
-                            tipo="select"
-                            etiqueta="En venta"
-                            value={estadoDeVenta}
-                            onChange={(evento) => cambiarFiltro(setEstadoDeVenta, evento.target.value)}
-                        >
-                            <option value="todas">Todas</option>
-                            <option value="si">En venta</option>
-                            <option value="no">No en venta</option>
-                        </CampoFormulario>
-
-                        <CampoFormulario
-                            tipo="select"
-                            etiqueta="Stock"
-                            value={estadoDeStock}
-                            onChange={(evento) => cambiarFiltro(setEstadoDeStock, evento.target.value)}
-                        >
-                            <option value="todas">Todas</option>
-                            <option value="sin">Con variantes sin stock</option>
-                        </CampoFormulario>
-
-                        <FiltroEstilos
-                            estilos={estilos}
-                            seleccionados={estiloIds}
-                            onCambiar={(ids) => cambiarFiltro(setEstiloIds, ids)}
-                        />
-
-                        {hayFiltros && (
-                            <Boton type="button" tipo="secundario" onClick={quitarFiltros}>
-                                Quitar filtros
-                            </Boton>
-                        )}
-
-                        {/* El total de obras (las que cumplen los filtros), a la derecha, como en Mis ventas y Mis compras. */}
-                        <div className="filtros-totales">
-                            <Indicador titulo="Obras" valor={totalObras} />
+                    </>
+                ) : (
+                    <>
+                        {/* Sin obras (o si falló el pedido) no hay nada que filtrar: el título y el botón, y el aviso. */}
+                        <div className="encabezado">
+                            <h1 className="headline-lg titulo-oculto">Mis obras</h1>
+                            <Boton onClick={() => navegar("/panel/obras/nueva")}>Publicar obra</Boton>
                         </div>
-                    </form>
+                        {cuerpo}
+                    </>
                 )}
-
-                {cuerpo}
             </div>
         </div>
     )
