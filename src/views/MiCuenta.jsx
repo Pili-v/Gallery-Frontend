@@ -39,6 +39,9 @@ const MiCuenta = () => {
     const [guardandoArtista, setGuardandoArtista] = useState(false)
     const [mensajeArtista, setMensajeArtista] = useState("")
 
+    // Qué sección se ve a la derecha: el menú de la izquierda la cambia. Es algo de esta pantalla, no del back.
+    const [seccion, setSeccion] = useState("datos")
+
     const limpiarNombre = (texto) => {
         const soloLetras = texto.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g, "")
 
@@ -274,131 +277,169 @@ const MiCuenta = () => {
         )
     }
 
+    const secciones = [{ clave: "datos", nombre: "Datos personales" }]
+    if (tieneArtista) secciones.push({ clave: "artista", nombre: "Perfil de artista" })
+    secciones.push({ clave: "contrasenia", nombre: "Contraseña" })
+
     return (
         <div className="seccion">
-            <div className="contenido col-media">
-                <h1 className="headline-lg centro">Mi cuenta</h1>
+            <div className="contenido">
+                <h1 className="headline-lg titulo-oculto">Mi cuenta</h1>
+                <p className="body-lg muted titulo-oculto">Consultá y actualizá tus datos personales.</p>
 
-                <p className="body-lg muted centro">Consultá y actualizá tus datos personales.</p>
+                <div className="panel-lista cuenta-panel">
+                    {/* El menú de secciones, fijo a la izquierda (como en el panel): se ve una sección a la vez. */}
+                    <nav className="cartela pad-lg pegado-arriba panel-lateral" aria-label="Secciones de la cuenta">
+                        <div className="panel-lateral-vista">
+                            {secciones.map((item) => (
+                                <button
+                                    key={item.clave}
+                                    type="button"
+                                    className={"chip" + (seccion === item.clave ? " activo" : "")}
+                                    aria-pressed={seccion === item.clave}
+                                    onClick={() => setSeccion(item.clave)}
+                                >
+                                    {item.nombre}
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
 
-                {errorGeneral && <Estado tipo="error" mensaje={errorGeneral} />}
+                    <div className="min-ancho-0">
+                        {errorGeneral && <Estado tipo="error" mensaje={errorGeneral} />}
 
-                <form className={"cartela pad-lg" + (errorGeneral ? " mt-md" : "")} onSubmit={handleSubmit}>
-                    <div className="fila-campos">
-                        <CampoFormulario
-                            etiqueta="Nombre"
-                            name="nombre_persona"
-                            value={datos.nombre_persona}
-                            onChange={handleChange}
-                            error={errores.nombre_persona}
-                        />
+                        {seccion === "datos" && (
+                            <form className={"cartela pad-lg" + (errorGeneral ? " mt-md" : "")} onSubmit={handleSubmit}>
+                                <h2 className="headline-sm mb-md">Datos personales</h2>
 
-                        <CampoFormulario
-                            etiqueta="Apellido"
-                            name="apellido_persona"
-                            value={datos.apellido_persona}
-                            onChange={handleChange}
-                            error={errores.apellido_persona}
-                        />
+                                <div className="fila-campos">
+                                    <CampoFormulario
+                                        etiqueta="Nombre"
+                                        name="nombre_persona"
+                                        value={datos.nombre_persona}
+                                        onChange={handleChange}
+                                        error={errores.nombre_persona}
+                                    />
+
+                                    <CampoFormulario
+                                        etiqueta="Apellido"
+                                        name="apellido_persona"
+                                        value={datos.apellido_persona}
+                                        onChange={handleChange}
+                                        error={errores.apellido_persona}
+                                    />
+                                </div>
+
+                                <div className="fila-campos">
+                                    <CampoFormulario
+                                        etiqueta="Nombre de usuario"
+                                        name="nombre_usuario"
+                                        value={datos.nombre_usuario}
+                                        onChange={handleChange}
+                                        error={errores.nombre_usuario}
+                                    />
+
+                                    <CampoFormulario
+                                        etiqueta="Teléfono"
+                                        tipo="tel"
+                                        name="telefono_usuario"
+                                        value={datos.telefono_usuario}
+                                        onChange={handleChange}
+                                        maxLength={10}
+                                        inputMode="numeric"
+                                        error={errores.telefono_usuario}
+                                    />
+                                </div>
+
+                                <CampoFormulario
+                                    etiqueta="Email"
+                                    tipo="email"
+                                    name="email_usuario"
+                                    value={datos.email_usuario}
+                                    onChange={handleChange}
+                                    error={errores.email_usuario}
+                                />
+
+                                {mensaje && <p className="body-sm mb-md">{mensaje}</p>}
+
+                                <div className="fila al-final">
+                                    <Boton tipo={guardando ? "deshabilitado" : "primario"} type="submit">
+                                        {guardando ? "Guardando..." : "Guardar cambios"}
+                                    </Boton>
+                                </div>
+                            </form>
+                        )}
+
+                        {seccion === "artista" && tieneArtista && (
+                            <form className="cartela pad-lg" onSubmit={handleArtista}>
+                                <h2 className="headline-sm mb-md">Perfil de artista</h2>
+
+                                <CampoFormulario
+                                    etiqueta="Nombre artístico"
+                                    name="nombre_artistico"
+                                    value={artista.nombre_artistico}
+                                    maxLength={150}
+                                    onChange={(e) => setArtista({ ...artista, nombre_artistico: e.target.value })}
+                                    error={errorNombreArtistico}
+                                />
+
+                                <label className="body-sm mb-xs bloque">
+                                    <input
+                                        type="checkbox"
+                                        checked={artista.acepta_encargos}
+                                        onChange={(e) => setArtista({ ...artista, acepta_encargos: e.target.checked })}
+                                    />{" "}
+                                    Quiero recibir encargos de obras a medida
+                                </label>
+
+                                <p className="body-sm muted mb-md">
+                                    Si lo desactivás, no vas a figurar como disponible para encargos nuevos. Los
+                                    encargos que ya tenés en curso los podés seguir gestionando y cerrando.
+                                </p>
+
+                                {mensajeArtista && <p className="body-sm mb-md">{mensajeArtista}</p>}
+
+                                <div className="fila al-final">
+                                    <Boton tipo={guardandoArtista ? "deshabilitado" : "primario"} type="submit">
+                                        {guardandoArtista ? "Guardando..." : "Guardar perfil de artista"}
+                                    </Boton>
+                                </div>
+                            </form>
+                        )}
+
+                        {seccion === "contrasenia" && (
+                            <form className="cartela pad-lg" onSubmit={handleCambioContrasenia}>
+                                <h2 className="headline-sm mb-md">Cambiar contraseña</h2>
+
+                                <CampoFormulario
+                                    etiqueta="Contraseña actual"
+                                    tipo="password"
+                                    name="contrasenia_actual"
+                                    value={contrasenias.contrasenia_actual}
+                                    onChange={handleContrasenia}
+                                    error={erroresContrasenia.contrasenia_actual}
+                                />
+
+                                <CampoFormulario
+                                    etiqueta="Nueva contraseña"
+                                    tipo="password"
+                                    name="contrasenia_nueva"
+                                    value={contrasenias.contrasenia_nueva}
+                                    onChange={handleContrasenia}
+                                    error={erroresContrasenia.contrasenia_nueva}
+                                />
+
+                                {mensajeContrasenia && <p className="body-sm mb-md">{mensajeContrasenia}</p>}
+
+                                <div className="fila al-final">
+                                    <Boton tipo={cambiandoContrasenia ? "deshabilitado" : "primario"} type="submit">
+                                        {cambiandoContrasenia ? "Cambiando..." : "Cambiar contraseña"}
+                                    </Boton>
+                                </div>
+                            </form>
+                        )}
                     </div>
-
-                    <CampoFormulario
-                        etiqueta="Nombre de usuario"
-                        name="nombre_usuario"
-                        value={datos.nombre_usuario}
-                        onChange={handleChange}
-                        error={errores.nombre_usuario}
-                    />
-
-                    <CampoFormulario
-                        etiqueta="Email"
-                        tipo="email"
-                        name="email_usuario"
-                        value={datos.email_usuario}
-                        onChange={handleChange}
-                        error={errores.email_usuario}
-                    />
-
-                    <CampoFormulario
-                        etiqueta="Teléfono"
-                        tipo="tel"
-                        name="telefono_usuario"
-                        value={datos.telefono_usuario}
-                        onChange={handleChange}
-                        maxLength={10}
-                        inputMode="numeric"
-                        error={errores.telefono_usuario}
-                    />
-
-                    {mensaje && <p className="body-sm mb-md">{mensaje}</p>}
-
-                    <Boton tipo={guardando ? "deshabilitado" : "primario"} bloque type="submit">
-                        {guardando ? "Guardando..." : "Guardar cambios"}
-                    </Boton>
-                </form>
-
-                {tieneArtista && (
-                    <form className="cartela mt-xl pad-lg" onSubmit={handleArtista}>
-                        <h2 className="headline-sm mb-md">Perfil de artista</h2>
-
-                        <CampoFormulario
-                            etiqueta="Nombre artístico"
-                            name="nombre_artistico"
-                            value={artista.nombre_artistico}
-                            maxLength={150}
-                            onChange={(e) => setArtista({ ...artista, nombre_artistico: e.target.value })}
-                            error={errorNombreArtistico}
-                        />
-
-                        <label className="body-sm mb-xs bloque">
-                            <input
-                                type="checkbox"
-                                checked={artista.acepta_encargos}
-                                onChange={(e) => setArtista({ ...artista, acepta_encargos: e.target.checked })}
-                            />{" "}
-                            Quiero recibir encargos de obras a medida
-                        </label>
-
-                        <p className="body-sm muted mb-md">
-                            Si lo desactivás, no vas a figurar como disponible para encargos nuevos. Los encargos que ya
-                            tenés en curso los podés seguir gestionando y cerrando.
-                        </p>
-
-                        {mensajeArtista && <p className="body-sm mb-md">{mensajeArtista}</p>}
-
-                        <Boton tipo={guardandoArtista ? "deshabilitado" : "primario"} bloque type="submit">
-                            {guardandoArtista ? "Guardando..." : "Guardar perfil de artista"}
-                        </Boton>
-                    </form>
-                )}
-
-                <form className="cartela mt-xl pad-lg" onSubmit={handleCambioContrasenia}>
-                    <h2 className="headline-sm mb-md">Cambiar contraseña</h2>
-
-                    <CampoFormulario
-                        etiqueta="Contraseña actual"
-                        tipo="password"
-                        name="contrasenia_actual"
-                        value={contrasenias.contrasenia_actual}
-                        onChange={handleContrasenia}
-                        error={erroresContrasenia.contrasenia_actual}
-                    />
-
-                    <CampoFormulario
-                        etiqueta="Nueva contraseña"
-                        tipo="password"
-                        name="contrasenia_nueva"
-                        value={contrasenias.contrasenia_nueva}
-                        onChange={handleContrasenia}
-                        error={erroresContrasenia.contrasenia_nueva}
-                    />
-
-                    {mensajeContrasenia && <p className="body-sm mb-md">{mensajeContrasenia}</p>}
-
-                    <Boton tipo={cambiandoContrasenia ? "deshabilitado" : "secundario"} bloque type="submit">
-                        {cambiandoContrasenia ? "Cambiando..." : "Cambiar contraseña"}
-                    </Boton>
-                </form>
+                </div>
             </div>
         </div>
     )
