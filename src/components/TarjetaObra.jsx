@@ -6,6 +6,7 @@ import Badge from "./Badge"
 // en el perfil del artista y en el panel del artista.
 // Cada dato llega en su propia prop (no como objetos obra y variante): id, nombreObra, estilo, artistaId,
 // nombreArtistico, nombreTamanio, precio, porcentajeDescuento, stock e imagen. Los de la variante pueden faltar.
+// conArtista pasa a la ficha: en false no nombra al artista.
 export default function TarjetaObra({
     id,
     nombreObra,
@@ -16,7 +17,8 @@ export default function TarjetaObra({
     precio,
     porcentajeDescuento,
     stock,
-    imagen
+    imagen,
+    conArtista = true
 }) {
     const sinStock = stock === 0
     const descuento = porcentajeDescuento > 0
@@ -40,6 +42,7 @@ export default function TarjetaObra({
                 precio={precio}
                 porcentajeDescuento={porcentajeDescuento}
                 stock={stock}
+                conArtista={conArtista}
             />
         </div>
     )

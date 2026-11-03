@@ -451,6 +451,11 @@ body {
 .al-final { justify-content: flex-end; }
 .alinear-arriba { align-items: flex-start; }
 .min-ancho-0 { min-width: 0; }
+/* Fuera de la vista pero en el HTML: lo leen los lectores de pantalla (por ejemplo, la etiqueta de un buscador). */
+.solo-lectores {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
 /* Una columna que acompaña al contenido mientras se scrollea (por ejemplo, el resumen de una compra). */
 .pegado-arriba { position: sticky; top: var(--md); }
 /* En una sola columna (pantallas angostas) ya no acompaña: queda en su lugar, debajo del contenido. */
@@ -966,6 +971,14 @@ body {
 .ficha-obra-meta a { color: inherit; text-decoration: none; }
 .ficha-obra-meta a:hover { color: var(--bordo); text-decoration: underline; text-underline-offset: 3px; }
 .ficha-obra .ficha-obra-precio { margin-top: var(--xs); }
+
+/* ---------- Pantalla: Perfil de artista ----------
+   Quién es en una columna fija a la izquierda (con el botón de encargo) y sus obras en una grilla a la derecha. En una
+   columna, los datos van arriba. */
+.perfil-artista { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--xl); align-items: start; }
+.perfil-artista-datos p { margin: 0; }
+.perfil-artista-datos .boton { width: 100%; }
+@media (max-width: 900px) { .perfil-artista { grid-template-columns: minmax(0, 1fr); gap: var(--lg); } }
 
 /* ---------- Pantalla: Detalle de obra ----------
    La obra y su descripción a la izquierda; la tarjeta de compra a la derecha, pegada arriba mientras se scrollea. */

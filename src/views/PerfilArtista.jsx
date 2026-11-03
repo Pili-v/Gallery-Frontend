@@ -4,20 +4,21 @@
 // GET /api/obras?artistaId=, que devuelve la misma forma que el catálogo y está paginado.
 // Las variantes y las imágenes se piden solo de las obras de la página que se ve:
 // pedir las listas completas traería las fotos de todas las obras de la base.
+// Los estilos que trabaja salen del resumen de artistas (el mismo que usa la pantalla Artistas; se pide una sola vez).
+// Disposición: los datos del artista en una columna fija a la izquierda y sus obras en una grilla a la derecha.
 
 import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchEstilos } from "../redux/estilosSlice"
-import { fetchArtistas } from "../redux/artistasSlice"
+import { fetchArtistas, fetchResumenArtistas } from "../redux/artistasSlice"
 import { cargarObrasDeArtista } from "../redux/obrasDeArtistaSlice"
 import { optimizada } from "../api/formato"
 import TarjetaObra from "../components/TarjetaObra"
 import Estado from "../components/Estado"
-import Boton from "../components/Boton"
 import Paginador from "../components/Paginador"
 
-const POR_PAGINA = 6
+const POR_PAGINA = 9
 
 // La key hace que, al pasar de un artista a otro, la pantalla arranque de cero (vuelve a la primera página).
 export default function PerfilArtista() {
@@ -39,10 +40,13 @@ function PerfilDeArtista({ id }) {
         error: errorObras
     } = useSelector((state) => state.obrasDeArtista)
 
-    // El artista y los estilos: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir)
+    const resumen = useSelector((state) => state.artistas.resumen)
+
+    // El artista, los estilos y el resumen: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir)
     useEffect(() => {
         dispatch(fetchArtistas())
         dispatch(fetchEstilos())
+        dispatch(fetchResumenArtistas())
     }, [dispatch])
 
     // Las obras de la página visible, con sus variantes e imágenes
@@ -84,6 +88,17 @@ function PerfilDeArtista({ id }) {
         )
     }
 
+    // Los estilos de todas sus obras, sin repetir. Si el resumen todavía no llegó (o falló), no se muestran.
+    const idsEstilos = []
+    resumen.obras
+        .filter((o) => o.artista_id === artista.id)
+        .forEach((obra) => {
+            ;(obra.estilo_ids ?? []).forEach((idEstilo) => {
+                if (!idsEstilos.includes(idEstilo)) idsEstilos.push(idEstilo)
+            })
+        })
+    const susEstilos = estilos.items.filter((e) => idsEstilos.includes(e.id)).map((e) => e.nombre_estilo)
+
     const armarTarjeta = (item) => {
         const portada = [...item.imagenes].sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0))[0]
         const estilo = estilos.items.find((e) => (item.obra.estilo_ids ?? []).includes(e.id))
@@ -101,30 +116,28 @@ function PerfilDeArtista({ id }) {
 
     return (
         <div className="seccion">
-            <div className="contenido apilado">
-                <header className="encabezado alinear-arriba">
-                    <div className="vendedor gap-md">
-                        <div className="avatar grande">{(artista.nombre_artistico ?? "A")[0]}</div>
-                        <div>
-                            <h1 className="headline-lg">{artista.nombre_artistico}</h1>
-                            <p className="body-lg muted">
-                                {artista.acepta_encargos ? "Acepta encargos" : "Por ahora no acepta encargos"}
-                            </p>
-                        </div>
-                    </div>
+            <div className="contenido perfil-artista">
+                {/* Quién es: fijo al costado mientras se recorren sus obras */}
+                <aside className="cartela pad-lg pegado-arriba perfil-artista-datos">
+                    <div className="avatar grande">{(artista.nombre_artistico ?? "A")[0]}</div>
+                    <h1 className="headline-md mt-md">{artista.nombre_artistico}</h1>
+                    <p className="cartela-meta">
+                        {totalObras === 1 ? "1 obra publicada" : totalObras + " obras publicadas"}
+                    </p>
+                    {susEstilos.length > 0 && <p className="body-sm muted mt-sm">{susEstilos.join(" · ")}</p>}
 
-                    {artista.acepta_encargos && (
-                        <Link to={"/encargos/nuevo?artistaId=" + artista.id}>
-                            <Boton tipo="primario">Pedirle un encargo</Boton>
+                    {artista.acepta_encargos ? (
+                        <Link to={"/encargos/nuevo?artistaId=" + artista.id} className="boton boton-primario mt-lg">
+                            Pedirle un encargo
                         </Link>
+                    ) : (
+                        <p className="cartela-meta mt-lg">Por ahora no acepta encargos</p>
                     )}
-                </header>
+                </aside>
 
-                <hr className="divisor" />
-
-                <section>
-                    <p className="catalog-number muted mb-lg">Obras publicadas — {totalObras} resultados</p>
-
+                {/* Sus obras */}
+                <section className="min-ancho-0">
+                    <h2 className="solo-lectores">Obras publicadas</h2>
                     {cargandoObras ? (
                         <Estado tipo="cargando" />
                     ) : items.length === 0 ? (
@@ -147,6 +160,7 @@ function PerfilDeArtista({ id }) {
                                         porcentajeDescuento={variante.porcentaje_descuento}
                                         stock={variante.stock_variante}
                                         imagen={tarjeta.imagen}
+                                        conArtista={false}
                                     />
                                 )
                             })}
