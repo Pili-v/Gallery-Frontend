@@ -60,7 +60,7 @@ const artistasSlice = createSlice({
         cargado: false,
         error: null,
         loading: false,
-        resultados: { items: [], totalPaginas: 1, error: null, loading: true, requestId: null },
+        resultados: { items: [], totalPaginas: 1, total: 0, error: null, loading: true, requestId: null },
         resumen: { obras: [], imagenes: [], cargado: false, loading: false }
     },
     reducers: {},
@@ -92,11 +92,13 @@ const artistasSlice = createSlice({
                 state.resultados.loading = false
                 state.resultados.items = action.payload.items
                 state.resultados.totalPaginas = action.payload.totalPaginas
+                state.resultados.total = action.payload.totalElementos
             })
             .addCase(buscarArtistas.rejected, (state, action) => {
                 if (state.resultados.requestId !== action.meta.requestId) return
                 state.resultados.loading = false
                 state.resultados.items = []
+                state.resultados.total = 0
                 state.resultados.error = action.error.message
             })
 

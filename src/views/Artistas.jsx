@@ -1,6 +1,6 @@
 // Artistas — lista completa de artistas, visible para visitante, cliente y artista.
-// Cada artista es una tarjeta horizontal, una debajo de la otra, con:
-// 3 portadas chicas de sus obras, hasta 4 estilos que trabaja y la cantidad de obras.
+// Cada artista es una tarjeta en una grilla de 3, con un mosaico de hasta 3 de sus obras arriba, la cantidad de obras,
+// hasta 3 estilos que trabaja (todos al pasar el mouse) y si acepta encargos.
 // Todo lo que viene del backend pasa por Redux: esta pantalla solo despacha acciones y lee el estado.
 // Las obras, imágenes y estilos se piden UNA sola vez y se agrupan acá por artista, así no se hacen pedidos
 // por tarjeta. GET /api/artistas viene paginado y se puede buscar por nombre artístico (q) y filtrar por
@@ -13,14 +13,14 @@ import { fetchEstilos } from "../redux/estilosSlice"
 import { fetchArtistas, buscarArtistas, fetchResumenArtistas } from "../redux/artistasSlice"
 import { optimizada } from "../api/formato"
 import Estado from "../components/Estado"
-import Boton from "../components/Boton"
 import Paginador from "../components/Paginador"
 import FiltroEstilos from "../components/FiltroEstilos"
 import BuscadorArtista from "../components/BuscadorArtista"
+import FiltrosAplicados from "../components/FiltrosAplicados"
 
-const POR_PAGINA = 3
+const POR_PAGINA = 9
 const MAX_PORTADAS = 3
-const MAX_ESTILOS = 4
+const MAX_ESTILOS = 3
 
 export default function Artistas() {
     const dispatch = useDispatch()
@@ -31,7 +31,7 @@ export default function Artistas() {
     const resultados = useSelector((state) => state.artistas.resultados) // la página visible
     const { obras, imagenes } = useSelector((state) => state.artistas.resumen)
 
-    const { items: artistas, totalPaginas, loading: cargando, error } = resultados
+    const { items: artistas, totalPaginas, total, loading: cargando, error } = resultados
 
     const [pagina, setPagina] = useState(0)
 
@@ -41,7 +41,6 @@ export default function Artistas() {
     const [artistaElegido, setArtistaElegido] = useState("")
     const [reinicio, setReinicio] = useState(0) // cambia la key del buscador para vaciarlo
     const [estiloIds, setEstiloIds] = useState([]) // varios estilos: artistas con obras de ALGUNO de ellos
-    const hayFiltros = busqueda !== "" || estiloIds.length > 0
 
     const todosLosArtistas = todos.map((a) => ({ id: a.id, nombre: a.nombre_artistico }))
 
@@ -94,6 +93,27 @@ export default function Artistas() {
         setPagina(0)
     }
 
+    // Quita un solo filtro: la búsqueda o uno de los estilos
+    const quitarFiltro = (clave) => {
+        if (clave === "busqueda") {
+            setTexto("")
+            setBusqueda("")
+            setArtistaElegido("")
+            setReinicio((n) => n + 1)
+        } else {
+            setEstiloIds(estiloIds.filter((id) => "estilo" + id !== clave))
+        }
+        setPagina(0)
+    }
+
+    // Los filtros aplicados, como etiquetas que se quitan de a una
+    const filtrosAplicados = []
+    if (busqueda !== "") filtrosAplicados.push({ clave: "busqueda", texto: "“" + busqueda + "”" })
+    estilos
+        .filter((e) => estiloIds.includes(e.id))
+        .forEach((e) => filtrosAplicados.push({ clave: "estilo" + e.id, texto: e.nombre_estilo }))
+    const hayFiltros = filtrosAplicados.length > 0
+
     // Lo que muestra la tarjeta de un artista
     const resumenDe = (artista) => {
         const susObras = obras.filter((o) => o.artista_id === artista.id)
@@ -128,6 +148,7 @@ export default function Artistas() {
         return {
             cantidad: susObras.length,
             portadas,
+            estilos: nombresEstilos,
             estilosVisibles: nombresEstilos.slice(0, MAX_ESTILOS),
             estilosOcultos: Math.max(nombresEstilos.length - MAX_ESTILOS, 0)
         }
@@ -162,44 +183,45 @@ export default function Artistas() {
         cuerpo = <Estado tipo="vacio" mensaje="Todavía no hay artistas registrados." />
     } else {
         cuerpo = (
-            <div className="apilado">
+            <div className="grilla-artistas">
                 {artistas.map((artista) => {
                     const resumen = resumenDe(artista)
 
                     return (
                         <Link key={artista.id} to={"/artista/" + artista.id} className="cartela tarjeta-artista">
-                            {/* Quién es */}
-                            <div className="min-ancho-0">
-                                <div className="vendedor gap-md">
-                                    <span className="avatar">{(artista.nombre_artistico ?? "A")[0]}</span>
-                                    <span className="title-work">{artista.nombre_artistico}</span>
-                                </div>
-                                <p className="cartela-meta mt-sm">
-                                    {resumen.cantidad === 1
-                                        ? "1 obra publicada"
-                                        : resumen.cantidad + " obras publicadas"}
-                                    {" · "}
-                                    {artista.acepta_encargos ? "Acepta encargos" : "Por ahora no acepta encargos"}
-                                </p>
-                                {/* Sus estilos, en una línea de texto: sin cajas, siempre en el mismo lugar de la tarjeta. */}
-                                {resumen.estilosVisibles.length > 0 && (
-                                    <p className="cartela-meta tarjeta-artista-estilos">
-                                        {resumen.estilosVisibles.join(" · ")}
-                                        {resumen.estilosOcultos > 0 && " · +" + resumen.estilosOcultos}
-                                    </p>
+                            {/* Muestra de su obra, del mismo tamaño en todas las tarjetas: con tres, la primera grande y
+                                las otras dos al costado; con dos, mitad y mitad; con una, ocupa todo. Sin obras queda el
+                                fondo vacío. */}
+                            <div className={"mosaico-artista de-" + resumen.portadas.length}>
+                                {resumen.portadas.length === 0 ? (
+                                    <span />
+                                ) : (
+                                    resumen.portadas.map((portada) => (
+                                        <img key={portada.id} src={portada.src} alt={portada.nombre} />
+                                    ))
                                 )}
                             </div>
 
-                            {/* Muestra de su obra */}
-                            <div className="fila tarjeta-artista-portadas">
-                                {resumen.portadas.map((portada) => (
-                                    <img
-                                        key={portada.id}
-                                        src={portada.src}
-                                        alt={portada.nombre}
-                                        className="muestra-obra"
-                                    />
-                                ))}
+                            {/* Quién es */}
+                            <div className="tarjeta-artista-datos">
+                                <div className="vendedor">
+                                    <span className="avatar">{(artista.nombre_artistico ?? "A")[0]}</span>
+                                    <span className="title-work">{artista.nombre_artistico}</span>
+                                </div>
+                                {/* Siempre dos renglones de alto, tenga los estilos que tenga: las tarjetas quedan
+                                    iguales. Los que no entran se cuentan ("+2 más") y se ven todos al pasar el mouse. */}
+                                <p className="cartela-meta tarjeta-artista-estilos" title={resumen.estilos.join(" · ")}>
+                                    {resumen.cantidad === 1 ? "1 obra" : resumen.cantidad + " obras"}
+                                    {resumen.estilosVisibles.length > 0 && " · " + resumen.estilosVisibles.join(" · ")}
+                                    {resumen.estilosOcultos > 0 && " · +" + resumen.estilosOcultos + " más"}
+                                </p>
+                                <p className="cartela-meta">
+                                    {artista.acepta_encargos ? (
+                                        <span className="chip activo chip-chico">Acepta encargos</span>
+                                    ) : (
+                                        "Por ahora no acepta encargos"
+                                    )}
+                                </p>
                             </div>
                         </Link>
                     )
@@ -216,29 +238,39 @@ export default function Artistas() {
                     <p className="body-lg muted">Quienes pintan y venden su obra en la galería.</p>
                 </div>
 
-                {/* Buscador por nombre artístico (con sugerencias) y filtro por estilos (siempre visibles) */}
-                <form className="filtros" onSubmit={buscar} role="search">
-                    <div className="ancho-buscador">
-                        <BuscadorArtista
-                            key={reinicio}
-                            artistas={todosLosArtistas}
-                            value={artistaElegido}
-                            onChange={elegirDeLaLista}
-                            onSearch={setTexto}
-                            required={false}
-                            enviarConEnter
+                {/* Buscador por nombre artístico (con sugerencias) y filtro por estilos, en la misma barra que el catálogo */}
+                <div>
+                    <form className="barra-filtros" onSubmit={buscar} role="search">
+                        <div className="barra-filtros-buscador">
+                            <BuscadorArtista
+                                key={reinicio}
+                                artistas={todosLosArtistas}
+                                value={artistaElegido}
+                                onChange={elegirDeLaLista}
+                                onSearch={setTexto}
+                                required={false}
+                                enviarConEnter
+                                conEtiqueta={false}
+                            />
+                        </div>
+                        <button type="submit" className="boton boton-secundario">
+                            Buscar
+                        </button>
+                        <FiltroEstilos
+                            estilos={estilos}
+                            seleccionados={estiloIds}
+                            onCambiar={cambiarEstilos}
+                            conEtiquetas={false}
                         />
-                    </div>
-                    <button type="submit" className="boton boton-secundario">
-                        Buscar
-                    </button>
-                    <FiltroEstilos estilos={estilos} seleccionados={estiloIds} onCambiar={cambiarEstilos} />
-                    {hayFiltros && (
-                        <Boton type="button" tipo="secundario" onClick={quitarFiltros}>
-                            Quitar filtros
-                        </Boton>
-                    )}
-                </form>
+                    </form>
+
+                    <FiltrosAplicados
+                        cantidad={total + (total === 1 ? " artista" : " artistas")}
+                        filtros={filtrosAplicados}
+                        onQuitar={quitarFiltro}
+                        onQuitarTodo={quitarFiltros}
+                    />
+                </div>
 
                 {cuerpo}
 

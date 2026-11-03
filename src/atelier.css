@@ -303,18 +303,6 @@ body {
   overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 .desplegable-opcion:hover, .desplegable-opcion.activa, .desplegable-opcion[aria-selected="true"] { background: var(--canvas); color: var(--bordo); }
-/* La tarjeta de un artista en la lista: a la izquierda quién es (con sus datos y sus estilos en una línea de texto) y a la
-   derecha una muestra de su obra, en una columna de ancho fijo: todas las tarjetas quedan alineadas igual. */
-.tarjeta-artista {
-  display: grid; grid-template-columns: minmax(0, 1fr) 232px; align-items: center; gap: var(--lg);
-  padding: var(--lg); text-decoration: none; color: inherit;
-}
-.tarjeta-artista-estilos { margin-top: var(--xs); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.tarjeta-artista-portadas { justify-content: flex-end; gap: var(--sm); }
-@media (max-width: 900px) {
-  .tarjeta-artista { grid-template-columns: minmax(0, 1fr); }
-  .tarjeta-artista-portadas { justify-content: flex-start; }
-}
 .desplegable-pie {
   display: block; width: 100%; padding: var(--sm) var(--md); background: none; border: 0; border-top: 1px solid var(--border);
   color: var(--bordo); cursor: pointer; font: inherit; font-size: 14px; text-align: left; text-decoration: underline;
@@ -451,6 +439,11 @@ body {
 .al-final { justify-content: flex-end; }
 .alinear-arriba { align-items: flex-start; }
 .min-ancho-0 { min-width: 0; }
+/* Fuera de la vista pero en el HTML: lo leen los lectores de pantalla (por ejemplo, la etiqueta de un buscador). */
+.solo-lectores {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
 /* Una columna que acompaña al contenido mientras se scrollea (por ejemplo, el resumen de una compra). */
 .pegado-arriba { position: sticky; top: var(--md); }
 /* En una sola columna (pantallas angostas) ya no acompaña: queda en su lugar, debajo del contenido. */
@@ -790,8 +783,6 @@ body {
 .accion-catalogo.apagada { color: var(--ink-muted); pointer-events: none; }
 .celda-miniatura { width: 64px; }
 .miniatura-marco { object-fit: contain; display: block; }
-/* Muestra de una obra en la tarjeta de un artista. */
-.muestra-obra { width: 72px; height: 72px; object-fit: contain; background: var(--fondo-obra); border-radius: var(--radio); }
 .titulo-obra { margin: var(--xs) 0 0; }
 .fila.centrada { justify-content: center; }
 /* Páginas de aviso (404, 403). */
@@ -956,6 +947,36 @@ body {
 .panel-precio .campo-error { margin-top: var(--sm); }
 .filtros-aplicados { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sm); min-height: 32px; margin-bottom: var(--lg); }
 .chip-chico { padding: 3px 12px; font-size: 13px; }
+.barra-filtros .campo { margin-bottom: 0; }
+
+/* ---------- Pantalla: Artistas ----------
+   Una grilla de tarjetas: arriba un mosaico con hasta tres obras del artista sobre el fondo de obra, y abajo quién es.
+   Todas tienen la misma forma, tenga el artista una obra o muchas. */
+.grilla-artistas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--lg); }
+.tarjeta-artista {
+  display: flex; flex-direction: column; padding: var(--sm); text-decoration: none; color: inherit;
+  transition: box-shadow var(--transicion), border-color var(--transicion);
+}
+.tarjeta-artista:hover { box-shadow: var(--sombra-suave); border-color: rgb(133 14 53 / 35%); }
+.tarjeta-artista:focus-visible { outline: none; box-shadow: var(--anillo-foco); }
+/* Una obra ocupa todo; dos van mitad y mitad; tres, la primera grande y las otras dos apiladas al costado. */
+.mosaico-artista {
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+  gap: var(--xs); aspect-ratio: 3/2; min-height: 0; overflow: hidden;
+}
+.mosaico-artista.de-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mosaico-artista.de-3 { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); grid-template-rows: repeat(2, minmax(0, 1fr)); }
+.mosaico-artista.de-3 > :first-child { grid-row: span 2; }
+.mosaico-artista > * { width: 100%; height: 100%; min-height: 0; background: var(--fondo-obra); border-radius: var(--radio); }
+.mosaico-artista img { object-fit: contain; padding: 10%; box-sizing: border-box; }
+.tarjeta-artista-datos { display: flex; flex-direction: column; gap: var(--xs); padding: var(--md) var(--sm) var(--sm); }
+.tarjeta-artista-datos p { margin: 0; }
+.tarjeta-artista-estilos {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+  min-height: calc(2 * 18px); /* dos renglones de .cartela-meta */
+}
+@media (max-width: 1000px) { .grilla-artistas { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .grilla-artistas { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- Componente: FichaObra (debajo de la imagen de una obra) ---------- */
 .ficha-obra { padding-top: var(--md); }

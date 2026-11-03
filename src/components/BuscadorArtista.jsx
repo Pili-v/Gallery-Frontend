@@ -9,7 +9,8 @@ export default function BuscadorArtista({
     error,
     disabled,
     required = true,
-    enviarConEnter = false
+    enviarConEnter = false,
+    conEtiqueta = true
 }) {
     const id = useId()
     const lista = useRef(null)
@@ -55,7 +56,8 @@ export default function BuscadorArtista({
 
     return (
         <div className="campo buscador-artista">
-            <label className="catalog-number muted" htmlFor={id}>
+            {/* Sin etiqueta visible (en una barra de filtros) la siguen leyendo los lectores de pantalla. */}
+            <label className={conEtiqueta ? "catalog-number muted" : "solo-lectores"} htmlFor={id}>
                 Buscar artista
             </label>
             <div className="buscador-artista-control">
