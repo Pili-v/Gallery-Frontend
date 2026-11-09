@@ -2,6 +2,7 @@
 // (useSelector((state) => state.estilos)).
 
 import sesionReducer from "./sesionSlice"
+import usuariosReducer from "./usuariosSlice"
 import { configureStore } from "@reduxjs/toolkit"
 import estilosReducer from "./estilosSlice"
 import marcosReducer from "./marcosSlice"
@@ -19,6 +20,7 @@ import misVentasReducer from "./misVentasSlice"
 export const store = configureStore({
     reducer: {
         sesion: sesionReducer,
+        usuarios: usuariosReducer,
         estilos: estilosReducer,
         marcos: marcosReducer,
         artistas: artistasReducer,
