@@ -1,13 +1,42 @@
 import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
 
 import CampoFormulario from "../components/CampoFormulario"
 import Boton from "../components/Boton"
 import Estado from "../components/Estado"
 
-import { api } from "../api/cliente"
-import { getToken, getUsuario, getPerfilArtista, guardarSesion } from "../api/sesion"
+import {
+    fetchSesionActual,
+    actualizarUsuario,
+    actualizarPerfilArtista,
+    cambiarContrasenia,
+    limpiarErrorSesion
+} from "../redux/sesionSlice"
+
 
 const MiCuenta = () => {
+    const dispatch = useDispatch()
+
+    // Datos globales de la sesión administrados por Redux.
+    const {
+        usuario,
+        perfilArtista,
+        loading,
+        operacion,
+        error
+    } = useSelector((state) => state.sesion)
+
+    // Nos permite saber qué operación concreta está cargando.
+    const cargando = loading && operacion === "cargarSesion"
+    const guardando = loading && operacion === "actualizarUsuario"
+    const guardandoArtista = loading && operacion === "actualizarArtista"
+    const cambiandoContrasenia = loading && operacion === "contrasenia"
+
+
+    // -------------------------
+    // ESTADO LOCAL DEL FORMULARIO
+    // -------------------------
+
     const [datos, setDatos] = useState({
         nombre_usuario: "",
         nombre_persona: "",
@@ -24,26 +53,74 @@ const MiCuenta = () => {
     const [errores, setErrores] = useState({})
     const [erroresContrasenia, setErroresContrasenia] = useState({})
 
-    const [cargando, setCargando] = useState(true)
-    const [guardando, setGuardando] = useState(false)
-    const [cambiandoContrasenia, setCambiandoContrasenia] = useState(false)
-
-    const [errorGeneral, setErrorGeneral] = useState("")
     const [mensaje, setMensaje] = useState("")
     const [mensajeContrasenia, setMensajeContrasenia] = useState("")
 
-    // Perfil de artista: solo lo tienen los artistas (la cuenta trae perfil_artista); para el resto no se muestra.
-    const [tieneArtista, setTieneArtista] = useState(false)
-    const [artista, setArtista] = useState({ nombre_artistico: "", acepta_encargos: true })
+    // Perfil artista: solamente se muestra si el usuario tiene uno.
+    const [artista, setArtista] = useState({
+        nombre_artistico: "",
+        acepta_encargos: true
+    })
+
     const [errorNombreArtistico, setErrorNombreArtistico] = useState("")
-    const [guardandoArtista, setGuardandoArtista] = useState(false)
     const [mensajeArtista, setMensajeArtista] = useState("")
 
-    // Qué sección se ve a la derecha: el menú de la izquierda la cambia. Es algo de esta pantalla, no del back.
+    // Estado puramente visual de esta pantalla.
     const [seccion, setSeccion] = useState("datos")
 
+
+    // -------------------------
+    // CARGAR SESIÓN
+    // -------------------------
+
+    useEffect(() => {
+        // Pedimos al backend los datos actuales del usuario.
+        dispatch(fetchSesionActual())
+    }, [dispatch])
+
+
+    // Cuando cambia el usuario global de Redux,
+    // sincronizamos los campos locales del formulario.
+    useEffect(() => {
+        if (!usuario) {
+            return
+        }
+
+        setDatos({
+            nombre_usuario: usuario.nombre_usuario ?? "",
+            nombre_persona: usuario.nombre_persona ?? "",
+            apellido_persona: usuario.apellido_persona ?? "",
+            email_usuario: usuario.email_usuario ?? "",
+            telefono_usuario: usuario.telefono_usuario ?? ""
+        })
+    }, [usuario])
+
+
+    // Lo mismo para el perfil de artista.
+    useEffect(() => {
+        if (!perfilArtista) {
+            return
+        }
+
+        setArtista({
+            nombre_artistico: perfilArtista.nombre_artistico ?? "",
+            acepta_encargos: perfilArtista.acepta_encargos
+        })
+    }, [perfilArtista])
+
+
+    const tieneArtista = perfilArtista !== null
+
+
+    // -------------------------
+    // VALIDACIONES
+    // -------------------------
+
     const limpiarNombre = (texto) => {
-        const soloLetras = texto.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g, "")
+        const soloLetras = texto.replace(
+            /[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ\s]/g,
+            ""
+        )
 
         return soloLetras
             .split(" ")
@@ -52,53 +129,31 @@ const MiCuenta = () => {
                     return ""
                 }
 
-                return palabra.charAt(0).toUpperCase() + palabra.slice(1).toLowerCase()
+                return (
+                    palabra.charAt(0).toUpperCase() +
+                    palabra.slice(1).toLowerCase()
+                )
             })
             .join(" ")
     }
 
-    useEffect(() => {
-        api.get("/api/usuarios/me")
-            .then((perfil) => {
-                setDatos({
-                    nombre_usuario: perfil.usuario.nombre_usuario ?? "",
-
-                    nombre_persona: perfil.usuario.nombre_persona ?? "",
-
-                    apellido_persona: perfil.usuario.apellido_persona ?? "",
-
-                    email_usuario: perfil.usuario.email_usuario ?? "",
-
-                    telefono_usuario: perfil.usuario.telefono_usuario ?? ""
-                })
-
-                if (perfil.perfil_artista) {
-                    setTieneArtista(true)
-                    setArtista({
-                        nombre_artistico: perfil.perfil_artista.nombre_artistico ?? "",
-                        acepta_encargos: perfil.perfil_artista.acepta_encargos
-                    })
-                }
-            })
-            .catch((e) => {
-                setErrorGeneral(e.message || "No se pudo cargar la cuenta.")
-            })
-            .finally(() => {
-                setCargando(false)
-            })
-    }, [])
 
     const handleChange = (e) => {
         const { name, value } = e.target
 
         let nuevoValor = value
 
-        if (name === "nombre_persona" || name === "apellido_persona") {
+        if (
+            name === "nombre_persona" ||
+            name === "apellido_persona"
+        ) {
             nuevoValor = limpiarNombre(value)
         }
 
         if (name === "telefono_usuario") {
-            nuevoValor = value.replace(/\D/g, "").slice(0, 10)
+            nuevoValor = value
+                .replace(/\D/g, "")
+                .slice(0, 10)
         }
 
         setDatos({
@@ -112,8 +167,11 @@ const MiCuenta = () => {
         })
 
         setMensaje("")
-        setErrorGeneral("")
+
+        // Limpia errores anteriores almacenados en Redux.
+        dispatch(limpiarErrorSesion())
     }
+
 
     const handleContrasenia = (e) => {
         const { name, value } = e.target
@@ -129,30 +187,36 @@ const MiCuenta = () => {
         })
 
         setMensajeContrasenia("")
-        setErrorGeneral("")
+        dispatch(limpiarErrorSesion())
     }
+
 
     const validar = () => {
         const nuevosErrores = {}
 
         if (!datos.nombre_usuario.trim()) {
-            nuevosErrores.nombre_usuario = "Ingresá un nombre de usuario."
+            nuevosErrores.nombre_usuario =
+                "Ingresá un nombre de usuario."
         }
 
         if (!datos.nombre_persona.trim()) {
-            nuevosErrores.nombre_persona = "Ingresá tu nombre."
+            nuevosErrores.nombre_persona =
+                "Ingresá tu nombre."
         }
 
         if (!datos.apellido_persona.trim()) {
-            nuevosErrores.apellido_persona = "Ingresá tu apellido."
+            nuevosErrores.apellido_persona =
+                "Ingresá tu apellido."
         }
 
         if (!datos.email_usuario.trim()) {
-            nuevosErrores.email_usuario = "Ingresá tu email."
+            nuevosErrores.email_usuario =
+                "Ingresá tu email."
         }
 
         if (!datos.telefono_usuario.trim()) {
-            nuevosErrores.telefono_usuario = "Ingresá tu teléfono."
+            nuevosErrores.telefono_usuario =
+                "Ingresá tu teléfono."
         }
 
         setErrores(nuevosErrores)
@@ -160,21 +224,29 @@ const MiCuenta = () => {
         return Object.keys(nuevosErrores).length === 0
     }
 
+
     const validarContrasenia = () => {
         const nuevosErrores = {}
 
         if (!contrasenias.contrasenia_actual.trim()) {
-            nuevosErrores.contrasenia_actual = "Ingresá tu contraseña actual."
+            nuevosErrores.contrasenia_actual =
+                "Ingresá tu contraseña actual."
         }
 
         if (!contrasenias.contrasenia_nueva.trim()) {
-            nuevosErrores.contrasenia_nueva = "Ingresá la nueva contraseña."
+            nuevosErrores.contrasenia_nueva =
+                "Ingresá la nueva contraseña."
         }
 
         setErroresContrasenia(nuevosErrores)
 
         return Object.keys(nuevosErrores).length === 0
     }
+
+
+    // -------------------------
+    // ACTUALIZAR DATOS PERSONALES
+    // -------------------------
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -183,27 +255,24 @@ const MiCuenta = () => {
             return
         }
 
-        setGuardando(true)
-        setErrorGeneral("")
         setMensaje("")
+        dispatch(limpiarErrorSesion())
 
-        api.patch("/api/usuarios/me", datos)
-            .then((usuarioActualizado) => {
-                // El back responde con el usuario ya guardado: alcanza para actualizar la sesión, sin volver a pedir el perfil.
-                guardarSesion(getToken(), { usuario: usuarioActualizado, perfil_artista: getPerfilArtista() })
-
-                setMensaje("Los cambios se guardaron correctamente.")
-            })
-            .catch((e) => {
-                setErrorGeneral(e.message || "No se pudieron guardar los cambios.")
-            })
-            .finally(() => {
-                setGuardando(false)
-            })
+        // Redux se encarga del PATCH y de actualizar el usuario global.
+        dispatch(actualizarUsuario(datos)).then((resultado) => {
+            if (actualizarUsuario.fulfilled.match(resultado)) {
+                setMensaje(
+                    "Los cambios se guardaron correctamente."
+                )
+            }
+        })
     }
 
-    // Guarda el nombre artístico y si acepta encargos. Dejar de aceptar solo afecta a los encargos NUEVOS:
-    // los que ya están en curso se pueden seguir gestionando y cerrando (el back valida esto al crearlos).
+
+    // -------------------------
+    // ACTUALIZAR PERFIL ARTISTA
+    // -------------------------
+
     const handleArtista = (e) => {
         e.preventDefault()
 
@@ -212,32 +281,41 @@ const MiCuenta = () => {
         }
 
         if (artista.nombre_artistico.trim() === "") {
-            setErrorNombreArtistico("El nombre artístico es obligatorio")
+            setErrorNombreArtistico(
+                "El nombre artístico es obligatorio"
+            )
             return
         }
 
-        setGuardandoArtista(true)
         setErrorNombreArtistico("")
-        setErrorGeneral("")
         setMensajeArtista("")
+        dispatch(limpiarErrorSesion())
 
-        api.patch("/api/artistas/me", {
+        const datosArtista = {
             nombre_artistico: artista.nombre_artistico.trim(),
             acepta_encargos: artista.acepta_encargos
-        })
-            .then((perfilActualizado) => {
-                // Igual que arriba: el back devuelve el perfil de artista ya guardado.
-                guardarSesion(getToken(), { usuario: getUsuario(), perfil_artista: perfilActualizado })
+        }
 
-                setMensajeArtista("El perfil de artista se guardó correctamente.")
-            })
-            .catch((e) => {
-                setErrorGeneral(e.message || "No se pudo guardar el perfil de artista.")
-            })
-            .finally(() => {
-                setGuardandoArtista(false)
-            })
+        // El thunk hace el PATCH y actualiza perfilArtista en Redux.
+        dispatch(actualizarPerfilArtista(datosArtista)).then(
+            (resultado) => {
+                if (
+                    actualizarPerfilArtista.fulfilled.match(
+                        resultado
+                    )
+                ) {
+                    setMensajeArtista(
+                        "El perfil de artista se guardó correctamente."
+                    )
+                }
+            }
+        )
     }
+
+
+    // -------------------------
+    // CAMBIAR CONTRASEÑA
+    // -------------------------
 
     const handleCambioContrasenia = (e) => {
         e.preventDefault()
@@ -246,28 +324,35 @@ const MiCuenta = () => {
             return
         }
 
-        setCambiandoContrasenia(true)
-        setErrorGeneral("")
         setMensajeContrasenia("")
+        dispatch(limpiarErrorSesion())
 
-        api.patch("/api/usuarios/me/contrasenia", contrasenias)
-            .then(() => {
-                setContrasenias({
-                    contrasenia_actual: "",
-                    contrasenia_nueva: ""
-                })
+        dispatch(cambiarContrasenia(contrasenias)).then(
+            (resultado) => {
+                if (
+                    cambiarContrasenia.fulfilled.match(
+                        resultado
+                    )
+                ) {
+                    setContrasenias({
+                        contrasenia_actual: "",
+                        contrasenia_nueva: ""
+                    })
 
-                setMensajeContrasenia("La contraseña se cambió correctamente.")
-            })
-            .catch((e) => {
-                setErrorGeneral(e.message || "No se pudo cambiar la contraseña.")
-            })
-            .finally(() => {
-                setCambiandoContrasenia(false)
-            })
+                    setMensajeContrasenia(
+                        "La contraseña se cambió correctamente."
+                    )
+                }
+            }
+        )
     }
 
-    if (cargando) {
+
+    // -------------------------
+    // PANTALLA DE CARGA
+    // -------------------------
+
+    if (cargando && !usuario) {
         return (
             <div className="seccion">
                 <div className="contenido col-media">
@@ -277,27 +362,68 @@ const MiCuenta = () => {
         )
     }
 
-    const secciones = [{ clave: "datos", nombre: "Datos personales" }]
-    if (tieneArtista) secciones.push({ clave: "artista", nombre: "Perfil de artista" })
-    secciones.push({ clave: "contrasenia", nombre: "Contraseña" })
+
+    // -------------------------
+    // SECCIONES
+    // -------------------------
+
+    const secciones = [
+        {
+            clave: "datos",
+            nombre: "Datos personales"
+        }
+    ]
+
+    if (tieneArtista) {
+        secciones.push({
+            clave: "artista",
+            nombre: "Perfil de artista"
+        })
+    }
+
+    secciones.push({
+        clave: "contrasenia",
+        nombre: "Contraseña"
+    })
+
 
     return (
         <div className="seccion">
             <div className="contenido">
-                <h1 className="headline-lg titulo-oculto">Mi cuenta</h1>
-                <p className="body-lg muted titulo-oculto">Consultá y actualizá tus datos personales.</p>
+                <h1 className="headline-lg titulo-oculto">
+                    Mi cuenta
+                </h1>
+
+                <p className="body-lg muted titulo-oculto">
+                    Consultá y actualizá tus datos personales.
+                </p>
 
                 <div className="panel-lista cuenta-panel">
-                    {/* El menú de secciones, fijo a la izquierda (como en el panel): se ve una sección a la vez. */}
-                    <nav className="cartela pad-lg pegado-arriba panel-lateral" aria-label="Secciones de la cuenta">
+
+                    {/* Menú local de secciones de Mi Cuenta. */}
+                    <nav
+                        className="cartela pad-lg pegado-arriba panel-lateral"
+                        aria-label="Secciones de la cuenta"
+                    >
                         <div className="panel-lateral-vista">
                             {secciones.map((item) => (
                                 <button
                                     key={item.clave}
                                     type="button"
-                                    className={"chip" + (seccion === item.clave ? " activo" : "")}
-                                    aria-pressed={seccion === item.clave}
-                                    onClick={() => setSeccion(item.clave)}
+                                    className={
+                                        "chip" +
+                                        (
+                                            seccion === item.clave
+                                                ? " activo"
+                                                : ""
+                                        )
+                                    }
+                                    aria-pressed={
+                                        seccion === item.clave
+                                    }
+                                    onClick={() =>
+                                        setSeccion(item.clave)
+                                    }
                                 >
                                     {item.nombre}
                                 </button>
@@ -305,12 +431,32 @@ const MiCuenta = () => {
                         </div>
                     </nav>
 
+
                     <div className="min-ancho-0">
-                        {errorGeneral && <Estado tipo="error" mensaje={errorGeneral} />}
+
+                        {error && (
+                            <Estado
+                                tipo="error"
+                                mensaje={error}
+                            />
+                        )}
+
+
+                        {/* -------------------------
+                            DATOS PERSONALES
+                        ------------------------- */}
 
                         {seccion === "datos" && (
-                            <form className={"cartela pad-lg" + (errorGeneral ? " mt-md" : "")} onSubmit={handleSubmit}>
-                                <h2 className="headline-sm mb-md">Datos personales</h2>
+                            <form
+                                className={
+                                    "cartela pad-lg" +
+                                    (error ? " mt-md" : "")
+                                }
+                                onSubmit={handleSubmit}
+                            >
+                                <h2 className="headline-sm mb-md">
+                                    Datos personales
+                                </h2>
 
                                 <div className="fila-campos">
                                     <CampoFormulario
@@ -318,38 +464,54 @@ const MiCuenta = () => {
                                         name="nombre_persona"
                                         value={datos.nombre_persona}
                                         onChange={handleChange}
-                                        error={errores.nombre_persona}
+                                        error={
+                                            errores.nombre_persona
+                                        }
                                     />
 
                                     <CampoFormulario
                                         etiqueta="Apellido"
                                         name="apellido_persona"
-                                        value={datos.apellido_persona}
+                                        value={
+                                            datos.apellido_persona
+                                        }
                                         onChange={handleChange}
-                                        error={errores.apellido_persona}
+                                        error={
+                                            errores.apellido_persona
+                                        }
                                     />
                                 </div>
+
 
                                 <div className="fila-campos">
                                     <CampoFormulario
                                         etiqueta="Nombre de usuario"
                                         name="nombre_usuario"
-                                        value={datos.nombre_usuario}
+                                        value={
+                                            datos.nombre_usuario
+                                        }
                                         onChange={handleChange}
-                                        error={errores.nombre_usuario}
+                                        error={
+                                            errores.nombre_usuario
+                                        }
                                     />
 
                                     <CampoFormulario
                                         etiqueta="Teléfono"
                                         tipo="tel"
                                         name="telefono_usuario"
-                                        value={datos.telefono_usuario}
+                                        value={
+                                            datos.telefono_usuario
+                                        }
                                         onChange={handleChange}
                                         maxLength={10}
                                         inputMode="numeric"
-                                        error={errores.telefono_usuario}
+                                        error={
+                                            errores.telefono_usuario
+                                        }
                                     />
                                 </div>
+
 
                                 <CampoFormulario
                                     etiqueta="Email"
@@ -357,87 +519,208 @@ const MiCuenta = () => {
                                     name="email_usuario"
                                     value={datos.email_usuario}
                                     onChange={handleChange}
-                                    error={errores.email_usuario}
+                                    error={
+                                        errores.email_usuario
+                                    }
                                 />
 
-                                {mensaje && <p className="body-sm mb-md">{mensaje}</p>}
+
+                                {mensaje && (
+                                    <p className="body-sm mb-md">
+                                        {mensaje}
+                                    </p>
+                                )}
+
 
                                 <div className="fila al-final">
-                                    <Boton tipo={guardando ? "deshabilitado" : "primario"} type="submit">
-                                        {guardando ? "Guardando..." : "Guardar cambios"}
+                                    <Boton
+                                        tipo={
+                                            guardando
+                                                ? "deshabilitado"
+                                                : "primario"
+                                        }
+                                        type="submit"
+                                    >
+                                        {guardando
+                                            ? "Guardando..."
+                                            : "Guardar cambios"}
                                     </Boton>
                                 </div>
                             </form>
                         )}
 
-                        {seccion === "artista" && tieneArtista && (
-                            <form className="cartela pad-lg" onSubmit={handleArtista}>
-                                <h2 className="headline-sm mb-md">Perfil de artista</h2>
 
-                                <CampoFormulario
-                                    etiqueta="Nombre artístico"
-                                    name="nombre_artistico"
-                                    value={artista.nombre_artistico}
-                                    maxLength={150}
-                                    onChange={(e) => setArtista({ ...artista, nombre_artistico: e.target.value })}
-                                    error={errorNombreArtistico}
-                                />
+                        {/* -------------------------
+                            PERFIL ARTISTA
+                        ------------------------- */}
 
-                                <label className="body-sm mb-xs bloque">
-                                    <input
-                                        type="checkbox"
-                                        checked={artista.acepta_encargos}
-                                        onChange={(e) => setArtista({ ...artista, acepta_encargos: e.target.checked })}
-                                    />{" "}
-                                    Quiero recibir encargos de obras a medida
-                                </label>
+                        {seccion === "artista" &&
+                            tieneArtista && (
+                                <form
+                                    className="cartela pad-lg"
+                                    onSubmit={handleArtista}
+                                >
+                                    <h2 className="headline-sm mb-md">
+                                        Perfil de artista
+                                    </h2>
 
-                                <p className="body-sm muted mb-md">
-                                    Si lo desactivás, no vas a figurar como disponible para encargos nuevos. Los
-                                    encargos que ya tenés en curso los podés seguir gestionando y cerrando.
-                                </p>
+                                    <CampoFormulario
+                                        etiqueta="Nombre artístico"
+                                        name="nombre_artistico"
+                                        value={
+                                            artista.nombre_artistico
+                                        }
+                                        maxLength={150}
+                                        onChange={(e) => {
+                                            setArtista({
+                                                ...artista,
+                                                nombre_artistico:
+                                                    e.target.value
+                                            })
 
-                                {mensajeArtista && <p className="body-sm mb-md">{mensajeArtista}</p>}
+                                            setErrorNombreArtistico("")
+                                            setMensajeArtista("")
+                                            dispatch(
+                                                limpiarErrorSesion()
+                                            )
+                                        }}
+                                        error={
+                                            errorNombreArtistico
+                                        }
+                                    />
 
-                                <div className="fila al-final">
-                                    <Boton tipo={guardandoArtista ? "deshabilitado" : "primario"} type="submit">
-                                        {guardandoArtista ? "Guardando..." : "Guardar perfil de artista"}
-                                    </Boton>
-                                </div>
-                            </form>
-                        )}
+
+                                    <label className="body-sm mb-xs bloque">
+                                        <input
+                                            type="checkbox"
+                                            checked={
+                                                artista.acepta_encargos
+                                            }
+                                            onChange={(e) => {
+                                                setArtista({
+                                                    ...artista,
+                                                    acepta_encargos:
+                                                        e.target.checked
+                                                })
+
+                                                setMensajeArtista("")
+                                                dispatch(
+                                                    limpiarErrorSesion()
+                                                )
+                                            }}
+                                        />{" "}
+                                        Quiero recibir encargos de
+                                        obras a medida
+                                    </label>
+
+
+                                    <p className="body-sm muted mb-md">
+                                        Si lo desactivás, no vas a
+                                        figurar como disponible para
+                                        encargos nuevos. Los encargos
+                                        que ya tenés en curso los
+                                        podés seguir gestionando y
+                                        cerrando.
+                                    </p>
+
+
+                                    {mensajeArtista && (
+                                        <p className="body-sm mb-md">
+                                            {mensajeArtista}
+                                        </p>
+                                    )}
+
+
+                                    <div className="fila al-final">
+                                        <Boton
+                                            tipo={
+                                                guardandoArtista
+                                                    ? "deshabilitado"
+                                                    : "primario"
+                                            }
+                                            type="submit"
+                                        >
+                                            {guardandoArtista
+                                                ? "Guardando..."
+                                                : "Guardar perfil de artista"}
+                                        </Boton>
+                                    </div>
+                                </form>
+                            )}
+
+
+                        {/* -------------------------
+                            CONTRASEÑA
+                        ------------------------- */}
 
                         {seccion === "contrasenia" && (
-                            <form className="cartela pad-lg" onSubmit={handleCambioContrasenia}>
-                                <h2 className="headline-sm mb-md">Cambiar contraseña</h2>
+                            <form
+                                className="cartela pad-lg"
+                                onSubmit={
+                                    handleCambioContrasenia
+                                }
+                            >
+                                <h2 className="headline-sm mb-md">
+                                    Cambiar contraseña
+                                </h2>
 
                                 <CampoFormulario
                                     etiqueta="Contraseña actual"
                                     tipo="password"
                                     name="contrasenia_actual"
-                                    value={contrasenias.contrasenia_actual}
-                                    onChange={handleContrasenia}
-                                    error={erroresContrasenia.contrasenia_actual}
+                                    value={
+                                        contrasenias.contrasenia_actual
+                                    }
+                                    onChange={
+                                        handleContrasenia
+                                    }
+                                    error={
+                                        erroresContrasenia.contrasenia_actual
+                                    }
                                 />
 
                                 <CampoFormulario
                                     etiqueta="Nueva contraseña"
                                     tipo="password"
                                     name="contrasenia_nueva"
-                                    value={contrasenias.contrasenia_nueva}
-                                    onChange={handleContrasenia}
-                                    error={erroresContrasenia.contrasenia_nueva}
+                                    value={
+                                        contrasenias.contrasenia_nueva
+                                    }
+                                    onChange={
+                                        handleContrasenia
+                                    }
+                                    error={
+                                        erroresContrasenia.contrasenia_nueva
+                                    }
                                 />
 
-                                {mensajeContrasenia && <p className="body-sm mb-md">{mensajeContrasenia}</p>}
+
+                                {mensajeContrasenia && (
+                                    <p className="body-sm mb-md">
+                                        {
+                                            mensajeContrasenia
+                                        }
+                                    </p>
+                                )}
+
 
                                 <div className="fila al-final">
-                                    <Boton tipo={cambiandoContrasenia ? "deshabilitado" : "primario"} type="submit">
-                                        {cambiandoContrasenia ? "Cambiando..." : "Cambiar contraseña"}
+                                    <Boton
+                                        tipo={
+                                            cambiandoContrasenia
+                                                ? "deshabilitado"
+                                                : "primario"
+                                        }
+                                        type="submit"
+                                    >
+                                        {cambiandoContrasenia
+                                            ? "Cambiando..."
+                                            : "Cambiar contraseña"}
                                     </Boton>
                                 </div>
                             </form>
                         )}
+
                     </div>
                 </div>
             </div>

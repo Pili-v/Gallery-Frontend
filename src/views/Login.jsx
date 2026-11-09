@@ -1,23 +1,35 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
 
 import CampoFormulario from "../components/CampoFormulario"
 import Boton from "../components/Boton"
 
-import { api } from "../api/cliente"
-import { guardarSesion } from "../api/sesion"
+import {
+    iniciarSesion,
+    limpiarErrorSesion
+} from "../redux/sesionSlice"
+
 
 const Login = () => {
     const navigate = useNavigate()
+    const dispatch = useDispatch()
 
+    // Leemos del estado global de sesión el estado de carga y los errores.
+    const { loading, operacion, error } = useSelector(
+        (state) => state.sesion
+    )
+
+    const cargando = loading && operacion === "login"
+
+    // Los datos del formulario siguen siendo estado local.
     const [datos, setDatos] = useState({
         email_usuario: "",
         contrasenia_usuario: ""
     })
 
     const [errores, setErrores] = useState({})
-    const [cargando, setCargando] = useState(false)
-    const [errorGeneral, setErrorGeneral] = useState("")
+
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -32,8 +44,10 @@ const Login = () => {
             [name]: null
         })
 
-        setErrorGeneral("")
+        // Limpia un posible error anterior de Redux cuando el usuario vuelve a escribir.
+        dispatch(limpiarErrorSesion())
     }
+
 
     const validar = () => {
         const nuevosErrores = {}
@@ -51,6 +65,7 @@ const Login = () => {
         return Object.keys(nuevosErrores).length === 0
     }
 
+
     const handleSubmit = (e) => {
         e.preventDefault()
 
@@ -58,40 +73,33 @@ const Login = () => {
             return
         }
 
-        setCargando(true)
-        setErrorGeneral("")
+        dispatch(limpiarErrorSesion())
 
-        api.post("/api/v1/auth/authenticate", datos)
-            .then((respuesta) => {
-                const token = respuesta.access_token
-
-                localStorage.setItem("token", token)
-
-                return api.get("/api/usuarios/me")
-            })
-            .then((perfil) => {
-                const token = localStorage.getItem("token")
-
-                guardarSesion(token, perfil)
-
+        // La vista solo despacha la acción.
+        // El thunk se encarga de autenticarse y obtener los datos del usuario.
+        dispatch(iniciarSesion(datos)).then((resultado) => {
+            if (iniciarSesion.fulfilled.match(resultado)) {
                 navigate("/")
-            })
-            .catch((e) => {
-                setErrorGeneral(e.message || "No se pudo iniciar sesión.")
-            })
-            .finally(() => {
-                setCargando(false)
-            })
+            }
+        })
     }
+
 
     return (
         <div className="seccion">
             <div className="contenido col-acceso">
-                <h1 className="headline-lg centro">Ingresar</h1>
+                <h1 className="headline-lg centro">
+                    Ingresar
+                </h1>
 
-                <p className="body-lg muted centro">Entrá para comprar o para publicar tu obra.</p>
+                <p className="body-lg muted centro">
+                    Entrá para comprar o para publicar tu obra.
+                </p>
 
-                <form className="cartela pad-lg" onSubmit={handleSubmit}>
+                <form
+                    className="cartela pad-lg"
+                    onSubmit={handleSubmit}
+                >
                     <CampoFormulario
                         etiqueta="Email"
                         tipo="email"
@@ -110,16 +118,27 @@ const Login = () => {
                         error={errores.contrasenia_usuario}
                     />
 
-                    {errorGeneral && <p className="campo-error body-sm mb-md">{errorGeneral}</p>}
+                    {error && (
+                        <p className="campo-error body-sm mb-md">
+                            {error}
+                        </p>
+                    )}
 
-                    <Boton tipo={cargando ? "deshabilitado" : "primario"} bloque type="submit">
+                    <Boton
+                        tipo={cargando ? "deshabilitado" : "primario"}
+                        bloque
+                        type="submit"
+                    >
                         {cargando ? "Ingresando..." : "Ingresar"}
                     </Boton>
                 </form>
 
                 <p className="body-sm centro muted mt-md">
                     ¿No tenés cuenta?{" "}
-                    <Link className="texto-bordo" to="/registro">
+                    <Link
+                        className="texto-bordo"
+                        to="/registro"
+                    >
                         Crear una
                     </Link>
                 </p>

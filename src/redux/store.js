@@ -1,6 +1,7 @@
 // El store de Redux: junta los slices. La clave de cada uno es el nombre con el que se lee en los componentes
 // (useSelector((state) => state.estilos)).
 
+import sesionReducer from "./sesionSlice"
 import { configureStore } from "@reduxjs/toolkit"
 import estilosReducer from "./estilosSlice"
 import marcosReducer from "./marcosSlice"
@@ -17,6 +18,7 @@ import misVentasReducer from "./misVentasSlice"
 
 export const store = configureStore({
     reducer: {
+        sesion: sesionReducer,
         estilos: estilosReducer,
         marcos: marcosReducer,
         artistas: artistasReducer,
@@ -29,5 +31,6 @@ export const store = configureStore({
         carrito: carritoReducer,
         misObras: misObrasReducer,
         misVentas: misVentasReducer
+        
     }
 })
