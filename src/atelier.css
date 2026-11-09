@@ -1069,3 +1069,34 @@ body {
 @media (max-width: 900px) {
   .detalle-obra { grid-template-columns: 1fr; }
 }
+
+/* Panel de métricas del administrador. */
+.metricas-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--lg);
+}
+
+.metrica-cartela {
+  min-width: 0;
+}
+
+.metrica-valor {
+  margin: var(--xs) 0;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 36px;
+  line-height: 42px;
+  color: var(--bordo);
+}
+
+@media (max-width: 900px) {
+  .metricas-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .metricas-grid {
+    grid-template-columns: 1fr;
+  }
+}

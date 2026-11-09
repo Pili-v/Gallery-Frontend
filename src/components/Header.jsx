@@ -48,6 +48,7 @@ const Header = () => {
             ["Carrito", "/carrito"]
         ],
         ADMIN: [
+            ["Métricas", "/admin/metricas"],
             ["Usuarios", "/admin/usuarios"],
             ["Catálogos", "/admin/catalogos"],
             ["Encargos", "/encargos"]
