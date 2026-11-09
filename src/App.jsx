@@ -25,6 +25,7 @@ import AdminCatalogos from "./views/AdminCatalogos"
 import SinPermiso from "./views/SinPermiso"
 import NoEncontrada from "./views/NoEncontrada"
 import Artistas from "./views/Artistas"
+import AdminMetricas from "./views/AdminMetricas"
 
 // Quiénes pueden entrar a cada grupo de pantallas.
 const COMPRA = ["CLIENTE", "ARTISTA_CLIENTE", "ADMIN"]
@@ -181,7 +182,14 @@ const App = () => {
                             </RutaProtegida>
                         }
                     />
-
+                    <Route
+                        path="/admin/metricas"
+                        element={
+                            <RutaProtegida roles={ADMIN}>
+                                <AdminMetricas />
+                            </RutaProtegida>
+                        }
+                    />
                     {/* Transversales */}
                     <Route path="/403" element={<SinPermiso />} />
                     <Route path="*" element={<NoEncontrada />} />

@@ -7,6 +7,7 @@ import { configureStore } from "@reduxjs/toolkit"
 import estilosReducer from "./estilosSlice"
 import marcosReducer from "./marcosSlice"
 import tamaniosReducer from "./tamaniosSlice"
+import metricasReducer from "./metricasSlice"
 import artistasReducer from "./artistasSlice"
 import obrasReducer from "./obrasSlice"
 import obrasDeArtistaReducer from "./obrasDeArtistaSlice"
@@ -26,6 +27,7 @@ export const store = configureStore({
         marcos: marcosReducer,
         tamanios: tamaniosReducer,
         artistas: artistasReducer,
+        metricas: metricasReducer,
         obras: obrasReducer,
         obrasDeArtista: obrasDeArtistaReducer,
         obraDetalle: obraDetalleReducer,
