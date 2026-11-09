@@ -6,6 +6,7 @@ import usuariosReducer from "./usuariosSlice"
 import { configureStore } from "@reduxjs/toolkit"
 import estilosReducer from "./estilosSlice"
 import marcosReducer from "./marcosSlice"
+import tamaniosReducer from "./tamaniosSlice"
 import artistasReducer from "./artistasSlice"
 import obrasReducer from "./obrasSlice"
 import obrasDeArtistaReducer from "./obrasDeArtistaSlice"
@@ -23,6 +24,7 @@ export const store = configureStore({
         usuarios: usuariosReducer,
         estilos: estilosReducer,
         marcos: marcosReducer,
+        tamanios: tamaniosReducer,
         artistas: artistasReducer,
         obras: obrasReducer,
         obrasDeArtista: obrasDeArtistaReducer,
