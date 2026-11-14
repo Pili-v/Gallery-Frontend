@@ -7,12 +7,25 @@
 // La portada ocupa toda la pantalla al entrar (los filtros quedan debajo); "Ver todas las obras" es un enlace a #obras
 // que baja hasta la barra de filtros: lo resuelve el navegador, sin mover el scroll desde el código.
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Link } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchEstilos } from "../redux/estilosSlice"
 import { fetchArtistas } from "../redux/artistasSlice"
-import { cargarObras } from "../redux/obrasSlice"
+import {
+    cargarObras,
+    errorDeRango,
+    setPagina,
+    setEstiloIds,
+    setOrden,
+    setTexto,
+    aplicarBusqueda,
+    setPrecioMin,
+    setPrecioMax,
+    aplicarRango,
+    quitarFiltro,
+    quitarFiltros
+} from "../redux/obrasSlice"
 import TarjetaObra from "../components/TarjetaObra"
 import Estado from "../components/Estado"
 import Paginador from "../components/Paginador"
@@ -22,10 +35,6 @@ import FiltrosAplicados from "../components/FiltrosAplicados"
 import InvitacionEncargo from "../components/InvitacionEncargo"
 import { pesos, optimizada } from "../api/formato"
 
-// Sin filtros: siempre los mismos valores (no copias), así quitar filtros cuando no hay ninguno no cambia el estado ni
-// vuelve a pedir las obras.
-const SIN_RANGO = { min: "", max: "" }
-const SIN_ESTILOS = []
 const POR_PAGINA = 12
 
 export default function Catalogo() {
@@ -46,18 +55,10 @@ export default function Catalogo() {
         codigo: codigoError
     } = useSelector((state) => state.obras)
 
-    // Paginación
-    const [pagina, setPagina] = useState(0)
-
-    // Filtros: lo que se escribe, y lo que está aplicado
-    const [estiloIds, setEstiloIds] = useState(SIN_ESTILOS) // varios estilos: se muestran las obras de ALGUNO de ellos
-    const [precioMin, setPrecioMin] = useState("")
-    const [precioMax, setPrecioMax] = useState("")
-    const [rango, setRango] = useState(SIN_RANGO)
-    const [errorPrecio, setErrorPrecio] = useState("")
-    const [orden, setOrden] = useState("recientes")
-    const [texto, setTexto] = useState("")
-    const [busqueda, setBusqueda] = useState("")
+    // Filtros, orden y página: también en Redux (state.obras.filtros), así sobreviven a salir del Catálogo y volver
+    const { pagina, estiloIds, precioMin, precioMax, rango, errorPrecio, orden, texto, busqueda } = useSelector(
+        (state) => state.obras.filtros
+    )
 
     // Estilos y artistas: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir)
     useEffect(() => {
@@ -87,68 +88,15 @@ export default function Catalogo() {
         aviso = { mensaje: null, deFiltro: true }
     }
 
-    // Cualquier cambio de filtro u orden vuelve a la primera página
-    const cambiarEstilos = (ids) => {
-        setEstiloIds(ids)
-        setPagina(0)
-    }
-
-    const elegirOrden = (nuevo) => {
-        setOrden(nuevo)
-        setPagina(0)
-    }
-
-    // Buscar por texto (nombre de obra o de artista). Se aplica al enviar el formulario.
     const buscar = (e) => {
         e.preventDefault()
-        setBusqueda(texto.trim())
-        setPagina(0)
+        dispatch(aplicarBusqueda())
     }
 
-    // El orden no es un filtro: queda como está al quitar filtros.
-    const quitarFiltros = () => {
-        setEstiloIds(SIN_ESTILOS)
-        setPrecioMin("")
-        setPrecioMax("")
-        setRango(SIN_RANGO)
-        setErrorPrecio("")
-        setTexto("")
-        setBusqueda("")
-        setPagina(0)
-    }
-
-    const aplicarFiltroPrecio = () => {
-        setErrorPrecio("")
-        const min = precioMin.trim()
-        const max = precioMax.trim()
-
-        if ((min !== "" && Number(min) < 0) || (max !== "" && Number(max) < 0)) {
-            setErrorPrecio("Los precios no pueden ser negativos.")
-            return false
-        }
-        if (min !== "" && max !== "" && Number(min) > Number(max)) {
-            setErrorPrecio("El mínimo no puede ser mayor que el máximo.")
-            return false
-        }
-        setRango({ min, max })
-        setPagina(0)
-        return true
-    }
-
-    // Quitar un filtro desde su etiqueta (debajo de la barra): la búsqueda, un estilo o el rango de precio.
-    const quitarFiltro = (clave) => {
-        if (clave === "busqueda") {
-            setTexto("")
-            setBusqueda("")
-        } else if (clave === "precio") {
-            setPrecioMin("")
-            setPrecioMax("")
-            setRango(SIN_RANGO)
-            setErrorPrecio("")
-        } else {
-            setEstiloIds(estiloIds.filter((id) => "estilo" + id !== clave))
-        }
-        setPagina(0)
+    // FiltroPrecio cierra su panel si esto devuelve true (el rango era válido)
+    const aplicarPrecio = () => {
+        dispatch(aplicarRango())
+        return errorDeRango(precioMin, precioMax) === ""
     }
 
     // Reintentar: si falló lo de apoyo, esos pedidos se repiten; las obras se piden de nuevo con los mismos filtros.
@@ -248,7 +196,7 @@ export default function Catalogo() {
                 tipo="vacio"
                 mensaje={aviso.mensaje ?? mensajeSinResultados()}
                 accion="Quitar filtros"
-                onAccion={quitarFiltros}
+                onAccion={() => dispatch(quitarFiltros())}
             />
         )
     } else if (aviso) {
@@ -273,6 +221,7 @@ export default function Catalogo() {
                             porcentajeDescuento={variante.porcentaje_descuento}
                             stock={variante.stock_variante}
                             imagen={item.imagen}
+                            varianteId={variante.id}
                         />
                     )
                 })}
@@ -295,7 +244,7 @@ export default function Catalogo() {
                         lo enviamos a tu domicilio o lo retiras por nuestra sucursal principal.
                     </p>
                     <div className="fila mt-lg">
-                        <a href="#obras" className="boton boton-primario" onClick={quitarFiltros}>
+                        <a href="#obras" className="boton boton-primario" onClick={() => dispatch(quitarFiltros())}>
                             Ver todas las obras
                         </a>
                         <Link to="/encargos/nuevo" className="boton boton-secundario">
@@ -326,7 +275,7 @@ export default function Catalogo() {
                             placeholder="Buscar por obra o por artista"
                             aria-label="Buscar por obra o por artista"
                             value={texto}
-                            onChange={(e) => setTexto(e.target.value)}
+                            onChange={(e) => dispatch(setTexto(e.target.value))}
                         />
                         <button type="submit" className="boton boton-secundario">
                             Buscar
@@ -334,7 +283,7 @@ export default function Catalogo() {
                         <FiltroEstilos
                             estilos={estilos.items}
                             seleccionados={estiloIds}
-                            onCambiar={cambiarEstilos}
+                            onCambiar={(ids) => dispatch(setEstiloIds(ids))}
                             conEtiquetas={false}
                         />
                         <FiltroPrecio
@@ -342,14 +291,14 @@ export default function Catalogo() {
                             max={precioMax}
                             aplicado={rango}
                             error={errorPrecio}
-                            onCambiarMin={setPrecioMin}
-                            onCambiarMax={setPrecioMax}
-                            onAplicar={aplicarFiltroPrecio}
+                            onCambiarMin={(v) => dispatch(setPrecioMin(v))}
+                            onCambiarMax={(v) => dispatch(setPrecioMax(v))}
+                            onAplicar={aplicarPrecio}
                         />
                         <select
                             className="select barra-filtros-orden"
                             value={orden}
-                            onChange={(e) => elegirOrden(e.target.value)}
+                            onChange={(e) => dispatch(setOrden(e.target.value))}
                             aria-label="Ordenar obras"
                         >
                             <option value="recientes">Más recientes</option>
@@ -361,14 +310,14 @@ export default function Catalogo() {
                     <FiltrosAplicados
                         cantidad={totalObras + (totalObras === 1 ? " obra" : " obras")}
                         filtros={filtrosAplicados}
-                        onQuitar={quitarFiltro}
-                        onQuitarTodo={quitarFiltros}
+                        onQuitar={(clave) => dispatch(quitarFiltro(clave))}
+                        onQuitarTodo={() => dispatch(quitarFiltros())}
                     />
 
                     {resultados}
 
                     {!cargandoObras && !aviso && (
-                        <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />
+                        <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={(p) => dispatch(setPagina(p))} />
                     )}
                     <InvitacionEncargo />
                 </section>

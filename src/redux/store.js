@@ -12,6 +12,7 @@ import artistasReducer from "./artistasSlice"
 import obrasReducer from "./obrasSlice"
 import obrasDeArtistaReducer from "./obrasDeArtistaSlice"
 import obraDetalleReducer from "./obraDetalleSlice"
+import variantesReducer from "./variantesSlice"
 import obrasRelacionadasReducer from "./obrasRelacionadasSlice"
 import comprasReducer from "./comprasSlice"
 import compraDetalleReducer from "./compraDetalleSlice"
@@ -31,6 +32,7 @@ export const store = configureStore({
         obras: obrasReducer,
         obrasDeArtista: obrasDeArtistaReducer,
         obraDetalle: obraDetalleReducer,
+        variantes: variantesReducer,
         obrasRelacionadas: obrasRelacionadasReducer,
         compras: comprasReducer,
         compraDetalle: compraDetalleReducer,

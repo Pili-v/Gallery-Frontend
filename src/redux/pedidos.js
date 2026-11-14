@@ -2,6 +2,7 @@
 // Sin try/catch: si algo falla el error sube hasta el createAsyncThunk, que lo deja en action.error.
 
 import { http, lista } from "./http"
+import { descuentoVigente, varianteParaMostrar } from "../api/precio"
 
 // Un 404 en una lista se toma como "no hay nada": el 404 de verdad (una obra o un artista que no existe) se pide
 // con http.get directo. La lista vacía normal llega como 204.
@@ -26,47 +27,43 @@ export const obtenerPagina = async (ruta, { sin404 = true } = {}) => {
     }
 }
 
-// El descuento de una variante solo vale hasta su fecha (descuento_hasta, inclusive): la misma regla que usa el back para
-// ordenar y para el filtro de precio. Las fechas llegan como "AAAA-MM-DD", así que se comparan como texto.
-const descuentoVigente = (variante) => {
-    const hoy = new Date().toLocaleDateString("en-CA") // AAAA-MM-DD en la hora local
-    const vigente = !variante.descuento_hasta || variante.descuento_hasta >= hoy
-    return vigente ? Number(variante.porcentaje_descuento || 0) : 0
-}
-const precioVigente = (variante) => Number(variante.precio_variante) * (1 - descuentoVigente(variante) / 100)
-
-// La variante que se muestra de una obra: la más barata con stock (la que define el orden "menor precio") y, con un rango
-// de precio aplicado, la más barata con stock DENTRO del rango, así el precio que se ve es el que se filtró. Si ninguna
-// tiene stock, la más barata igual. Su descuento llega ya resuelto: 0 si venció.
-const varianteAMostrar = (variantes, rango) => {
-    const enRango = variantes.filter((variante) => {
-        const precio = precioVigente(variante)
-        return (rango.min === "" || precio >= Number(rango.min)) && (rango.max === "" || precio <= Number(rango.max))
-    })
-    const candidatas = enRango.length > 0 ? enRango : variantes
-    const conStock = candidatas.filter((variante) => variante.stock_variante > 0)
-    const opciones = conStock.length > 0 ? conStock : candidatas
-    if (opciones.length === 0) return null
-
-    const masBarata = [...opciones].sort((a, b) => precioVigente(a) - precioVigente(b))[0]
-    return { ...masBarata, porcentaje_descuento: descuentoVigente(masBarata) }
-}
-
-// De cada obra se trae la variante que se muestra (ver varianteAMostrar) y su portada.
-// Las portadas de todas las obras van en un solo pedido (portada=true); las variantes, de a una obra.
+// De cada obra se necesita la variante que se muestra (ver varianteParaMostrar) y su portada.
+// Solo se piden las obras que no están en el cache (guardadas = state.variantes.porObra):
+// las portadas de todas las que faltan van en un solo pedido (portada=true); las variantes, de a una obra.
 // rango es el filtro de precio del catálogo ({ min, max }, "" = sin límite); las demás pantallas no lo mandan.
-// Devuelve [{ id, variante, imagenes }] en el mismo orden que las obras.
-export const extrasDeObras = async (obras, rango = { min: "", max: "" }) => {
-    if (obras.length === 0) return []
+// Devuelve:
+//   datos: [{ id, variante, imagenes }] en el mismo orden que las obras
+//   nuevas: { [obraId]: { variantes, portada } } lo que se acaba de pedir, para que variantesSlice lo guarde
+export const extrasDeObras = async (obras, rango = { min: "", max: "" }, guardadas = {}) => {
+    if (obras.length === 0) return { datos: [], nuevas: {} }
 
-    const [portadas, variantes] = await Promise.all([
-        obtenerLista("/api/imagenes?portada=true&" + obras.map((obra) => "obraId=" + obra.id).join("&")),
-        Promise.all(obras.map((obra) => obtenerLista("/api/variantes?obraId=" + obra.id)))
-    ])
+    const faltan = obras.filter((obra) => !guardadas[obra.id])
+    const nuevas = {}
 
-    return obras.map((obra, i) => ({
-        id: obra.id,
-        variante: varianteAMostrar(variantes[i], rango),
-        imagenes: portadas.filter((p) => p.obra_id === obra.id)
-    }))
+    if (faltan.length > 0) {
+        const [portadas, variantes] = await Promise.all([
+            obtenerLista("/api/imagenes?portada=true&" + faltan.map((obra) => "obraId=" + obra.id).join("&")),
+            Promise.all(faltan.map((obra) => obtenerLista("/api/variantes?obraId=" + obra.id)))
+        ])
+        faltan.forEach((obra, i) => {
+            nuevas[obra.id] = {
+                variantes: variantes[i],
+                portada: portadas.filter((p) => p.obra_id === obra.id)
+            }
+        })
+    }
+
+    // La variante a mostrar se calcula ahora, con el rango de este pedido, sobre la lista (nueva o guardada).
+    const datos = obras.map((obra) => {
+        const entrada = nuevas[obra.id] ?? guardadas[obra.id]
+        const variante = varianteParaMostrar(entrada.variantes, rango)
+        // El descuento llega ya resuelto: 0 si no está vigente
+        return {
+            id: obra.id,
+            variante: variante ? { ...variante, porcentaje_descuento: descuentoVigente(variante) } : null,
+            imagenes: entrada.portada
+        }
+    })
+
+    return { datos, nuevas }
 }

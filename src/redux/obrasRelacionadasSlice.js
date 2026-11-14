@@ -7,7 +7,7 @@ import { obtenerLista, extrasDeObras } from "./pedidos"
 // consultas: filtros de /api/obras, uno por pedido (["artistaId=3"] o ["estiloId=1", "estiloId=2"]).
 export const cargarRelacionadas = createAsyncThunk(
     "obrasRelacionadas/cargarRelacionadas",
-    async ({ consultas, excluirId, excluirArtistaId, maximo }) => {
+    async ({ consultas, excluirId, excluirArtistaId, maximo }, { getState }) => {
         // Se piden de más porque después se descartan la obra actual y las del mismo artista.
         const tamanio = maximo * 3 + 1
         const respuestas = await Promise.all(
@@ -26,8 +26,12 @@ export const cargarRelacionadas = createAsyncThunk(
         })
         const obras = elegidas.slice(0, maximo)
 
-        const datos = await extrasDeObras(obras)
-        return obras.map((obra, i) => ({ obra, variante: datos[i].variante, imagenes: datos[i].imagenes }))
+        // Las variantes y portadas que ya están guardadas (state.variantes) no se vuelven a pedir.
+        const { datos, nuevas } = await extrasDeObras(obras, undefined, getState().variantes.porObra)
+        return {
+            items: obras.map((obra, i) => ({ obra, variante: datos[i].variante, imagenes: datos[i].imagenes })),
+            nuevas
+        }
     }
 )
 
@@ -51,7 +55,7 @@ const obrasRelacionadasSlice = createSlice({
                 const grupo = state.porClave[action.meta.arg.clave]
                 if (grupo.requestId !== action.meta.requestId) return
                 grupo.loading = false
-                grupo.items = action.payload
+                grupo.items = action.payload.items
             })
             .addCase(cargarRelacionadas.rejected, (state, action) => {
                 const grupo = state.porClave[action.meta.arg.clave]

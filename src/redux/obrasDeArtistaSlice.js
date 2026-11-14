@@ -5,14 +5,16 @@ import { obtenerPagina, extrasDeObras } from "./pedidos"
 
 export const cargarObrasDeArtista = createAsyncThunk(
     "obrasDeArtista/cargarObrasDeArtista",
-    async ({ artistaId, pagina, size }) => {
+    async ({ artistaId, pagina, size }, { getState }) => {
         const { items, totalPaginas, totalElementos } = await obtenerPagina(
             "/api/obras?artistaId=" + artistaId + "&page=" + pagina + "&size=" + size
         )
-        const datos = await extrasDeObras(items)
+        // Las variantes y portadas que ya están guardadas (state.variantes) no se vuelven a pedir.
+        const { datos, nuevas } = await extrasDeObras(items, undefined, getState().variantes.porObra)
 
         return {
             obras: items.map((obra, i) => ({ obra, variante: datos[i].variante, imagenes: datos[i].imagenes })),
+            nuevas,
             totalPaginas,
             totalElementos
         }
