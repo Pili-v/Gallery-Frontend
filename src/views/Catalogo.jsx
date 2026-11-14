@@ -273,6 +273,7 @@ export default function Catalogo() {
                             porcentajeDescuento={variante.porcentaje_descuento}
                             stock={variante.stock_variante}
                             imagen={item.imagen}
+                            varianteId={variante.id}
                         />
                     )
                 })}

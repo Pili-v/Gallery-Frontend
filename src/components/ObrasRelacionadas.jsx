@@ -81,6 +81,7 @@ export default function ObrasRelacionadas({ titulo, consultas, excluirId, exclui
                             porcentajeDescuento={variante.porcentaje_descuento}
                             stock={variante.stock_variante}
                             imagen={item.imagen}
+                            varianteId={variante.id}
                         />
                     )
                 })}
