@@ -6,6 +6,7 @@ import Badge from "./Badge"
 // en el perfil del artista y en el panel del artista.
 // Cada dato llega en su propia prop (no como objetos obra y variante): id, nombreObra, estilo, artistaId,
 // nombreArtistico, nombreTamanio, precio, porcentajeDescuento, stock e imagen. Los de la variante pueden faltar.
+// varianteId es el tamaño que muestra: va en el enlace para que el detalle abra en ese mismo tamaño.
 // conArtista pasa a la ficha: en false no nombra al artista.
 export default function TarjetaObra({
     id,
@@ -18,14 +19,16 @@ export default function TarjetaObra({
     porcentajeDescuento,
     stock,
     imagen,
+    varianteId,
     conArtista = true
 }) {
     const sinStock = stock === 0
     const descuento = porcentajeDescuento > 0
+    const enlace = "/obra/" + id + (varianteId ? "?variante=" + varianteId : "")
 
     return (
         <div className="tarjeta-obra">
-            <Link className="sin-subrayado bloque" to={`/obra/${id}`}>
+            <Link className="sin-subrayado bloque" to={enlace}>
                 <div className="obra-imagen">
                     {imagen && <img src={imagen} alt={nombreObra} />}
                     {sinStock && <Badge tipo="sinstock">Sin stock</Badge>}
@@ -42,6 +45,7 @@ export default function TarjetaObra({
                 precio={precio}
                 porcentajeDescuento={porcentajeDescuento}
                 stock={stock}
+                varianteId={varianteId}
                 conArtista={conArtista}
             />
         </div>
