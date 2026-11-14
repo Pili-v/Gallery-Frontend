@@ -6,11 +6,22 @@
 // por tarjeta. GET /api/artistas viene paginado y se puede buscar por nombre artístico (q) y filtrar por
 // estilo (estiloId): lo resuelve el backend, sobre todos los artistas.
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Link } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchEstilos } from "../redux/estilosSlice"
-import { fetchArtistas, buscarArtistas, fetchResumenArtistas } from "../redux/artistasSlice"
+import {
+    fetchArtistas,
+    buscarArtistas,
+    fetchResumenArtistas,
+    setPagina,
+    setTexto,
+    aplicarBusqueda,
+    setEstiloIds,
+    elegirArtista,
+    quitarFiltro,
+    quitarFiltros
+} from "../redux/artistasSlice"
 import { optimizada } from "../api/formato"
 import Estado from "../components/Estado"
 import Paginador from "../components/Paginador"
@@ -33,14 +44,8 @@ export default function Artistas() {
 
     const { items: artistas, totalPaginas, total, loading: cargando, error } = resultados
 
-    const [pagina, setPagina] = useState(0)
-
-    // Búsqueda: lo que se escribe, lo que está aplicado, el artista elegido en la lista y los estilos elegidos
-    const [texto, setTexto] = useState("")
-    const [busqueda, setBusqueda] = useState("")
-    const [artistaElegido, setArtistaElegido] = useState("")
-    const [reinicio, setReinicio] = useState(0) // cambia la key del buscador para vaciarlo
-    const [estiloIds, setEstiloIds] = useState([]) // varios estilos: artistas con obras de ALGUNO de ellos
+    // Página, búsqueda y estilos elegidos: también en Redux (state.artistas.filtros), así se conservan al volver
+    const { pagina, busqueda, artistaElegido, reinicio, estiloIds } = useSelector((state) => state.artistas.filtros)
 
     const todosLosArtistas = todos.map((a) => ({ id: a.id, nombre: a.nombre_artistico }))
 
@@ -62,48 +67,15 @@ export default function Artistas() {
         dispatch(buscarArtistas({ pagina, size: POR_PAGINA, busqueda, estiloIds }))
     }
 
-    // Cualquier cambio de búsqueda o de estilo vuelve a la primera página
     const buscar = (e) => {
         e.preventDefault()
-        setBusqueda(texto.trim())
-        setPagina(0)
-    }
-
-    const cambiarEstilos = (ids) => {
-        setEstiloIds(ids)
-        setPagina(0)
+        dispatch(aplicarBusqueda())
     }
 
     // Al elegir un nombre de la lista se filtra enseguida; si solo se escribe, se aplica con "Buscar".
     const elegirDeLaLista = (id) => {
-        setArtistaElegido(id)
         const elegido = todosLosArtistas.find((a) => String(a.id) === id)
-        if (elegido) {
-            setBusqueda(elegido.nombre)
-            setPagina(0)
-        }
-    }
-
-    const quitarFiltros = () => {
-        setTexto("")
-        setBusqueda("")
-        setArtistaElegido("")
-        setReinicio((n) => n + 1)
-        setEstiloIds([])
-        setPagina(0)
-    }
-
-    // Quita un solo filtro: la búsqueda o uno de los estilos
-    const quitarFiltro = (clave) => {
-        if (clave === "busqueda") {
-            setTexto("")
-            setBusqueda("")
-            setArtistaElegido("")
-            setReinicio((n) => n + 1)
-        } else {
-            setEstiloIds(estiloIds.filter((id) => "estilo" + id !== clave))
-        }
-        setPagina(0)
+        dispatch(elegirArtista({ id, nombre: elegido?.nombre }))
     }
 
     // Los filtros aplicados, como etiquetas que se quitan de a una
@@ -176,7 +148,7 @@ export default function Artistas() {
                 tipo="vacio"
                 mensaje={"No hay artistas " + partes.join(" ") + "."}
                 accion="Quitar filtros"
-                onAccion={quitarFiltros}
+                onAccion={() => dispatch(quitarFiltros())}
             />
         )
     } else if (artistas.length === 0) {
@@ -247,7 +219,7 @@ export default function Artistas() {
                                 artistas={todosLosArtistas}
                                 value={artistaElegido}
                                 onChange={elegirDeLaLista}
-                                onSearch={setTexto}
+                                onSearch={(t) => dispatch(setTexto(t))}
                                 required={false}
                                 enviarConEnter
                                 conEtiqueta={false}
@@ -259,7 +231,7 @@ export default function Artistas() {
                         <FiltroEstilos
                             estilos={estilos}
                             seleccionados={estiloIds}
-                            onCambiar={cambiarEstilos}
+                            onCambiar={(ids) => dispatch(setEstiloIds(ids))}
                             conEtiquetas={false}
                         />
                     </form>
@@ -267,14 +239,14 @@ export default function Artistas() {
                     <FiltrosAplicados
                         cantidad={total + (total === 1 ? " artista" : " artistas")}
                         filtros={filtrosAplicados}
-                        onQuitar={quitarFiltro}
-                        onQuitarTodo={quitarFiltros}
+                        onQuitar={(clave) => dispatch(quitarFiltro(clave))}
+                        onQuitarTodo={() => dispatch(quitarFiltros())}
                     />
                 </div>
 
                 {cuerpo}
 
-                {!cargando && !error && <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />}
+                {!cargando && !error && <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={(p) => dispatch(setPagina(p))} />}
             </div>
         </div>
     )

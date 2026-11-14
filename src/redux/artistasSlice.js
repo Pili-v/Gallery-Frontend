@@ -53,6 +53,10 @@ export const fetchResumenArtistas = createAsyncThunk(
     }
 )
 
+// Los filtros de la pantalla Artistas viven acá (state.artistas.filtros): al entrar a un artista y volver, se conservan.
+// texto es lo que se escribe; busqueda es lo aplicado (lo que se manda al back). reinicio cambia la key del buscador para vaciarlo.
+const FILTROS_INICIALES = { pagina: 0, texto: "", busqueda: "", artistaElegido: "", reinicio: 0, estiloIds: [] }
+
 const artistasSlice = createSlice({
     name: "artistas",
     initialState: {
@@ -61,9 +65,56 @@ const artistasSlice = createSlice({
         error: null,
         loading: false,
         resultados: { items: [], totalPaginas: 1, total: 0, error: null, loading: true, requestId: null },
-        resumen: { obras: [], imagenes: [], cargado: false, loading: false }
+        resumen: { obras: [], imagenes: [], cargado: false, loading: false },
+        filtros: FILTROS_INICIALES
     },
-    reducers: {},
+    reducers: {
+        // Cualquier cambio de búsqueda o de estilo vuelve a la primera página
+        setPagina: (state, action) => {
+            state.filtros.pagina = action.payload
+        },
+        setTexto: (state, action) => {
+            state.filtros.texto = action.payload
+        },
+        aplicarBusqueda: (state) => {
+            state.filtros.busqueda = state.filtros.texto.trim()
+            state.filtros.pagina = 0
+        },
+        setEstiloIds: (state, action) => {
+            state.filtros.estiloIds = action.payload
+            state.filtros.pagina = 0
+        },
+        // Elegir un nombre de la lista filtra enseguida. payload: { id, nombre } (nombre = undefined si no se encontró)
+        elegirArtista: (state, action) => {
+            const { id, nombre } = action.payload
+            state.filtros.artistaElegido = id
+            if (nombre !== undefined) {
+                state.filtros.busqueda = nombre
+                state.filtros.pagina = 0
+            }
+        },
+        quitarFiltro: (state, action) => {
+            const f = state.filtros
+            if (action.payload === "busqueda") {
+                f.texto = ""
+                f.busqueda = ""
+                f.artistaElegido = ""
+                f.reinicio += 1
+            } else {
+                f.estiloIds = f.estiloIds.filter((id) => "estilo" + id !== action.payload)
+            }
+            f.pagina = 0
+        },
+        quitarFiltros: (state) => {
+            const f = state.filtros
+            f.texto = ""
+            f.busqueda = ""
+            f.artistaElegido = ""
+            f.reinicio += 1
+            if (f.estiloIds.length > 0) f.estiloIds = []
+            f.pagina = 0
+        }
+    },
     extraReducers: (builder) => {
         builder
             // Todos los artistas
@@ -117,5 +168,8 @@ const artistasSlice = createSlice({
             })
     }
 })
+
+export const { setPagina, setTexto, aplicarBusqueda, setEstiloIds, elegirArtista, quitarFiltro, quitarFiltros } =
+    artistasSlice.actions
 
 export default artistasSlice.reducer

@@ -52,16 +52,16 @@ function DetalleDeObra({ id }) {
         dispatch(fetchArtistas())
     }, [dispatch])
 
-    // La obra: depende del id, si se navega a otra obra se vuelve a pedir.
+    // La obra: depende del id. Si ya se vio hace poco, el slice no la vuelve a pedir (ver obraDetalleSlice).
     useEffect(() => {
         dispatch(fetchObraDetalle(id))
     }, [dispatch, id])
 
-    // El estado puede ser todavía el de otra obra (el pedido de esta recién sale): se ignora hasta que sea el de esta.
-    const esDeEstaObra = detalle.id === id
-    const obra = esDeEstaObra ? detalle.obra : null
-    const variantes = esDeEstaObra ? detalle.variantes : []
-    const imagenes = esDeEstaObra ? detalle.imagenes : []
+    // Los datos de ESTA obra (el slice guarda varias, cada una por su id). Si todavía no llegaron, todo queda vacío.
+    const guardada = detalle.porId[id]
+    const obra = guardada?.obra ?? null
+    const variantes = guardada?.variantes ?? []
+    const imagenes = guardada?.imagenes ?? []
     const marcos = marcosEstado.items
     const artista = obra ? artistasEstado.items.find((a) => a.id === obra.artista_id) : null
 
@@ -71,7 +71,7 @@ function DetalleDeObra({ id }) {
     const varianteSeleccionada = variantes.find((v) => v.id === varianteElegida) ?? variantePorDefecto ?? null
     const marcoSeleccionado = marcos.find((m) => m.id === marcoElegido) ?? null
 
-    const error = (esDeEstaObra && detalle.error) || marcosEstado.error || artistasEstado.error
+    const error = guardada?.error || marcosEstado.error || artistasEstado.error
     const cargando = !error && (!obra || !marcosEstado.cargado || !artistasEstado.cargado)
     const agregando = detalle.agregando
 
