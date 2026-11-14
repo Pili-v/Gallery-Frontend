@@ -4,15 +4,18 @@
 // sola vez para toda la app (si otra pantalla ya los pidió, no se vuelven a pedir).
 // Disposición: la obra (con sus miniaturas) y su descripción a la izquierda; a la derecha, la tarjeta de compra
 // (precio, tamaño, marco y botón), que acompaña el scroll.
+// Abre en el tamaño que mostraba la tarjeta (?variante=id en el enlace) o, si no viene, en el más barato con stock: la
+// misma regla que la tarjeta. El descuento se aplica solo si está vigente, como lo cobra el back.
 
 import { useState, useEffect } from "react"
-import { useParams, useNavigate, Link } from "react-router-dom"
+import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchMarcos } from "../redux/marcosSlice"
 import { fetchArtistas } from "../redux/artistasSlice"
 import { fetchObraDetalle, agregarAlCarrito } from "../redux/obraDetalleSlice"
 import { getUsuario } from "../api/sesion"
 import { pesos } from "../api/formato"
+import { descuentoVigente, varianteParaMostrar } from "../api/precio"
 import { colorDeMarco } from "../api/Coloresmarco"
 import Badge from "../components/Badge"
 import Estado from "../components/Estado"
@@ -32,12 +35,13 @@ export default function DetalleObra() {
 function DetalleDeObra({ id }) {
     const dispatch = useDispatch()
     const navegar = useNavigate()
+    const [parametros] = useSearchParams()
 
     const detalle = useSelector((state) => state.obraDetalle)
     const marcosEstado = useSelector((state) => state.marcos)
     const artistasEstado = useSelector((state) => state.artistas)
 
-    // Lo que el usuario eligió (estado de la pantalla, no del backend). Sin elegir, vale el primero de la lista.
+    // Lo que el usuario eligió (estado de la pantalla, no del backend). Sin elegir, vale el tamaño con el que abre.
     const [varianteElegida, setVarianteElegida] = useState(null)
     // El marco elegido (id). Por defecto la obra va sin marco: el marco es un agregado opcional.
     const [marcoElegido, setMarcoElegido] = useState(SIN_MARCO)
@@ -61,7 +65,10 @@ function DetalleDeObra({ id }) {
     const marcos = marcosEstado.items
     const artista = obra ? artistasEstado.items.find((a) => a.id === obra.artista_id) : null
 
-    const varianteSeleccionada = variantes.find((v) => v.id === varianteElegida) ?? variantes[0] ?? null
+    // El tamaño con el que abre: el del enlace de la tarjeta si es de esta obra; si no, el más barato con stock.
+    const varianteDelEnlace = variantes.find((v) => String(v.id) === parametros.get("variante"))
+    const variantePorDefecto = varianteDelEnlace ?? varianteParaMostrar(variantes)
+    const varianteSeleccionada = variantes.find((v) => v.id === varianteElegida) ?? variantePorDefecto ?? null
     const marcoSeleccionado = marcos.find((m) => m.id === marcoElegido) ?? null
 
     const error = (esDeEstaObra && detalle.error) || marcosEstado.error || artistasEstado.error
@@ -103,7 +110,7 @@ function DetalleDeObra({ id }) {
         )
 
     const precio = varianteSeleccionada?.precio_variante ?? 0
-    const descuento = varianteSeleccionada?.porcentaje_descuento ?? 0
+    const descuento = varianteSeleccionada ? descuentoVigente(varianteSeleccionada) : 0
     const precioObra = descuento ? precio * (1 - descuento / 100) : precio
     const precioMarco = marcoSeleccionado ? Number(marcoSeleccionado.precio_marco) : 0
     const precioFinal = precioObra + precioMarco
