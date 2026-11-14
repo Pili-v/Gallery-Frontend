@@ -7,6 +7,7 @@ import { pesos } from "../api/formato"
 // Cada dato llega en su propia prop (no como objetos obra y variante): id, nombreObra, estilo, artistaId,
 // nombreArtistico, nombreTamanio, precio, porcentajeDescuento y stock. Los de la variante pueden faltar.
 // Con conArtista en false no se nombra al artista (en su propio perfil ya está arriba).
+// varianteId es el tamaño que se muestra: va en el enlace para que el detalle abra en ese mismo tamaño.
 
 export default function FichaObra({
     id,
@@ -18,6 +19,7 @@ export default function FichaObra({
     precio,
     porcentajeDescuento: descuento,
     stock,
+    varianteId,
     conArtista = true
 }) {
     const detalle = [nombreTamanio, estilo].filter(Boolean)
@@ -25,7 +27,10 @@ export default function FichaObra({
 
     return (
         <div className="ficha-obra">
-            <Link to={`/obra/${id}`} className="title-work ficha-obra-titulo">
+            <Link
+                to={"/obra/" + id + (varianteId ? "?variante=" + varianteId : "")}
+                className="title-work ficha-obra-titulo"
+            >
                 {nombreObra}
             </Link>
 

@@ -160,6 +160,7 @@ function PerfilDeArtista({ id }) {
                                         porcentajeDescuento={variante.porcentaje_descuento}
                                         stock={variante.stock_variante}
                                         imagen={tarjeta.imagen}
+                                        varianteId={variante.id}
                                         conArtista={false}
                                     />
                                 )
