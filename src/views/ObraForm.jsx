@@ -7,6 +7,8 @@
 
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { useDispatch } from "react-redux"
+import { invalidarCacheObras } from "../redux/cache"
 import { api, lista, subirArchivo } from "../api/cliente"
 import { prepararImagen } from "../api/Imagen"
 import { getPerfilArtista } from "../api/sesion"
@@ -96,6 +98,7 @@ const planDeFotos = (fotos, idsEnElServidor, quitadas) => {
 
 const FormularioObra = ({ id }) => {
     const navegar = useNavigate()
+    const dispatch = useDispatch()   
     const editando = id !== undefined
 
     // Catálogos y datos que se piden al entrar. null = todavía no llegó.
@@ -338,6 +341,7 @@ const FormularioObra = ({ id }) => {
 
         pedido
             .then((respuesta) => {
+                dispatch(invalidarCacheObras())
                 let idSiguiente = idActual
 
                 if (tarea.tipo === "crearObra") {
@@ -443,13 +447,16 @@ const FormularioObra = ({ id }) => {
 
     // Eliminar: el back marca la obra como eliminada (deja de verse en todos lados) y conserva
     // sus variantes. Si no se puede (por ejemplo, error del back), vuelve el mensaje.
-    const eliminar = () => {
+  const eliminar = () => {
         if (guardando) return
         setErrorGeneral("")
         setGuardando(true)
 
         api.delete("/api/obras/" + idObra)
-            .then(() => navegar("/panel/obras"))
+            .then(() => {
+                dispatch(invalidarCacheObras())
+                navegar("/panel/obras")
+            })
             .catch((e) => {
                 setErrorGeneral(e.message)
                 setGuardando(false)
