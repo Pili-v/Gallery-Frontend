@@ -1,5 +1,5 @@
 // Axios: el único lugar que sabe la dirección del backend y que le pone el token a cada pedido.
-// Reemplaza a fetch (api/cliente.js) para todo lo que pasa por Redux. Los slices importan `http` desde acá.
+// Todos los pedidos al back pasan por acá, siempre desde un thunk de Redux. Los slices importan `http` desde acá.
 //
 // Los errores salen con el mensaje que mandó el backend y con el código HTTP en error.code (como texto,
 // por ejemplo "404"). Se usa `code` porque createAsyncThunk, al rechazar, solo guarda name, message y code:
@@ -7,9 +7,10 @@
 
 import axios from "axios"
 import { getToken } from "../api/sesion"
-// Por ahora el aviso de sesión vencida sigue viviendo en cliente.js (lo escucha el componente SesionVencida).
-// Cuando cliente.js desaparezca, esta constante se mueve a api/sesion.js y se cambia el import en los dos lugares.
-import { SESION_VENCIDA } from "../api/cliente"
+
+// Nombre del aviso que se emite cuando el back dice que la sesión ya no sirve.
+// Lo escucha el componente SesionVencida, que muestra el cartel.
+export const SESION_VENCIDA = "sesion-vencida"
 
 export const http = axios.create({ baseURL: "http://localhost:8080" })
 

@@ -1,12 +1,6 @@
-// Direcciones — módulo de apoyo del área de Compra.
-// Habla con Georef, la API de direcciones del Estado argentino (apis.datos.gob.ar):
-// es publica, gratuita y no pide clave.
-//
-// No pasa por cliente.js a proposito: ese modulo apunta a nuestro backend y le
-// agrega el token JWT a cada pedido. Georef es un tercero y no tiene por que
-// recibir nuestras credenciales.
-
-const GEOREF = "https://apis.datos.gob.ar/georef/api"
+// Direcciones — funciones de apoyo del área de Compra para las direcciones de Georef (la API de direcciones del
+// Estado argentino). Los pedidos a Georef los hace direccionesSlice; acá queda solo cómo se lee y se muestra lo que
+// devuelve.
 
 // Lo unico que no se puede pedir a ninguna API: como escribe la gente.
 const ALIAS = {
@@ -21,15 +15,6 @@ const sinAcentos = (texto) =>
         .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
         .trim()
-
-// Las 24 provincias salen de la misma API que despues valida la direccion,
-// asi no hay una lista escrita a mano que se pueda desactualizar.
-// Si Georef no responde, devuelve [] y la busqueda sigue andando a nivel pais.
-export const traerProvincias = () =>
-    fetch(GEOREF + "/provincias?campos=nombre&max=30")
-        .then((respuesta) => respuesta.json())
-        .then((datos) => datos.provincias ?? [])
-        .catch(() => [])
 
 // "Florida 500, CABA" -> { calle: "Florida 500", provincia: "Ciudad Autonoma...", desconocida: "" }
 // Sin coma, busca en todo el pais. Si lo de despues de la coma no es una
@@ -59,22 +44,3 @@ export const textoDeDireccion = (sugerida) => {
 
 // Como se muestra el nombre de una provincia en pantalla.
 export const nombreCorto = (provincia) => (provincia === "Ciudad Autónoma de Buenos Aires" ? "CABA" : provincia)
-
-// Busca direcciones. Con provincia acota a esa; sin provincia, todo el pais.
-// Georef devuelve la misma calle una vez por tramo: se deja una sola.
-export const buscarDirecciones = (calle, provincia) => {
-    const url =
-        GEOREF +
-        "/direcciones?max=8&direccion=" +
-        encodeURIComponent(calle) +
-        (provincia ? "&provincia=" + encodeURIComponent(provincia) : "")
-
-    return fetch(url)
-        .then((respuesta) => respuesta.json())
-        .then((datos) => {
-            const encontradas = datos.direcciones ?? []
-            const textos = encontradas.map(textoDeDireccion)
-            return encontradas.filter((sugerida, indice) => textos.indexOf(textos[indice]) === indice)
-        })
-        .catch(() => [])
-}

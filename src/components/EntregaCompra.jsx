@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
-import { traerProvincias, separarZona, buscarDirecciones, textoDeDireccion, nombreCorto } from "../api/direcciones"
+import { useDispatch, useSelector } from "react-redux"
+import { separarZona, textoDeDireccion, nombreCorto } from "../api/direcciones"
+import { fetchProvincias, buscarDirecciones } from "../redux/direccionesSlice"
 import { ENVIO_DOMICILIO, RETIRO_LOCAL } from "../api/entrega"
 import CampoFormulario from "./CampoFormulario"
 
@@ -10,16 +12,17 @@ import CampoFormulario from "./CampoFormulario"
 //   error: el aviso de la dirección (por ejemplo, si falta para el envío).
 //   onTipoEntrega(tipo), onDireccion(texto): los avisos de cada cambio.
 const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDireccion }) => {
-    const [provincias, setProvincias] = useState([])
+    const dispatch = useDispatch()
+    const provincias = useSelector((state) => state.direcciones.provincias)
     const [sugerencias, setSugerencias] = useState([])
     const [buscando, setBuscando] = useState(false)
     // Una dirección que ya viene escrita no es algo recién tecleado: no hay que salir a buscar sugerencias por ella.
     const [elegida, setElegida] = useState(direccion !== "")
 
-    // Las provincias salen de la API de direcciones y no dependen de nada: una sola vez.
+    // Las provincias salen de la API de direcciones y no dependen de nada: una sola vez para toda la app.
     useEffect(() => {
-        traerProvincias().then(setProvincias)
-    }, [])
+        dispatch(fetchProvincias())
+    }, [dispatch])
 
     // Autocompletado. El setTimeout de 400 ms es el "debounce": no se consulta en cada tecla sino cuando la
     // persona deja de escribir, y el clearTimeout del return cancela la consulta pendiente si sigue tecleando.
@@ -31,13 +34,15 @@ const EntregaCompra = ({ tipoEntrega, direccion, error, onTipoEntrega, onDirecci
 
         const temporizador = setTimeout(() => {
             setBuscando(true)
-            buscarDirecciones(calle, provincia)
-                .then(setSugerencias)
-                .finally(() => setBuscando(false))
+            // Las sugerencias son de esta pantalla: se toman del resultado del thunk (si falla, ninguna).
+            dispatch(buscarDirecciones({ calle, provincia })).then((resultado) => {
+                setSugerencias(resultado.error ? [] : resultado.payload)
+                setBuscando(false)
+            })
         }, 400)
 
         return () => clearTimeout(temporizador)
-    }, [direccion, elegida, provincias])
+    }, [dispatch, direccion, elegida, provincias])
 
     const escribirDireccion = (e) => {
         onDireccion(e.target.value)
