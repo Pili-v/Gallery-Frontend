@@ -11,14 +11,12 @@ import metricasReducer from "./metricasSlice"
 import artistasReducer from "./artistasSlice"
 import obrasReducer from "./obrasSlice"
 import obrasDeArtistaReducer from "./obrasDeArtistaSlice"
-import obraDetalleReducer from "./obraDetalleSlice"
-import variantesReducer from "./variantesSlice"
 import obrasRelacionadasReducer from "./obrasRelacionadasSlice"
 import comprasReducer from "./comprasSlice"
-import compraDetalleReducer from "./compraDetalleSlice"
 import carritoReducer from "./carritoSlice"
 import misObrasReducer from "./misObrasSlice"
 import misVentasReducer from "./misVentasSlice"
+import catalogoReducer from "./catalogoSlice"
 
 export const store = configureStore({
     reducer: {
@@ -29,16 +27,13 @@ export const store = configureStore({
         tamanios: tamaniosReducer,
         artistas: artistasReducer,
         metricas: metricasReducer,
-        obras: obrasReducer,
+        obras: obrasReducer, // cada obra una sola vez (las listas guardan sus ids)
         obrasDeArtista: obrasDeArtistaReducer,
-        obraDetalle: obraDetalleReducer,
-        variantes: variantesReducer,
         obrasRelacionadas: obrasRelacionadasReducer,
         compras: comprasReducer,
-        compraDetalle: compraDetalleReducer,
         carrito: carritoReducer,
         misObras: misObrasReducer,
-        misVentas: misVentasReducer
-        
+        misVentas: misVentasReducer,
+        catalogo: catalogoReducer
     }
 })

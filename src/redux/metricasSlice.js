@@ -4,6 +4,7 @@ import {
 } from "@reduxjs/toolkit"
 
 import { http } from "./http"
+import { cambioDeUsuario } from "./sesionSlice"
 
 
 // -------------------------
@@ -60,6 +61,9 @@ const metricasSlice = createSlice({
                         action.error.message
                 }
             )
+
+            // Son datos del usuario: al cerrar sesión o entrar con otro, se vuelve al estado inicial.
+            .addMatcher(cambioDeUsuario, () => metricasSlice.getInitialState())
     }
 })
 

@@ -1,7 +1,8 @@
 // Artistas — tres cosas del mismo recurso:
 //   items      : todos los artistas, una sola vez (nombres para las tarjetas, el contador, las sugerencias del buscador)
 //   resultados : la página que muestra la pantalla Artistas (con búsqueda por nombre y filtro de estilos)
-//   resumen    : las obras y portadas con las que la pantalla Artistas arma cada tarjeta
+//   resumen    : las obras con las que la pantalla Artistas arma cada tarjeta (solo ids: las obras, con su portada,
+//                se guardan en obrasSlice)
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { obtenerLista, obtenerPagina } from "./pedidos"
@@ -35,20 +36,20 @@ export const buscarArtistas = createAsyncThunk(
     }
 )
 
-// Las obras y las portadas de todos los artistas, una sola vez: se agrupan en la pantalla, así no se pide por tarjeta.
+// Las obras de todos los artistas (cada una trae su portada): se agrupan en la pantalla, así no se pide por tarjeta.
+// Como el Catálogo, se pide una vez y se reutiliza, salvo que un cambio propio lo haya dejado viejo (ver version en
+// obrasSlice); si ya hay un pedido en camino, no se repite.
 export const fetchResumenArtistas = createAsyncThunk(
     "artistas/fetchResumenArtistas",
-    async () => {
-        const [obras, imagenes] = await Promise.all([
-            obtenerLista("/api/obras"),
-            obtenerLista("/api/imagenes?portada=true")
-        ])
-        return { obras, imagenes }
+    async (_, { getState }) => {
+        const version = getState().obras.version
+        const obras = await obtenerLista("/api/obras")
+        return { obras, version }
     },
     {
         condition: (_, { getState }) => {
-            const { cargado, loading } = getState().artistas.resumen
-            return !cargado && !loading
+            const { cargado, loading, version } = getState().artistas.resumen
+            return !loading && !(cargado && version === getState().obras.version)
         }
     }
 )
@@ -65,7 +66,7 @@ const artistasSlice = createSlice({
         error: null,
         loading: false,
         resultados: { items: [], totalPaginas: 1, total: 0, error: null, loading: true, requestId: null },
-        resumen: { obras: [], imagenes: [], cargado: false, loading: false },
+        resumen: { ids: [], cargado: false, loading: false, version: null },
         filtros: FILTROS_INICIALES
     },
     reducers: {
@@ -160,8 +161,8 @@ const artistasSlice = createSlice({
             .addCase(fetchResumenArtistas.fulfilled, (state, action) => {
                 state.resumen.loading = false
                 state.resumen.cargado = true
-                state.resumen.obras = action.payload.obras
-                state.resumen.imagenes = action.payload.imagenes
+                state.resumen.ids = action.payload.obras.map((obra) => obra.id)
+                state.resumen.version = action.payload.version
             })
             .addCase(fetchResumenArtistas.rejected, (state) => {
                 state.resumen.loading = false

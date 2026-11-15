@@ -1,5 +1,5 @@
-// Las fotos de la obra en el formulario: se agregan, se reordenan, se reemplazan y se quitan.
-// Solo dibuja y avisa los cambios: el estado y los pedidos viven en ObraForm.
+// Las fotos de la obra en el formulario: se agregan, se reordenan, se reemplazan y se quitan. Los cambios se guardan
+// juntos con el botón de la sección (en ObraForm). Solo dibuja y avisa.
 // La primera foto es la portada (la que se ve en el catálogo).
 //
 // Como en el publicador de Mercado Libre, las fotos se ordenan arrastrándolas y se agregan soltando
@@ -9,10 +9,10 @@
 // con las flechas ← y → de cada foto.
 //
 // Props:
-//   fotos        : [{ clave, id, url, vista }]. vista es la foto elegida que todavía no se subió.
+//   fotos        : [{ clave, id, url, vista }], en orden. vista es la foto elegida que todavía no se guardó.
 //   preparando   : true mientras se achican las fotos elegidas
-//   error        : aviso de las fotos que no se pudieron usar
-//   ocupado      : true mientras se guarda (se bloquea todo)
+//   error        : aviso de las fotos que no se pudieron usar o de un cambio que falló
+//   ocupado      : true mientras se guarda un cambio (se bloquea todo)
 //   onAgregar    : (archivos) => void
 //   onMover      : (clave, delta) => void   (-1 antes, +1 después)
 //   onOrdenar    : (claveArrastrada, claveDestino) => void   (la arrastrada pasa al lugar del destino)
@@ -166,9 +166,11 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
             >
                 {preparando
                     ? "Preparando fotos…"
-                    : soltandoArchivos
-                      ? "Soltá las fotos acá"
-                      : "Arrastrá fotos hasta acá o tocá para elegirlas"}
+                    : ocupado
+                      ? "Guardando…"
+                      : soltandoArchivos
+                        ? "Soltá las fotos acá"
+                        : "Arrastrá fotos hasta acá o tocá para elegirlas"}
                 <input
                     className="oculto"
                     type="file"
@@ -182,8 +184,8 @@ const SeccionFotos = ({ fotos, preparando, error, ocupado, onAgregar, onMover, o
                 />
             </label>
             <p className="body-sm muted mt-xs">
-                Ordenalas arrastrándolas o con las flechas ← →: la primera es la que se ve en el catálogo. Se achican a
-                1600 px y deben tener al menos 600 px de lado.
+                Ordenalas arrastrándolas o con las flechas ← →: la primera es la que se ve en el catálogo. Los cambios
+                se guardan con "Guardar fotos". Se achican a 1600 px y deben tener al menos 600 px de lado.
             </p>
 
             {error && (

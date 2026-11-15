@@ -1,11 +1,12 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
+import { createAsyncThunk, createSlice, isAnyOf } from "@reduxjs/toolkit"
 
 import { http } from "./http"
 import {
     getToken,
     getUsuario,
     getPerfilArtista,
-    guardarSesion
+    guardarSesion,
+    cerrarSesion as borrarSesionGuardada
 } from "../api/sesion"
 
 
@@ -138,6 +139,20 @@ export const cambiarContrasenia = createAsyncThunk(
         await http.patch("/api/usuarios/me/contrasenia", datos)
     }
 )
+
+
+// -------------------------
+// CERRAR SESIÓN
+// -------------------------
+
+// Se borra la sesión del navegador. Los slices con datos propios del usuario (sus obras, ventas, compras, carrito…)
+// escuchan cambioDeUsuario y vuelven a su estado inicial; lo público (catálogo, artistas, estilos) queda.
+export const cerrarSesion = createAsyncThunk("sesion/cerrarSesion", async () => {
+    borrarSesionGuardada()
+})
+
+// Cambió quién usa la aplicación: salió, entró o se registró alguien.
+export const cambioDeUsuario = isAnyOf(cerrarSesion.fulfilled, iniciarSesion.fulfilled, registrarUsuario.fulfilled)
 
 
 // Al iniciar Redux recuperamos lo que quedó persistido en el navegador.
@@ -310,6 +325,13 @@ const sesionSlice = createSlice({
                 state.loading = false
                 state.operacion = null
                 state.error = action.error.message
+            })
+
+            .addCase(cerrarSesion.fulfilled, (state) => {
+                state.token = null
+                state.usuario = null
+                state.perfilArtista = null
+                state.error = null
             })
     }
 })

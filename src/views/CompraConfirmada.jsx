@@ -1,13 +1,15 @@
 // Compra confirmada — Área 4 · Compra
 // Es la pantalla donde se ve lo que hace el checkout por dentro: una sola
 // compra, pero una factura por cada artista que vendió algo.
-// Los datos viven en el estado global (compraDetalleSlice): la pantalla despacha
-// la acción con el id de la URL y se suscribe al resultado.
+// La compra y sus facturas viven en el estado global (comprasSlice), una sola vez: la pantalla las pide con el id de
+// la URL y las lee de ahí. Los nombres de los artistas salen de la lista de artistas (artistasSlice). Si el pedido
+// terminó es cosa de esta pantalla: queda en su estado.
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
-import { cargarCompra } from "../redux/compraDetalleSlice"
+import { fetchCompra } from "../redux/comprasSlice"
+import { fetchArtistas } from "../redux/artistasSlice"
 import { pesos, fecha } from "../api/formato"
 import Estado from "../components/Estado"
 import Boton from "../components/Boton"
@@ -18,12 +20,31 @@ const CompraConfirmada = () => {
     const navegar = useNavigate()
 
     const dispatch = useDispatch()
-    const { compra, facturas, loading: cargando, error } = useSelector((state) => state.compraDetalle)
+    const compraGuardada = useSelector((state) => state.compras.porId[id])
+    const facturasGuardadas = useSelector((state) => state.compras.facturas[id])
+    const artistas = useSelector((state) => state.artistas)
+    const [pedido, setPedido] = useState({ listo: false, error: null })
+
+    // Los artistas: una sola vez para toda la app (si otra pantalla ya los pidió, no se vuelven a pedir).
+    useEffect(() => {
+        dispatch(fetchArtistas())
+    }, [dispatch])
 
     // Depende del id: si se navega a otra compra, se vuelve a despachar.
     useEffect(() => {
-        dispatch(cargarCompra(id))
+        dispatch(fetchCompra(id)).then((resultado) => {
+            setPedido({ listo: true, error: resultado.error ? resultado.error.message : null })
+        })
     }, [dispatch, id])
+
+    const error = pedido.error || artistas.error
+    const cargando = !error && (!pedido.listo || !artistas.cargado)
+    const compra = compraGuardada
+    // Cada factura trae el id del artista: el nombre sale de la lista de artistas.
+    const facturas = (facturasGuardadas ?? []).map((factura) => {
+        const artista = artistas.items.find((a) => a.id === factura.artista_id)
+        return { ...factura, nombre_artistico: artista ? artista.nombre_artistico : "Artista" }
+    })
 
     if (cargando)
         return (

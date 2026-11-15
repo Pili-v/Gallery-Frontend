@@ -4,16 +4,16 @@
 // GET /api/obras?artistaId=, que devuelve la misma forma que el catálogo y está paginado.
 // Las variantes y las imágenes se piden solo de las obras de la página que se ve:
 // pedir las listas completas traería las fotos de todas las obras de la base.
-// Los estilos que trabaja salen del resumen de artistas (el mismo que usa la pantalla Artistas; se pide una sola vez).
+// Los estilos que trabaja salen del resumen de artistas (el mismo que usa la pantalla Artistas; se pide al entrar).
 // Disposición: los datos del artista en una columna fija a la izquierda y sus obras en una grilla a la derecha.
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchEstilos } from "../redux/estilosSlice"
 import { fetchArtistas, fetchResumenArtistas } from "../redux/artistasSlice"
-import { cargarObrasDeArtista } from "../redux/obrasDeArtistaSlice"
-import { optimizada } from "../api/formato"
+import { fetchObrasDeArtista, setPagina } from "../redux/obrasDeArtistaSlice"
+import { armarTarjeta } from "../api/tarjetas"
 import TarjetaObra from "../components/TarjetaObra"
 import Estado from "../components/Estado"
 import Paginador from "../components/Paginador"
@@ -28,21 +28,26 @@ export default function PerfilArtista() {
 
 function PerfilDeArtista({ id }) {
     const dispatch = useDispatch()
-    const [pagina, setPagina] = useState(0)
 
     const artistas = useSelector((state) => state.artistas)
     const estilos = useSelector((state) => state.estilos)
+    const obrasGuardadas = useSelector((state) => state.obras.porId)
     const {
-        items,
+        ids,
         totalPaginas,
         totalObras,
         loading: cargandoObras,
-        error: errorObras
+        error: errorObras,
+        vista
     } = useSelector((state) => state.obrasDeArtista)
+
+    // La página que se ve, si es de este artista (al volver de una de sus obras); si no, la primera.
+    const pagina = vista.artistaId === String(id) ? vista.pagina : 0
 
     const resumen = useSelector((state) => state.artistas.resumen)
 
-    // El artista, los estilos y el resumen: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir)
+    // El artista y los estilos: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir). El resumen se pide
+    // al entrar: puede haber publicado obras nuevas.
     useEffect(() => {
         dispatch(fetchArtistas())
         dispatch(fetchEstilos())
@@ -51,7 +56,7 @@ function PerfilDeArtista({ id }) {
 
     // Las obras de la página visible, con sus variantes e imágenes
     useEffect(() => {
-        dispatch(cargarObrasDeArtista({ artistaId: id, pagina, size: POR_PAGINA }))
+        dispatch(fetchObrasDeArtista({ artistaId: id, pagina, size: POR_PAGINA }))
     }, [dispatch, id, pagina])
 
     const error = artistas.error || estilos.error || errorObras
@@ -62,7 +67,7 @@ function PerfilDeArtista({ id }) {
     const reintentar = () => {
         dispatch(fetchArtistas({ forzar: true }))
         dispatch(fetchEstilos())
-        dispatch(cargarObrasDeArtista({ artistaId: id, pagina, size: POR_PAGINA }))
+        dispatch(fetchObrasDeArtista({ artistaId: id, pagina, size: POR_PAGINA }))
     }
 
     if (cargando)
@@ -90,8 +95,9 @@ function PerfilDeArtista({ id }) {
 
     // Los estilos de todas sus obras, sin repetir. Si el resumen todavía no llegó (o falló), no se muestran.
     const idsEstilos = []
-    resumen.obras
-        .filter((o) => o.artista_id === artista.id)
+    resumen.ids
+        .map((idObra) => obrasGuardadas[idObra])
+        .filter((o) => o && o.artista_id === artista.id)
         .forEach((obra) => {
             ;(obra.estilo_ids ?? []).forEach((idEstilo) => {
                 if (!idsEstilos.includes(idEstilo)) idsEstilos.push(idEstilo)
@@ -99,20 +105,10 @@ function PerfilDeArtista({ id }) {
         })
     const susEstilos = estilos.items.filter((e) => idsEstilos.includes(e.id)).map((e) => e.nombre_estilo)
 
-    const armarTarjeta = (item) => {
-        const portada = [...item.imagenes].sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0))[0]
-        const estilo = estilos.items.find((e) => (item.obra.estilo_ids ?? []).includes(e.id))
-        return {
-            obra: {
-                ...item.obra,
-                estilo: estilo ? estilo.nombre_estilo : "",
-                artistaId: artista.id,
-                nombre_artistico: artista.nombre_artistico
-            },
-            variante: item.variante,
-            imagen: portada ? optimizada(portada.url, 600) : null
-        }
-    }
+    const tarjetas = ids
+        .map((idObra) => obrasGuardadas[idObra])
+        .filter(Boolean)
+        .map((obra) => armarTarjeta(obra, { artistas: artistas.items, estilos: estilos.items }))
 
     return (
         <div className="seccion">
@@ -140,12 +136,11 @@ function PerfilDeArtista({ id }) {
                     <h2 className="solo-lectores">Obras publicadas</h2>
                     {cargandoObras ? (
                         <Estado tipo="cargando" />
-                    ) : items.length === 0 ? (
+                    ) : tarjetas.length === 0 ? (
                         <Estado tipo="vacio" mensaje="Este artista todavía no publicó obras." />
                     ) : (
                         <div className="grilla-obras">
-                            {items.map((item) => {
-                                const tarjeta = armarTarjeta(item)
+                            {tarjetas.map((tarjeta) => {
                                 const variante = tarjeta.variante || {}
                                 return (
                                     <TarjetaObra
@@ -168,7 +163,13 @@ function PerfilDeArtista({ id }) {
                         </div>
                     )}
 
-                    {!cargandoObras && <Paginador pagina={pagina} totalPaginas={totalPaginas} onCambiar={setPagina} />}
+                    {!cargandoObras && (
+                        <Paginador
+                            pagina={pagina}
+                            totalPaginas={totalPaginas}
+                            onCambiar={(nueva) => dispatch(setPagina({ artistaId: id, pagina: nueva }))}
+                        />
+                    )}
                 </section>
             </div>
         </div>

@@ -1,13 +1,16 @@
 // Obras relacionadas — las filas "Más obras de..." y "Obras parecidas" del detalle de una obra.
-// Hay dos a la vez, cada una con sus propios filtros: por eso el estado se guarda por clave.
+// Hay dos a la vez, cada una con sus propios filtros: por eso el estado se guarda por clave. Cada obra llega con sus
+// variantes y su portada; acá quedan solo sus ids (las obras se guardan en obrasSlice). Como el Catálogo, se piden una
+// vez por clave, salvo que un cambio propio las haya dejado viejas (docs/datos-con-redux.md).
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
-import { obtenerLista, extrasDeObras } from "./pedidos"
+import { obtenerLista } from "./pedidos"
 
 // consultas: filtros de /api/obras, uno por pedido (["artistaId=3"] o ["estiloId=1", "estiloId=2"]).
-export const cargarRelacionadas = createAsyncThunk(
-    "obrasRelacionadas/cargarRelacionadas",
+export const fetchRelacionadas = createAsyncThunk(
+    "obrasRelacionadas/fetchRelacionadas",
     async ({ consultas, excluirId, excluirArtistaId, maximo }, { getState }) => {
+        const version = getState().obras.version
         // Se piden de más porque después se descartan la obra actual y las del mismo artista.
         const tamanio = maximo * 3 + 1
         const respuestas = await Promise.all(
@@ -24,44 +27,44 @@ export const cargarRelacionadas = createAsyncThunk(
                 elegidas.push(obra)
             })
         })
-        const obras = elegidas.slice(0, maximo)
-
-        // Las variantes y portadas que ya están guardadas (state.variantes) no se vuelven a pedir.
-        const { datos, nuevas } = await extrasDeObras(obras, undefined, getState().variantes.porObra)
-        return {
-            items: obras.map((obra, i) => ({ obra, variante: datos[i].variante, imagenes: datos[i].imagenes })),
-            nuevas
+        return { obras: elegidas.slice(0, maximo), version }
+    },
+    {
+        condition: ({ clave }, { getState }) => {
+            const grupo = getState().obrasRelacionadas.porClave[clave]
+            if (!grupo) return true
+            return !grupo.loading && (grupo.error !== null || grupo.version !== getState().obras.version)
         }
     }
 )
 
 const obrasRelacionadasSlice = createSlice({
     name: "obrasRelacionadas",
-    initialState: { porClave: {} }, // clave -> { items, loading, error, requestId }
+    initialState: { porClave: {} }, // clave -> { ids, loading, error, requestId, version }
     reducers: {},
     extraReducers: (builder) => {
         builder
-            .addCase(cargarRelacionadas.pending, (state, action) => {
+            .addCase(fetchRelacionadas.pending, (state, action) => {
                 const { clave } = action.meta.arg
-                const anterior = state.porClave[clave]
                 state.porClave[clave] = {
-                    items: anterior ? anterior.items : [],
+                    ids: [],
                     loading: true,
                     error: null,
                     requestId: action.meta.requestId
                 }
             })
-            .addCase(cargarRelacionadas.fulfilled, (state, action) => {
+            .addCase(fetchRelacionadas.fulfilled, (state, action) => {
                 const grupo = state.porClave[action.meta.arg.clave]
                 if (grupo.requestId !== action.meta.requestId) return
                 grupo.loading = false
-                grupo.items = action.payload.items
+                grupo.ids = action.payload.obras.map((obra) => obra.id)
+                grupo.version = action.payload.version
             })
-            .addCase(cargarRelacionadas.rejected, (state, action) => {
+            .addCase(fetchRelacionadas.rejected, (state, action) => {
                 const grupo = state.porClave[action.meta.arg.clave]
                 if (grupo.requestId !== action.meta.requestId) return
                 grupo.loading = false
-                grupo.items = []
+                grupo.ids = []
                 grupo.error = action.error.message
             })
     }

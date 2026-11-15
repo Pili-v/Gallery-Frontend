@@ -13,7 +13,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { fetchEstilos } from "../redux/estilosSlice"
 import { fetchArtistas } from "../redux/artistasSlice"
 import {
-    cargarObras,
+    fetchCatalogo,
     errorDeRango,
     setPagina,
     setEstiloIds,
@@ -25,7 +25,8 @@ import {
     aplicarRango,
     quitarFiltro,
     quitarFiltros
-} from "../redux/obrasSlice"
+} from "../redux/catalogoSlice"
+import { armarTarjeta } from "../api/tarjetas"
 import TarjetaObra from "../components/TarjetaObra"
 import Estado from "../components/Estado"
 import Paginador from "../components/Paginador"
@@ -33,7 +34,7 @@ import FiltroEstilos from "../components/FiltroEstilos"
 import FiltroPrecio from "../components/FiltroPrecio"
 import FiltrosAplicados from "../components/FiltrosAplicados"
 import InvitacionEncargo from "../components/InvitacionEncargo"
-import { pesos, optimizada } from "../api/formato"
+import { pesos } from "../api/formato"
 
 const POR_PAGINA = 12
 
@@ -43,22 +44,24 @@ export default function Catalogo() {
     // Lo que viene del backend (Redux)
     const estilos = useSelector((state) => state.estilos)
     const artistas = useSelector((state) => state.artistas)
+    const obrasGuardadas = useSelector((state) => state.obras.porId)
     const {
-        items: obras,
-        extras,
+        ids,
         totalPaginas,
         totalObras,
-        primeraObra,
+        primeraObraId,
         conFiltros,
         loading: cargandoObras,
         error: errorObras,
         codigo: codigoError
-    } = useSelector((state) => state.obras)
+    } = useSelector((state) => state.catalogo)
 
-    // Filtros, orden y página: también en Redux (state.obras.filtros), así sobreviven a salir del Catálogo y volver
+    // Filtros, orden y página: también en Redux (state.catalogo.filtros), así sobreviven a ir a una obra y volver
     const { pagina, estiloIds, precioMin, precioMax, rango, errorPrecio, orden, texto, busqueda } = useSelector(
-        (state) => state.obras.filtros
+        (state) => state.catalogo.filtros
     )
+    // Las obras de la página, guardadas en obrasSlice
+    const obras = ids.map((id) => obrasGuardadas[id]).filter(Boolean)
 
     // Estilos y artistas: una sola vez (si otra pantalla ya los pidió, no se vuelven a pedir)
     useEffect(() => {
@@ -68,7 +71,7 @@ export default function Catalogo() {
 
     // Obras: se vuelven a pedir cuando cambia un filtro, el orden o la página
     useEffect(() => {
-        dispatch(cargarObras({ pagina, size: POR_PAGINA, orden, estiloIds, rango, busqueda }))
+        dispatch(fetchCatalogo({ pagina, size: POR_PAGINA, orden, estiloIds, rango, busqueda }))
     }, [dispatch, pagina, orden, estiloIds, rango, busqueda])
 
     const errorApoyo = estilos.error || artistas.error
@@ -103,33 +106,16 @@ export default function Catalogo() {
     const reintentar = () => {
         dispatch(fetchEstilos())
         dispatch(fetchArtistas())
-        dispatch(cargarObras({ pagina, size: POR_PAGINA, orden, estiloIds, rango, busqueda }))
+        dispatch(fetchCatalogo({ pagina, size: POR_PAGINA, orden, estiloIds, rango, busqueda }))
     }
 
-    // La API devuelve ids, no nombres: la vista los traduce
-    const armarItem = (obra) => {
-        const extra = extras[obra.id]
-        const variante = extra?.variante
-        const portada = [...(extra?.imagenes ?? [])].sort((x, y) => (x.orden_imagen ?? 0) - (y.orden_imagen ?? 0))[0]
-        const artista = artistas.items.find((a) => a.id === obra.artista_id)
-        const estilo = estilos.items.find((e) => (obra.estilo_ids ?? []).includes(e.id))
-
-        return {
-            obra: {
-                ...obra,
-                estilo: estilo ? estilo.nombre_estilo : "",
-                artistaId: obra.artista_id,
-                nombre_artistico: artista ? artista.nombre_artistico : "Artista"
-            },
-            variante,
-            imagen: portada ? optimizada(portada.url, 600) : null
-        }
-    }
-
+    // Cada tarjeta, con la obra guardada (ver api/tarjetas.js). Con un rango de precio, muestra el tamaño que entra.
     // El orden lo resuelve el backend (sobre TODO el catálogo, no solo esta página).
-    const items = obras.map(armarItem)
+    const apoyo = { artistas: artistas.items, estilos: estilos.items }
+    const items = obras.map((obra) => armarTarjeta(obra, { ...apoyo, rango }))
 
-    const destacada = primeraObra ? armarItem(primeraObra) : null
+    const primeraObra = primeraObraId !== null ? obrasGuardadas[primeraObraId] : null
+    const destacada = primeraObra ? armarTarjeta(primeraObra, apoyo) : null
     const cantidadArtistas = artistas.items.length
 
     if (cargandoApoyo) {

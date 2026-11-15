@@ -1,14 +1,14 @@
 // Mis compras — Área 4 · Compra
 // Historial del usuario logueado. Esta pantalla solo lee: no modifica nada.
-// Las compras viven en el estado global (comprasSlice): la pantalla despacha la acción y se suscribe al
-// resultado. Los filtros (cómo se entregó y de cuándo es la compra) los aplica el back: cada vez que cambian
-// se despacha de nuevo con los parámetros correspondientes.
+// Las compras viven en el estado global (comprasSlice), cada una una sola vez; la lista guarda sus ids. Los filtros
+// (cómo se entregó y de cuándo es la compra) también viven ahí, así se conservan al abrir una compra y volver; los
+// aplica el back: se pide al entrar y cada vez que cambian.
 // Disposición: los totales y los filtros en una columna fija a la izquierda; la tabla a la derecha.
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { Link } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
-import { cargarCompras } from "../redux/comprasSlice"
+import { fetchMisCompras, setEntrega, setPeriodo, quitarFiltros as quitarFiltrosDelStore } from "../redux/comprasSlice"
 import { pesos, fecha } from "../api/formato"
 import { PERIODOS } from "../api/filtros"
 
@@ -30,25 +30,22 @@ const TEXTO_ENTREGA = {
 }
 
 const MisCompras = () => {
-    // Los filtros son preferencias de ESTA pantalla: quedan en estado local.
-    // Las compras vienen del back y las consumen otras pantallas: van al estado global.
-    const [filtroDeEntrega, setFiltroDeEntrega] = useState("todas")
-    const [filtroDePeriodo, setFiltroDePeriodo] = useState("0")
-
     const dispatch = useDispatch()
-    const { items: compras, loading: cargando, error } = useSelector((state) => state.compras)
+    const { porId, lista, filtros } = useSelector((state) => state.compras)
+    const { entrega: filtroDeEntrega, periodo: filtroDePeriodo } = filtros
+    const { loading: cargando, error } = lista
+    const compras = lista.ids.map((id) => porId[id]).filter(Boolean)
 
     const hayFiltros = filtroDeEntrega !== "todas" || filtroDePeriodo !== "0"
 
     // Se despacha al montar y cada vez que cambia un filtro. Si se cambia otro antes de que llegue la
     // respuesta, el slice descarta la vieja comparando el requestId.
     useEffect(() => {
-        dispatch(cargarCompras({ entrega: filtroDeEntrega, periodo: filtroDePeriodo }))
+        dispatch(fetchMisCompras({ entrega: filtroDeEntrega, periodo: filtroDePeriodo }))
     }, [dispatch, filtroDeEntrega, filtroDePeriodo])
 
     const quitarFiltros = () => {
-        setFiltroDeEntrega("todas")
-        setFiltroDePeriodo("0")
+        dispatch(quitarFiltrosDelStore())
     }
 
     // Lo gastado en las compras que se ven (las que cumplen los filtros).
@@ -129,7 +126,7 @@ const MisCompras = () => {
                                     tipo="select"
                                     etiqueta="Entrega"
                                     value={filtroDeEntrega}
-                                    onChange={(evento) => setFiltroDeEntrega(evento.target.value)}
+                                    onChange={(evento) => dispatch(setEntrega(evento.target.value))}
                                 >
                                     <option value="todas">Todas</option>
                                     <option value="envio">{TEXTO_ENTREGA.envio}</option>
@@ -141,7 +138,7 @@ const MisCompras = () => {
                                     tipo="select"
                                     etiqueta="Período"
                                     value={filtroDePeriodo}
-                                    onChange={(evento) => setFiltroDePeriodo(evento.target.value)}
+                                    onChange={(evento) => dispatch(setPeriodo(evento.target.value))}
                                 >
                                     {PERIODOS.map((periodoPosible) => (
                                         <option key={periodoPosible.valor} value={periodoPosible.valor}>
