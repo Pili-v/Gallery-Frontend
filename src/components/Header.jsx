@@ -3,14 +3,14 @@ import { Link, NavLink, useNavigate } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { cargarCarrito } from "../redux/carritoSlice"
 import { cerrarSesion } from "../redux/sesionSlice"
-import { getUsuario, getRol } from "../api/sesion"
 
 // Barra de arriba. El menú cambia según el rol: cada uno ve solo lo suyo.
 // El contador del carrito sale del estado global: el Header no es padre ni hijo del carrito, así que sin
 // Redux no habría forma de que se entere de lo que pasa adentro de esa pantalla.
 const Header = () => {
-    const usuario = getUsuario()
-    const rol = getRol()
+    // La sesión sale del store (sesionSlice), como todo lo demás.
+    const usuario = useSelector((state) => state.sesion.usuario)
+    const rol = usuario ? usuario.rol_usuario : null
     const navegar = useNavigate()
 
     const dispatch = useDispatch()
@@ -64,8 +64,8 @@ const Header = () => {
     // Unidades, no líneas: así el contador también reacciona cuando cambia la cantidad de un ítem.
     const unidades = items.reduce((suma, item) => suma + item.cantidad, 0)
 
-    // El id del usuario, no el objeto: getUsuario() lee el localStorage y devuelve uno nuevo en cada dibujo,
-    // así que como dependencia haría correr el efecto una y otra vez.
+    // El id del usuario, no el objeto: si cambia algún dato de la cuenta (por ejemplo, el nombre) no hace falta volver
+    // a pedir el carrito.
     const usuarioId = usuario ? usuario.id : null
 
     // El carrito se pide una vez, al montar el Header, y de nuevo solo si cambia el usuario (alguien cerró

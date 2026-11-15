@@ -5,9 +5,8 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { crearPerfilArtista } from "../redux/sesionSlice"
-import { getRol } from "../api/sesion"
 
 import Boton from "../components/Boton"
 import CampoFormulario from "../components/CampoFormulario"
@@ -15,7 +14,8 @@ import CampoFormulario from "../components/CampoFormulario"
 const QuieroPublicar = () => {
     const navegar = useNavigate()
     const dispatch = useDispatch()
-    const rol = getRol()
+    const usuario = useSelector((state) => state.sesion.usuario)
+    const rol = usuario ? usuario.rol_usuario : null
 
     const [nombreArtistico, setNombreArtistico] = useState("")
     const [aceptaEncargos, setAceptaEncargos] = useState(true)

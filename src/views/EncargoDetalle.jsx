@@ -1,4 +1,3 @@
-import { getUsuario, getPerfilArtista } from "../api/sesion"
 import { permisosEncargo } from "../api/encargoSesion.js"
 import { useEffect, useRef, useState } from "react"
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
@@ -44,9 +43,9 @@ function Detalle({ id, recibidos, base }) {
     const [intento, setIntento] = useState(0)
     const [enviando, setEnviando] = useState(false)
     const [guardando, setGuardando] = useState(false)
-    const usuario = getUsuario()
+    const usuario = useSelector((state) => state.sesion.usuario)
     const esAdmin = usuario?.rol_usuario === "ADMIN"
-    const perfilArtista = getPerfilArtista()
+    const perfilArtista = useSelector((state) => state.sesion.perfilArtista)
 
     // El administrador no ve los mensajes: son privados de los participantes.
     useEffect(() => {

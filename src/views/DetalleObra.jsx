@@ -16,7 +16,6 @@ import { fetchMarcos } from "../redux/marcosSlice"
 import { fetchArtistas } from "../redux/artistasSlice"
 import { fetchObra } from "../redux/obrasSlice"
 import { agregarAlCarrito } from "../redux/carritoSlice"
-import { getUsuario } from "../api/sesion"
 import { pesos } from "../api/formato"
 import { descuentoVigente, varianteParaMostrar } from "../api/precio"
 import { colorDeMarco } from "../api/Coloresmarco"
@@ -40,6 +39,7 @@ function DetalleDeObra({ id }) {
     const navegar = useNavigate()
     const [parametros] = useSearchParams()
 
+    const usuario = useSelector((state) => state.sesion.usuario)
     const obraGuardada = useSelector((state) => state.obras.porId[id])
     const marcosEstado = useSelector((state) => state.marcos)
     const artistasEstado = useSelector((state) => state.artistas)
@@ -86,7 +86,7 @@ function DetalleDeObra({ id }) {
 
     // Agregar al carrito es lo único que escribe. Sin sesión, al login.
     const alAgregar = async () => {
-        if (!getUsuario()) {
+        if (!usuario) {
             navegar("/login")
             return
         }

@@ -8,7 +8,6 @@ import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchEncargo, pagarEncargo } from "../redux/encargosSlice"
-import { getUsuario } from "../api/sesion"
 
 import FormularioPago from "../components/FormularioPago"
 import Estado from "../components/Estado"
@@ -17,7 +16,7 @@ import Boton from "../components/Boton"
 const PagoEncargo = () => {
     const { id } = useParams()
     const navegar = useNavigate()
-    const usuario = getUsuario()
+    const usuario = useSelector((state) => state.sesion.usuario)
 
     const dispatch = useDispatch()
     const encargoGuardado = useSelector((state) => state.encargos.porId[id])
