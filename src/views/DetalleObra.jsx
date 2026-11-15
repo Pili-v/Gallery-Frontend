@@ -1,7 +1,9 @@
 // Detalle de obra — Área 3 · Catálogo
 // Todo lo que viene del backend pasa por Redux: esta pantalla solo despacha acciones y lee el estado.
-// La obra con sus variantes e imágenes sale de obraDetalleSlice; los marcos, los artistas y los estilos se piden una
-// sola vez para toda la app (si otra pantalla ya los pidió, no se vuelven a pedir).
+// La obra (con sus variantes y su galería) se lee de obrasSlice, donde está una sola vez para toda la app. Se pide
+// solo si no está guardada: si vino en una tarjeta del catálogo, ya está completa (regla de negocio del catálogo en
+// docs/datos-con-redux.md). Los marcos y los artistas se piden una sola vez (si otra pantalla ya los pidió, no se vuelven
+// a pedir). El error del pedido y si se está agregando al carrito son cosa de esta pantalla: quedan en su estado.
 // Disposición: la obra (con sus miniaturas) y su descripción a la izquierda; a la derecha, la tarjeta de compra
 // (precio, tamaño, marco y botón), que acompaña el scroll.
 // Abre en el tamaño que mostraba la tarjeta (?variante=id en el enlace) o, si no viene, en el más barato con stock: la
@@ -12,7 +14,8 @@ import { useParams, useNavigate, useSearchParams, Link } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchMarcos } from "../redux/marcosSlice"
 import { fetchArtistas } from "../redux/artistasSlice"
-import { fetchObraDetalle, agregarAlCarrito } from "../redux/obraDetalleSlice"
+import { fetchObra } from "../redux/obrasSlice"
+import { agregarAlCarrito } from "../redux/carritoSlice"
 import { getUsuario } from "../api/sesion"
 import { pesos } from "../api/formato"
 import { descuentoVigente, varianteParaMostrar } from "../api/precio"
@@ -37,7 +40,7 @@ function DetalleDeObra({ id }) {
     const navegar = useNavigate()
     const [parametros] = useSearchParams()
 
-    const detalle = useSelector((state) => state.obraDetalle)
+    const obraGuardada = useSelector((state) => state.obras.porId[id])
     const marcosEstado = useSelector((state) => state.marcos)
     const artistasEstado = useSelector((state) => state.artistas)
 
@@ -45,6 +48,11 @@ function DetalleDeObra({ id }) {
     const [varianteElegida, setVarianteElegida] = useState(null)
     // El marco elegido (id). Por defecto la obra va sin marco: el marco es un agregado opcional.
     const [marcoElegido, setMarcoElegido] = useState(SIN_MARCO)
+    // Si el pedido de la obra falló (por ejemplo, la obra ya no existe).
+    const [errorObra, setErrorObra] = useState(null)
+    // Agregar al carrito
+    const [agregando, setAgregando] = useState(false)
+    const [errorCarrito, setErrorCarrito] = useState(null)
 
     // Marcos y artistas: una sola vez
     useEffect(() => {
@@ -52,16 +60,18 @@ function DetalleDeObra({ id }) {
         dispatch(fetchArtistas())
     }, [dispatch])
 
-    // La obra: depende del id. Si ya se vio hace poco, el slice no la vuelve a pedir (ver obraDetalleSlice).
+    // La obra: si ya está guardada y al día, el thunk no hace nada (no se pide ni se despacha). Si no se pidió por eso
+    // (meta.condition), no es un error.
     useEffect(() => {
-        dispatch(fetchObraDetalle(id))
+        dispatch(fetchObra({ id })).then((resultado) => {
+            if (resultado.error && !resultado.meta.condition) setErrorObra(resultado.error.message)
+        })
     }, [dispatch, id])
 
-    // Los datos de ESTA obra (el slice guarda varias, cada una por su id). Si todavía no llegaron, todo queda vacío.
-    const guardada = detalle.porId[id]
-    const obra = guardada?.obra ?? null
-    const variantes = guardada?.variantes ?? []
-    const imagenes = guardada?.imagenes ?? []
+    // Los datos de ESTA obra, cuando están.
+    const obra = obraGuardada ?? null
+    const variantes = obra ? obra.variantes : []
+    const imagenes = obra ? obra.imagenes : []
     const marcos = marcosEstado.items
     const artista = obra ? artistasEstado.items.find((a) => a.id === obra.artista_id) : null
 
@@ -71,9 +81,8 @@ function DetalleDeObra({ id }) {
     const varianteSeleccionada = variantes.find((v) => v.id === varianteElegida) ?? variantePorDefecto ?? null
     const marcoSeleccionado = marcos.find((m) => m.id === marcoElegido) ?? null
 
-    const error = guardada?.error || marcosEstado.error || artistasEstado.error
+    const error = errorObra || marcosEstado.error || artistasEstado.error
     const cargando = !error && (!obra || !marcosEstado.cargado || !artistasEstado.cargado)
-    const agregando = detalle.agregando
 
     // Agregar al carrito es lo único que escribe. Sin sesión, al login.
     const alAgregar = async () => {
@@ -83,13 +92,17 @@ function DetalleDeObra({ id }) {
         }
         if (!varianteSeleccionada) return
 
+        setAgregando(true)
+        setErrorCarrito(null)
         const resultado = await dispatch(
             agregarAlCarrito({
                 varianteId: varianteSeleccionada.id,
                 marcoId: marcoSeleccionado ? marcoSeleccionado.id : null
             })
         )
-        if (agregarAlCarrito.fulfilled.match(resultado)) navegar("/carrito")
+        setAgregando(false)
+        if (resultado.error) setErrorCarrito(resultado.error.message)
+        else navegar("/carrito")
     }
 
     if (cargando)
@@ -235,7 +248,7 @@ function DetalleDeObra({ id }) {
                         </div>
                     )}
 
-                    {detalle.errorCarrito && <div className="campo-error body-sm mt-md">{detalle.errorCarrito}</div>}
+                    {errorCarrito && <div className="campo-error body-sm mt-md">{errorCarrito}</div>}
 
                     <div className="mt-lg">
                         <Boton

@@ -17,8 +17,8 @@ import { useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchArtistas } from "../redux/artistasSlice"
 import { fetchEstilos } from "../redux/estilosSlice"
-import { cargarRelacionadas } from "../redux/obrasRelacionadasSlice"
-import { optimizada } from "../api/formato"
+import { fetchRelacionadas } from "../redux/obrasRelacionadasSlice"
+import { armarTarjeta } from "../api/tarjetas"
 import TarjetaObra from "./TarjetaObra"
 
 export default function ObrasRelacionadas({ titulo, consultas, excluirId, excluirArtistaId = null, maximo = 4 }) {
@@ -27,6 +27,7 @@ export default function ObrasRelacionadas({ titulo, consultas, excluirId, exclui
     // Cada sección guarda su resultado bajo su propia clave (hay dos a la vez en el detalle).
     const clave = consultas.join("|") + "#" + excluirId + "#" + excluirArtistaId + "#" + maximo
     const grupo = useSelector((state) => state.obrasRelacionadas.porClave[clave])
+    const obrasGuardadas = useSelector((state) => state.obras.porId)
     const artistas = useSelector((state) => state.artistas.items)
     const estilos = useSelector((state) => state.estilos.items)
 
@@ -38,27 +39,15 @@ export default function ObrasRelacionadas({ titulo, consultas, excluirId, exclui
     // La clave ya resume las consultas, la obra excluida y el máximo: cambia cuando cambia cualquiera de ellos.
     useEffect(() => {
         if (consultas.length > 0) {
-            dispatch(cargarRelacionadas({ clave, consultas, excluirId, excluirArtistaId, maximo }))
+            dispatch(fetchRelacionadas({ clave, consultas, excluirId, excluirArtistaId, maximo }))
         }
     }, [dispatch, clave, excluirId, excluirArtistaId, maximo])
 
-    // Se arma lo que muestra cada tarjeta: los ids se traducen a nombres y se elige la portada.
-    const items = (grupo?.items ?? []).map(({ obra, variante, imagenes }) => {
-        const portada = [...imagenes].sort((x, y) => (x.orden_imagen ?? 0) - (y.orden_imagen ?? 0))[0]
-        const artista = artistas.find((a) => a.id === obra.artista_id)
-        const estilo = estilos.find((e) => (obra.estilo_ids ?? []).includes(e.id))
-
-        return {
-            obra: {
-                ...obra,
-                estilo: estilo ? estilo.nombre_estilo : "",
-                artistaId: obra.artista_id,
-                nombre_artistico: artista ? artista.nombre_artistico : "Artista"
-            },
-            variante,
-            imagen: portada ? optimizada(portada.url, 600) : null
-        }
-    })
+    // Lo que muestra cada tarjeta, con la obra guardada (ver api/tarjetas.js).
+    const items = (grupo?.ids ?? [])
+        .map((id) => obrasGuardadas[id])
+        .filter(Boolean)
+        .map((obra) => armarTarjeta(obra, { artistas, estilos }))
 
     if (items.length === 0) return null
 

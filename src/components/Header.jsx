@@ -2,7 +2,8 @@ import { useState, useEffect } from "react"
 import { Link, NavLink, useNavigate } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { cargarCarrito } from "../redux/carritoSlice"
-import { getUsuario, getRol, cerrarSesion } from "../api/sesion"
+import { cerrarSesion } from "../redux/sesionSlice"
+import { getUsuario, getRol } from "../api/sesion"
 
 // Barra de arriba. El menú cambia según el rol: cada uno ve solo lo suyo.
 // El contador del carrito sale del estado global: el Header no es padre ni hijo del carrito, así que sin
@@ -80,7 +81,8 @@ const Header = () => {
 
     const salir = (e) => {
         e.preventDefault()
-        cerrarSesion()
+        // Se borran la sesión y los datos propios del usuario (Mis obras, ventas, compras, carrito…).
+        dispatch(cerrarSesion())
         navegar("/login")
     }
 

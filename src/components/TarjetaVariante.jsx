@@ -1,4 +1,5 @@
 import CampoFormulario from "./CampoFormulario"
+import Boton from "./Boton"
 
 // La fecha de hoy como la espera un campo de fecha (AAAA-MM-DD), en hora local:
 // toISOString usa la hora UTC y de noche daría el día siguiente.
@@ -9,11 +10,16 @@ const hoy = () => {
     return ahora.getFullYear() + "-" + mes + "-" + dia
 }
 
-// Una variante de la obra en el formulario: su tamaño, precio, stock y descuento.
-// Solo dibuja y avisa los cambios: el estado vive en ObraForm.
+// Una variante de la obra en el formulario: su tamaño, precio, stock y descuento, con su propio botón para guardarla
+// (se guarda sola, sin tocar el resto de la obra) y otro para quitarla.
+// Solo dibuja y avisa: lo escrito vive en ObraForm y los pedidos en el slice de la obra en edición.
 // Los min, max y required son los límites obvios; las reglas de negocio las valida el back.
-// Los datos de la variante llegan cada uno en su prop: clave, id (null si todavía no se guardó), idTamanio,
-// precio, stock, porcentajeDescuento y descuentoHasta. Al cambiar un campo avisa con la clave de la variante.
+// Los datos llegan cada uno en su prop: clave, id (null si todavía no se guardó), idTamanio, precio, stock,
+// porcentajeDescuento y descuentoHasta. Además:
+//   tamanios, usados : los tamaños de lienzo y los que ya usa otra variante (no se repiten)
+//   cambiado         : si hay algo escrito que todavía no se guardó (habilita Guardar)
+//   guardando, error : el pedido en curso de esta variante y su falla
+//   onCambiar(clave, campo, valor), onGuardar(clave), onQuitar(clave)
 const TarjetaVariante = ({
     clave,
     id,
@@ -24,13 +30,23 @@ const TarjetaVariante = ({
     descuentoHasta,
     tamanios,
     usados,
+    cambiado,
+    guardando,
+    error,
     onCambiar,
+    onGuardar,
     onQuitar
 }) => {
     const cambiar = (campo) => (e) => onCambiar(clave, campo, e.target.value)
 
+    // Cada variante es su propio formulario: Enter o Guardar guardan solo esta.
+    const guardar = (e) => {
+        e.preventDefault()
+        if (!guardando && cambiado) onGuardar(clave)
+    }
+
     return (
-        <div className="cartela pad-md mb-md">
+        <form className="cartela pad-md mb-md" onSubmit={guardar}>
             <div className="grilla-campos">
                 <CampoFormulario
                     etiqueta="Tamaño"
@@ -77,21 +93,34 @@ const TarjetaVariante = ({
                     onChange={cambiar("porcentaje_descuento")}
                 />
 
-                {/* Una variante nueva no puede vencer antes de hoy. En una ya guardada no se exige, para
-                    que un descuento vencido no impida guardar otros cambios. El back no lo valida. */}
+                {/* Con descuento, la fecha de fin es obligatoria. Una variante nueva no puede vencer antes de hoy; en
+                    una ya guardada no se exige, para que un descuento vencido no impida guardar otros cambios. */}
                 <CampoFormulario
                     etiqueta="Descuento hasta"
                     tipo="date"
+                    required={Number(porcentajeDescuento) > 0}
                     min={id === null ? hoy() : undefined}
                     value={descuentoHasta}
                     onChange={cambiar("descuento_hasta")}
                 />
             </div>
 
-            <button type="button" onClick={() => onQuitar(clave, id)} className="body-sm boton-texto peligro">
-                Quitar variante
-            </button>
-        </div>
+            {error && <p className="campo-error body-sm mb-sm">{error}</p>}
+
+            <div className="entre">
+                <button
+                    type="button"
+                    onClick={() => onQuitar(clave)}
+                    disabled={guardando}
+                    className="body-sm boton-texto peligro"
+                >
+                    Quitar
+                </button>
+                <Boton type="submit" tipo={cambiado && !guardando ? "primario" : "deshabilitado"}>
+                    {guardando ? "Guardando…" : id === null ? "Agregar" : "Guardar"}
+                </Boton>
+            </div>
+        </form>
     )
 }
 

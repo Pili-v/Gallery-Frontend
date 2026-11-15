@@ -2,8 +2,8 @@
 // Cada artista es una tarjeta en una grilla de 3, con un mosaico de hasta 3 de sus obras arriba, la cantidad de obras,
 // hasta 3 estilos que trabaja (todos al pasar el mouse) y si acepta encargos.
 // Todo lo que viene del backend pasa por Redux: esta pantalla solo despacha acciones y lee el estado.
-// Las obras, imágenes y estilos se piden UNA sola vez y se agrupan acá por artista, así no se hacen pedidos
-// por tarjeta. GET /api/artistas viene paginado y se puede buscar por nombre artístico (q) y filtrar por
+// Los estilos se piden una sola vez; las obras y sus portadas (el resumen), cada vez que se entra, porque los artistas
+// publican obras nuevas. Se agrupan acá por artista, así no se hacen pedidos por tarjeta. GET /api/artistas viene paginado y se puede buscar por nombre artístico (q) y filtrar por
 // estilo (estiloId): lo resuelve el backend, sobre todos los artistas.
 
 import { useEffect } from "react"
@@ -23,6 +23,7 @@ import {
     quitarFiltros
 } from "../redux/artistasSlice"
 import { optimizada } from "../api/formato"
+import { portadaDe } from "../redux/fotos"
 import Estado from "../components/Estado"
 import Paginador from "../components/Paginador"
 import FiltroEstilos from "../components/FiltroEstilos"
@@ -40,7 +41,10 @@ export default function Artistas() {
     const estilos = useSelector((state) => state.estilos.items)
     const todos = useSelector((state) => state.artistas.items) // todos los artistas, solo para sugerir nombres
     const resultados = useSelector((state) => state.artistas.resultados) // la página visible
-    const { obras, imagenes } = useSelector((state) => state.artistas.resumen)
+    // Las obras del resumen (solo ids); cada una, con su portada, está en obrasSlice.
+    const idsDelResumen = useSelector((state) => state.artistas.resumen.ids)
+    const obrasGuardadas = useSelector((state) => state.obras.porId)
+    const obras = idsDelResumen.map((id) => obrasGuardadas[id]).filter(Boolean)
 
     const { items: artistas, totalPaginas, total, loading: cargando, error } = resultados
 
@@ -49,8 +53,8 @@ export default function Artistas() {
 
     const todosLosArtistas = todos.map((a) => ({ id: a.id, nombre: a.nombre_artistico }))
 
-    // Datos de apoyo para armar las tarjetas (una sola vez). Si fallan, las tarjetas quedan sin fotos ni
-    // estilos, pero la lista se ve igual.
+    // Datos de apoyo para armar las tarjetas (estilos y artistas una sola vez; el resumen, al entrar). Si fallan,
+    // las tarjetas quedan sin fotos ni estilos, pero la lista se ve igual.
     useEffect(() => {
         dispatch(fetchEstilos())
         dispatch(fetchArtistas())
@@ -90,20 +94,16 @@ export default function Artistas() {
     const resumenDe = (artista) => {
         const susObras = obras.filter((o) => o.artista_id === artista.id)
 
-        // Portadas: la imagen de menor orden de cada obra, hasta 3 obras
+        // Portadas: la de cada obra, hasta 3 obras
         const portadas = []
         susObras.forEach((obra) => {
-            if (portadas.length >= MAX_PORTADAS) return
-            const portada = imagenes
-                .filter((i) => i.obra_id === obra.id)
-                .sort((a, b) => (a.orden_imagen ?? 0) - (b.orden_imagen ?? 0))[0]
-            if (portada) {
-                portadas.push({
-                    id: obra.id,
-                    nombre: obra.nombre_obra,
-                    src: optimizada(portada.url, 600)
-                })
-            }
+            const portada = portadaDe(obra)
+            if (portadas.length >= MAX_PORTADAS || !portada) return
+            portadas.push({
+                id: obra.id,
+                nombre: obra.nombre_obra,
+                src: optimizada(portada, 600)
+            })
         })
 
         // Estilos sin repetir, en el orden en que aparecen

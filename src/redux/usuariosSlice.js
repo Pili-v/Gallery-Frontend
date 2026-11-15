@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit"
 
 import { http, lista } from "./http"
+import { cambioDeUsuario } from "./sesionSlice"
 
 
 // -------------------------
@@ -116,6 +117,9 @@ const usuariosSlice = createSlice({
                 state.guardandoId = null
                 state.error = action.error.message
             })
+
+            // Son datos del usuario: al cerrar sesión o entrar con otro, se vuelve al estado inicial.
+            .addMatcher(cambioDeUsuario, () => usuariosSlice.getInitialState())
     }
 })
 

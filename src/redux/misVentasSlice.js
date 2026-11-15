@@ -4,6 +4,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { parametrosDeFiltros } from "../api/filtros"
 import { http, lista } from "./http"
+import { cambioDeUsuario } from "./sesionSlice"
 
 // filtros: { entrega ("envio", "retiro", "encargo" o ""), desde (aaaa-mm-dd o "") }.
 // Además de la página, el back manda total_vendido: lo vendido con TODAS las facturas que cumplen los filtros.
@@ -87,6 +88,9 @@ const misVentasSlice = createSlice({
             .addCase(fetchDetalleDeVenta.rejected, (state, action) => {
                 state.detalles[action.meta.arg] = { loading: false, detalle: null, error: action.error.message }
             })
+
+            // Son datos del usuario: al cerrar sesión o entrar con otro, se vuelve al estado inicial.
+            .addMatcher(cambioDeUsuario, () => misVentasSlice.getInitialState())
     }
 })
 

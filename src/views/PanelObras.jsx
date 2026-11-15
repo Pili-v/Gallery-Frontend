@@ -1,17 +1,28 @@
 // Mis obras — Área 5 · Artista
 // Las obras del artista logueado, con su estilo, sus variantes y el stock. Esta pantalla solo lee.
-// La lista llega paginada y cada obra trae lo que se ve en su fila (estilos, portada y cantidad de
-// variantes). El detalle de las variantes se pide recién cuando se abre la obra.
-// Los datos del back viven en Redux (misObrasSlice y estilosSlice); acá quedan los filtros, la página y qué
-// obras están abiertas, que son cosas de esta pantalla.
+// La lista llega paginada y cada obra trae todo lo que se ve: estilos, fotos y variantes (al abrirla se ven sin
+// otro pedido). Los ids de la página, los filtros y la página viven en misObrasSlice; las obras, en obrasSlice. Al ir
+// a editar una obra y volver, se vuelve a la misma página con los mismos filtros (y se pide de nuevo). Acá queda solo
+// qué obras están abiertas, que es cosa de esta pantalla.
+// Criterio de datos en docs/datos-con-redux.md.
 // Disposición: el botón de publicar, el total y los filtros en una columna fija a la izquierda; la tabla a la derecha.
 
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { optimizada } from "../api/formato"
+import { portadaDe } from "../redux/fotos"
 import { fetchEstilos } from "../redux/estilosSlice"
-import { fetchMisObras, fetchVariantesDeObra, olvidarVariantes } from "../redux/misObrasSlice"
+import {
+    fetchMisObras,
+    setPagina,
+    setTextoEscrito,
+    buscarPorNombre,
+    setEstadoDeVenta,
+    setEstadoDeStock,
+    setEstiloIds,
+    quitarFiltros as quitarFiltrosDelStore
+} from "../redux/misObrasSlice"
 
 import Boton from "../components/Boton"
 import CampoFormulario from "../components/CampoFormulario"
@@ -29,41 +40,28 @@ const PanelObras = () => {
     const dispatch = useDispatch()
 
     // Lo que viene del backend (Redux)
-    const {
-        items: obras,
-        totalPaginas,
-        totalObras,
-        loading: cargando,
-        error,
-        variantes
-    } = useSelector((state) => state.misObras)
+    const { ids, totalPaginas, totalObras, loading: cargando, error, filtros } = useSelector((state) => state.misObras)
+    const obrasGuardadas = useSelector((state) => state.obras.porId)
+    const obras = ids.map((id) => obrasGuardadas[id]).filter(Boolean)
     const { items: estilos } = useSelector((state) => state.estilos)
 
-    // La página que se está viendo (empieza en 0, como en el back).
-    const [pagina, setPagina] = useState(0)
+    // Los filtros los aplica el back y la lista vuelve paginada. textoEscrito es lo que se está escribiendo y
+    // nombreBuscado lo que se buscó (se aplica al apretar Buscar o Enter); los demás se aplican apenas se eligen.
+    const { pagina, textoEscrito, nombreBuscado, estadoDeVenta, estadoDeStock, estiloIds } = filtros
 
-    // Los filtros: los aplica el back y la lista vuelve paginada. "texto" es lo que se está escribiendo y "busqueda"
-    // lo que se buscó (se aplica al apretar Buscar o Enter); los demás se aplican apenas se eligen.
-    const [textoEscrito, setTextoEscrito] = useState("")
-    const [nombreBuscado, setNombreBuscado] = useState("")
-    const [estadoDeVenta, setEstadoDeVenta] = useState("todas")
-    const [estadoDeStock, setEstadoDeStock] = useState("todas")
-    const [estiloIds, setEstiloIds] = useState([])
     const hayFiltros =
         nombreBuscado !== "" || estadoDeVenta !== "todas" || estadoDeStock !== "todas" || estiloIds.length > 0
 
     // Qué obras están abiertas, por id de obra. Puede haber varias a la vez.
     const [abiertas, setAbiertas] = useState({})
 
-    // Al entrar: los estilos (una sola vez para toda la app; las obras traen solo los ids) y se olvidan las variantes
-    // que quedaron de otra visita, porque pudieron cambiar.
+    // Los estilos: una sola vez para toda la app (las obras traen solo los ids).
     useEffect(() => {
         dispatch(fetchEstilos())
-        dispatch(olvidarVariantes())
     }, [dispatch])
 
-    // Las obras: se vuelven a pedir cuando cambia un filtro o la página. Si llega una respuesta vieja (de un filtro o una
-    // página anterior), el slice la descarta.
+    // Las obras: se piden al entrar y cada vez que cambia un filtro o la página. Si llega una respuesta vieja (de un
+    // filtro o una página anterior), el slice la descarta.
     useEffect(() => {
         const filtros = {
             nombreObra: nombreBuscado,
@@ -75,39 +73,25 @@ const PanelObras = () => {
     }, [dispatch, pagina, nombreBuscado, estadoDeVenta, estadoDeStock, estiloIds])
 
     const cambiarPagina = (nueva) => {
-        setPagina(nueva)
-    }
-
-    // Con otro filtro vuelve a la primera página: la que se estaba viendo puede no existir con menos resultados.
-    const cambiarFiltro = (actualizarFiltro, valorNuevo) => {
-        actualizarFiltro(valorNuevo)
-        setPagina(0)
+        dispatch(setPagina(nueva))
     }
 
     const buscar = (evento) => {
         evento.preventDefault()
-        cambiarFiltro(setNombreBuscado, textoEscrito.trim())
+        dispatch(buscarPorNombre())
     }
 
     const quitarFiltros = () => {
-        setTextoEscrito("")
-        setNombreBuscado("")
-        setEstadoDeVenta("todas")
-        setEstadoDeStock("todas")
-        setEstiloIds([])
-        setPagina(0)
+        dispatch(quitarFiltrosDelStore())
     }
 
     // Sin obras y sin filtros no hay nada que filtrar: solo se invita a publicar. Con filtros se mantienen a la vista.
     const sinNada = !cargando && !error && obras.length === 0 && !hayFiltros
     const conLateral = !sinNada && !error
 
-    // Abre o cierra una obra. Las variantes se piden la primera vez que se abre (el thunk no repite el pedido si ya
-    // llegaron; si había fallado, reintenta). Una obra sin variantes llega como lista vacía.
+    // Abre o cierra una obra: sus variantes ya llegaron con la lista.
     const alternar = (obra) => {
-        const abriendo = !abiertas[obra.id]
-        setAbiertas((previas) => ({ ...previas, [obra.id]: abriendo }))
-        if (abriendo) dispatch(fetchVariantesDeObra(obra.id))
+        setAbiertas((previas) => ({ ...previas, [obra.id]: !previas[obra.id] }))
     }
 
     // El back manda los estilos de la obra como ids: los nombres salen de la lista de estilos.
@@ -160,28 +144,25 @@ const PanelObras = () => {
                     </thead>
                     {/* Un tbody por obra: así la fila y su detalle van juntas sin envoltorio extra. */}
                     {obras.map((obra) => {
-                        const entrada = variantes[obra.id]
-
                         return (
                             <tbody key={obra.id}>
                                 <FilaObra
                                     id={obra.id}
                                     nombreObra={obra.nombre_obra}
                                     enVenta={obra.en_venta}
-                                    portada={obra.portada_url ? optimizada(obra.portada_url, 160) : null}
+                                    portada={portadaDe(obra) ? optimizada(portadaDe(obra), 160) : null}
                                     estilos={nombresDeEstilos(obra)}
-                                    cantidadVariantes={obra.cantidad_variantes}
-                                    variantesSinStock={obra.variantes_sin_stock}
+                                    cantidadVariantes={obra.variantes.length}
+                                    variantesSinStock={
+                                        obra.variantes.filter((variante) => variante.stock_variante === 0).length
+                                    }
                                     abierta={abiertas[obra.id] === true}
                                     onAlternar={() => alternar(obra)}
                                 />
                                 {abiertas[obra.id] && (
                                     <tr>
                                         <td className="fondo-canvas" colSpan={5}>
-                                            {(!entrada || entrada.loading) && <Estado tipo="cargando" />}
-                                            {entrada && !entrada.loading && (
-                                                <DetalleObra variantes={entrada.error ? null : entrada.items} />
-                                            )}
+                                            <DetalleObra variantes={obra.variantes} />
                                         </td>
                                     </tr>
                                 )}
@@ -216,7 +197,7 @@ const PanelObras = () => {
                                             etiqueta="Buscar obra"
                                             placeholder="Nombre de la obra"
                                             value={textoEscrito}
-                                            onChange={(evento) => setTextoEscrito(evento.target.value)}
+                                            onChange={(evento) => dispatch(setTextoEscrito(evento.target.value))}
                                         />
                                         {/* Un botón cuadrado con la lupa, así el campo usa casi todo el ancho. */}
                                         <button type="submit" className="boton boton-secundario boton-lupa">
@@ -232,7 +213,7 @@ const PanelObras = () => {
                                         tipo="select"
                                         etiqueta="En venta"
                                         value={estadoDeVenta}
-                                        onChange={(evento) => cambiarFiltro(setEstadoDeVenta, evento.target.value)}
+                                        onChange={(evento) => dispatch(setEstadoDeVenta(evento.target.value))}
                                     >
                                         <option value="todas">Todas</option>
                                         <option value="si">En venta</option>
@@ -243,7 +224,7 @@ const PanelObras = () => {
                                         tipo="select"
                                         etiqueta="Stock"
                                         value={estadoDeStock}
-                                        onChange={(evento) => cambiarFiltro(setEstadoDeStock, evento.target.value)}
+                                        onChange={(evento) => dispatch(setEstadoDeStock(evento.target.value))}
                                     >
                                         <option value="todas">Todas</option>
                                         <option value="sin">Con variantes sin stock</option>
@@ -252,7 +233,7 @@ const PanelObras = () => {
                                     <FiltroEstilos
                                         estilos={estilos}
                                         seleccionados={estiloIds}
-                                        onCambiar={(ids) => cambiarFiltro(setEstiloIds, ids)}
+                                        onCambiar={(ids) => dispatch(setEstiloIds(ids))}
                                     />
 
                                     {hayFiltros && (

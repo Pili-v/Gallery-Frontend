@@ -6,6 +6,7 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { http } from "./http"
+import { cambioDeUsuario } from "./sesionSlice"
 import { obtenerLista } from "./pedidos"
 
 // Los ítems del carrito y las portadas de sus obras, en un solo pedido cada uno.
@@ -59,6 +60,19 @@ export const vaciarCarrito = createAsyncThunk("carrito/vaciarCarrito", async (ca
 export const guardarDireccion = createAsyncThunk("carrito/guardarDireccion", async ({ carritoId, direccion }) => {
     await http.put("/api/carritos/" + carritoId, { direccion_cliente: direccion })
     return direccion
+})
+
+// Agregar una obra desde su detalle: primero se pide el carrito propio y después se agrega el ítem. La pantalla
+// lleva después al carrito, que se pide de nuevo al entrar (con la portada y la disponibilidad de cada ítem).
+export const agregarAlCarrito = createAsyncThunk("carrito/agregarAlCarrito", async ({ varianteId, marcoId }) => {
+    const miCarrito = await http.get("/api/carritos/me")
+    const respuesta = await http.post("/api/items-carrito", {
+        carrito_id: miCarrito.data.id,
+        variante_id: varianteId,
+        marco_id: marcoId,
+        cantidad: 1
+    })
+    return respuesta.data
 })
 
 // Convierte el carrito en una compra. El back saca el usuario del token y, en una sola transacción, crea la
@@ -174,6 +188,8 @@ const carritoSlice = createSlice({
                 state.error = action.error.message
             })
 
+            // Son datos del usuario: al cerrar sesión o entrar con otro, se vuelve al estado inicial.
+            .addMatcher(cambioDeUsuario, () => carritoSlice.getInitialState())
     }
 })
 
