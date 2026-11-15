@@ -1,7 +1,9 @@
 # Cómo se piden y se guardan los datos (Redux)
 
 Toda la aplicación usa Redux Toolkit con axios. Ningún componente llama a la API: cada pedido es un thunk
-(`createAsyncThunk`) en `src/redux/`, y las pantallas solo despachan acciones y leen el estado con `useSelector`.
+(`createAsyncThunk`) en `src/redux/`, y las pantallas solo despachan acciones y leen el estado con `useSelector`. Los
+pedidos a nuestro back pasan por `redux/http.js` (pone el token y arma los errores); los de Georef, por su propia
+instancia de axios en `direccionesSlice`, para no mandarle nuestras credenciales a un tercero.
 
 Este documento fija **un solo criterio para toda la aplicación**:
 
@@ -22,6 +24,8 @@ Los slices se organizan por **recurso** (obras, compras, artistas…), no por pa
 | `obras` | Cada obra una vez, por id, como la manda el back: datos, estilos, portada y variantes. Y la galería completa de las que se abrieron. Todas las operaciones sobre obras (crear, editar, borrar, variantes, fotos). |
 | `catalogo`, `obrasDeArtista`, `obrasRelacionadas`, `misObras` | Las listas de obras: **solo los ids** de lo que se ve, la página, los filtros y el estado del pedido. |
 | `compras` | Cada compra una vez, por id, sus facturas y la lista de Mis compras (ids y filtros). |
+| `encargos` | Cada encargo una vez, por id, sus mensajes, la lista de Encargos (ids y filtros) y los tipos de pintura y de lienzo. Todas las operaciones sobre encargos (crear, mensajes, estado, precio, pago). |
+| `direcciones` | Las provincias de Georef (la API de direcciones del Estado), una vez. Las sugerencias del autocompletado son de la pantalla. |
 | `estilos`, `marcos`, `tamanios`, `artistas` | Datos de referencia. |
 | `carrito`, `misVentas`, `usuarios`, `metricas`, `sesion` | Lo suyo. |
 
@@ -50,7 +54,8 @@ una cantidad fija de consultas, sin importar cuántas obras haya).
 
 3. **Lo que se usa para comprar y lo propio se pide siempre al entrar**: el carrito (y al volver a su pestaña), el
    editor de obra (guardar una variante manda también su stock: con uno viejo se pisarían las ventas), Mis obras,
-   Mis compras, Mis ventas. Mientras llega se muestra "cargando". Lo que llega reemplaza lo guardado, así que también
+   Mis compras, Mis ventas, Encargos (el detalle de un encargo, además, se vuelve a pedir cada 3 segundos mientras
+   está abierto, para ver los mensajes y cambios de la otra parte). Mientras llega se muestra "cargando". Lo que llega reemplaza lo guardado, así que también
    deja al día esas obras en el catálogo.
 
 4. **Cada dato, una sola vez, en el slice de su recurso.** Las listas guardan ids. Ningún slice guarda una copia de

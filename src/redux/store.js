@@ -17,6 +17,8 @@ import carritoReducer from "./carritoSlice"
 import misObrasReducer from "./misObrasSlice"
 import misVentasReducer from "./misVentasSlice"
 import catalogoReducer from "./catalogoSlice"
+import direccionesReducer from "./direccionesSlice"
+import encargosReducer from "./encargosSlice"
 
 export const store = configureStore({
     reducer: {
@@ -34,6 +36,8 @@ export const store = configureStore({
         carrito: carritoReducer,
         misObras: misObrasReducer,
         misVentas: misVentasReducer,
-        catalogo: catalogoReducer
+        catalogo: catalogoReducer,
+        direcciones: direccionesReducer,
+        encargos: encargosReducer
     }
 })

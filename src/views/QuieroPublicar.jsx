@@ -5,14 +5,16 @@
 
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { api } from "../api/cliente"
-import { getRol, getToken, guardarSesion } from "../api/sesion"
+import { useDispatch } from "react-redux"
+import { crearPerfilArtista } from "../redux/sesionSlice"
+import { getRol } from "../api/sesion"
 
 import Boton from "../components/Boton"
 import CampoFormulario from "../components/CampoFormulario"
 
 const QuieroPublicar = () => {
     const navegar = useNavigate()
+    const dispatch = useDispatch()
     const rol = getRol()
 
     const [nombreArtistico, setNombreArtistico] = useState("")
@@ -41,8 +43,8 @@ const QuieroPublicar = () => {
         )
     }
 
-    // Crea el perfil y vuelve a pedir los datos de la cuenta: el rol cambió y la barra de arriba
-    // y las pantallas de artista lo leen de lo que se guardó al entrar.
+    // Crea el perfil (el thunk vuelve a pedir los datos de la cuenta: el rol cambió y la barra de arriba y las
+    // pantallas de artista lo leen de la sesión).
     const crearPerfil = (e) => {
         e.preventDefault()
         if (enviando) return
@@ -50,19 +52,14 @@ const QuieroPublicar = () => {
         setEnviando(true)
         setError("")
 
-        api.post("/api/usuarios/me/perfil-artista", {
-            nombre_artistico: nombreArtistico.trim(),
-            acepta_encargos: aceptaEncargos
-        })
-            .then(() => api.get("/api/usuarios/me"))
-            .then((cuenta) => {
-                guardarSesion(getToken(), cuenta)
-                navegar("/panel/obras")
-            })
-            .catch((falla) => {
-                setError(falla.message)
+        dispatch(crearPerfilArtista({ nombreArtistico: nombreArtistico.trim(), aceptaEncargos })).then((resultado) => {
+            if (resultado.error) {
+                setError(resultado.error.message)
                 setEnviando(false)
-            })
+            } else {
+                navegar("/panel/obras")
+            }
+        })
     }
 
     return (
