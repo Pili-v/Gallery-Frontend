@@ -226,8 +226,8 @@ export default function Catalogo() {
                     </p>
                     <h1 className="display-hero mt-sm">Obras Originales</h1>
                     <p className="body-lg muted mt-md ancho-texto">
-                        Cada pieza se vende en el tamaño y el marco que elijas. Luego tienes la libertad de decidir si
-                        lo enviamos a tu domicilio o lo retiras por nuestra sucursal principal.
+                        Cada pieza se vende en el tamaño y el marco que elijas. Después decidís si
+                        te la enviamos a domicilio o la retirás por nuestra sucursal principal.
                     </p>
                     <div className="fila mt-lg">
                         <a href="#obras" className="boton boton-primario" onClick={() => dispatch(quitarFiltros())}>

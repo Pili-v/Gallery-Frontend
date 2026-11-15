@@ -1,4 +1,3 @@
-import { getUsuario, getPerfilArtista } from "../api/sesion"
 import { useEffect } from "react"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
@@ -23,8 +22,8 @@ const ORDEN_ESTADOS = ["PENDIENTE", "APROBADO", "EN_PROCESO", "TERMINADO", "PAGA
 export default function Encargos() {
     const [parametros, setParametros] = useSearchParams()
     const navigate = useNavigate()
-    const usuario = getUsuario()
-    const perfilArtista = getPerfilArtista()
+    const usuario = useSelector((state) => state.sesion.usuario)
+    const perfilArtista = useSelector((state) => state.sesion.perfilArtista)
     const { state } = useLocation()
     const base = "/encargos"
     const esAdmin = usuario?.rol_usuario === "ADMIN"

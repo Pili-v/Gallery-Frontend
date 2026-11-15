@@ -17,7 +17,6 @@ import {
     vaciarCarrito,
     guardarDireccion
 } from "../redux/carritoSlice"
-import { getUsuario } from "../api/sesion"
 import { optimizada, portadaDe } from "../api/formato"
 import { ENVIO_DOMICILIO, costoDeEnvio } from "../api/entrega"
 import LineaItem from "../components/LineaItem"
@@ -28,16 +27,18 @@ import Estado from "../components/Estado"
 const Carrito = () => {
     // Decisiones de esta pantalla: quedan en estado local, no las consume nadie más.
     const [tipoEntrega, setTipoEntrega] = useState(ENVIO_DOMICILIO)
-    const [direccion, setDireccion] = useState("")
+    // Lo que se escribió en la dirección (null mientras no se tocó: vale la guardada en el carrito).
+    const [direccionEscrita, setDireccion] = useState(null)
     const [errorDireccion, setErrorDireccion] = useState("")
     const [yendo, setYendo] = useState(false)
 
-    const usuario = getUsuario()
+    const usuario = useSelector((state) => state.sesion.usuario)
     const navegar = useNavigate()
     const ubicacion = useLocation()
 
     const dispatch = useDispatch()
     const { carrito, items, imagenes, loading: cargando, error } = useSelector((state) => state.carrito)
+    const direccion = direccionEscrita ?? ((carrito && carrito.direccion_cliente) || "")
 
     // Si el pago volvió acá porque algo ya no estaba disponible, trae el aviso del back (los ítems afectados se
     // marcan solos: la lista se acaba de pedir de nuevo y cada ítem trae su disponibilidad).
@@ -47,12 +48,6 @@ const Carrito = () => {
     useEffect(() => {
         dispatch(cargarCarrito(usuario.id))
     }, [dispatch, usuario.id])
-
-    // La dirección guardada se copia al campo cuando llega el carrito. Depende del id y no del objeto entero
-    // para que no se pise lo que la persona está escribiendo cada vez que el carrito cambia.
-    useEffect(() => {
-        if (carrito) setDireccion(carrito.direccion_cliente || "")
-    }, [carrito?.id])
 
     // Al volver a la pantalla después de haberla dejado (otra pestaña u otra ventana) se piden de nuevo los ítems: así
     // se ve enseguida si mientras tanto una obra se quedó sin stock o salió de la venta. Solo en ese momento, sin

@@ -37,13 +37,15 @@ const MiCuenta = () => {
     // ESTADO LOCAL DEL FORMULARIO
     // -------------------------
 
-    const [datos, setDatos] = useState({
-        nombre_usuario: "",
-        nombre_persona: "",
-        apellido_persona: "",
-        email_usuario: "",
-        telefono_usuario: ""
-    })
+    // Lo que se está editando. Mientras no se toca (null), el formulario muestra lo que hay en la sesión.
+    const [datosEditados, setDatos] = useState(null)
+    const datos = datosEditados ?? {
+        nombre_usuario: (usuario && usuario.nombre_usuario) ?? "",
+        nombre_persona: (usuario && usuario.nombre_persona) ?? "",
+        apellido_persona: (usuario && usuario.apellido_persona) ?? "",
+        email_usuario: (usuario && usuario.email_usuario) ?? "",
+        telefono_usuario: (usuario && usuario.telefono_usuario) ?? ""
+    }
 
     const [contrasenias, setContrasenias] = useState({
         contrasenia_actual: "",
@@ -57,10 +59,11 @@ const MiCuenta = () => {
     const [mensajeContrasenia, setMensajeContrasenia] = useState("")
 
     // Perfil artista: solamente se muestra si el usuario tiene uno.
-    const [artista, setArtista] = useState({
-        nombre_artistico: "",
-        acepta_encargos: true
-    })
+    const [artistaEditado, setArtista] = useState(null)
+    const artista = artistaEditado ?? {
+        nombre_artistico: (perfilArtista && perfilArtista.nombre_artistico) ?? "",
+        acepta_encargos: perfilArtista ? perfilArtista.acepta_encargos : true
+    }
 
     const [errorNombreArtistico, setErrorNombreArtistico] = useState("")
     const [mensajeArtista, setMensajeArtista] = useState("")
@@ -77,36 +80,6 @@ const MiCuenta = () => {
         // Pedimos al backend los datos actuales del usuario.
         dispatch(fetchSesionActual())
     }, [dispatch])
-
-
-    // Cuando cambia el usuario global de Redux,
-    // sincronizamos los campos locales del formulario.
-    useEffect(() => {
-        if (!usuario) {
-            return
-        }
-
-        setDatos({
-            nombre_usuario: usuario.nombre_usuario ?? "",
-            nombre_persona: usuario.nombre_persona ?? "",
-            apellido_persona: usuario.apellido_persona ?? "",
-            email_usuario: usuario.email_usuario ?? "",
-            telefono_usuario: usuario.telefono_usuario ?? ""
-        })
-    }, [usuario])
-
-
-    // Lo mismo para el perfil de artista.
-    useEffect(() => {
-        if (!perfilArtista) {
-            return
-        }
-
-        setArtista({
-            nombre_artistico: perfilArtista.nombre_artistico ?? "",
-            acepta_encargos: perfilArtista.acepta_encargos
-        })
-    }, [perfilArtista])
 
 
     const tieneArtista = perfilArtista !== null
