@@ -33,8 +33,11 @@ const enOrdenDeLectura = (mensajes) =>
 // arg: { id, conMensajes }. Un encargo que no existe es un 404 de verdad (sube como error). Sin mensajes, el back
 // responde vacío: es una lista vacía. El administrador no ve los mensajes (son privados de los participantes).
 export const fetchEncargo = createAsyncThunk("encargos/fetchEncargo", async ({ id, conMensajes }) => {
-    const respuesta = await http.get("/api/encargos/" + id)
-    const mensajes = conMensajes ? await obtenerLista("/api/encargos/" + id + "/mensajes") : null
+    // Los dos pedidos no dependen entre sí: van a la vez.
+    const [respuesta, mensajes] = await Promise.all([
+        http.get("/api/encargos/" + id),
+        conMensajes ? obtenerLista("/api/encargos/" + id + "/mensajes") : null
+    ])
     return { encargo: respuesta.data, mensajes }
 })
 

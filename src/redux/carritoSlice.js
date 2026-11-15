@@ -14,19 +14,27 @@ const itemsConPortadas = async (carritoId) => {
     const items = await obtenerLista("/api/carritos/" + carritoId + "/items")
     if (items.length === 0) return { items, imagenes: [] }
 
-    const imagenes = await obtenerLista(
-        "/api/imagenes?portada=true&" + items.map((item) => "obraId=" + item.obra_id).join("&")
-    )
+    // Cada obra una sola vez, aunque esté en más de un ítem (otro tamaño o marco).
+    const obraIds = [...new Set(items.map((item) => item.obra_id))]
+    const imagenes = await obtenerLista("/api/imagenes?portada=true&" + obraIds.map((id) => "obraId=" + id).join("&"))
     return { items, imagenes }
 }
 
 // Carga inicial: el carrito del usuario y después sus ítems. El id del usuario sale de la sesión, no de la
 // URL: así nadie puede mirar el carrito de otro cambiando un número a mano.
-export const cargarCarrito = createAsyncThunk("carrito/cargarCarrito", async (usuarioId) => {
-    const { data: carrito } = await http.get("/api/usuarios/" + usuarioId + "/carrito")
-    const { items, imagenes } = await itemsConPortadas(carrito.id)
-    return { carrito, items, imagenes }
-})
+// Lo piden el Header (para el contador) y la pantalla del carrito: si ya hay una carga en camino (por ejemplo, al
+// recargar la página estando en el carrito), no se lanza otra, porque la que viaja trae lo mismo.
+export const cargarCarrito = createAsyncThunk(
+    "carrito/cargarCarrito",
+    async (usuarioId) => {
+        const { data: carrito } = await http.get("/api/usuarios/" + usuarioId + "/carrito")
+        const { items, imagenes } = await itemsConPortadas(carrito.id)
+        return { carrito, items, imagenes }
+    },
+    {
+        condition: (_, { getState }) => !getState().carrito.cargando
+    }
+)
 
 // Al volver a la pantalla: se piden de nuevo los ítems para ver si algo dejó de estar disponible.
 // No toca el loading: es una actualización silenciosa, la pantalla ya está dibujada.
@@ -93,6 +101,7 @@ const carritoSlice = createSlice({
         error: null,
         codigo: null, // código HTTP del error ("409", "403"...)
         requestId: null, // el de la carga
+        cargando: false, // si hay una carga en camino (para no lanzar otra igual)
         cambioId: null // el del último cambio de cantidad pedido
     },
     reducers: {},
@@ -104,10 +113,12 @@ const carritoSlice = createSlice({
                 state.error = null
                 state.codigo = null
                 state.requestId = action.meta.requestId
+                state.cargando = true
             })
             .addCase(cargarCarrito.fulfilled, (state, action) => {
                 if (state.requestId !== action.meta.requestId) return
                 state.loading = false
+                state.cargando = false
                 state.carrito = action.payload.carrito
                 state.items = action.payload.items
                 state.imagenes = action.payload.imagenes
@@ -115,6 +126,7 @@ const carritoSlice = createSlice({
             .addCase(cargarCarrito.rejected, (state, action) => {
                 if (state.requestId !== action.meta.requestId) return
                 state.loading = false
+                state.cargando = false
                 state.error = action.error.message
                 state.codigo = action.error.code ?? null
             })

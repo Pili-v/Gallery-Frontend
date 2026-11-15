@@ -24,6 +24,10 @@ export const fetchArtistas = createAsyncThunk(
 )
 
 // La página de artistas. El backend busca por nombre artístico (q) y por estilos (estiloId=1,2: alguno de ellos).
+// Como el resto del catálogo público (docs/datos-con-redux.md), si se vuelve a la pantalla con la misma búsqueda y
+// la misma página, no se pide de nuevo.
+const claveDe = (arg) => JSON.stringify(arg)
+
 export const buscarArtistas = createAsyncThunk(
     "artistas/buscarArtistas",
     async ({ pagina, size, busqueda, estiloIds }) => {
@@ -33,6 +37,9 @@ export const buscarArtistas = createAsyncThunk(
 
         const resultado = await obtenerPagina("/api/artistas?" + partes.join("&"))
         return resultado
+    },
+    {
+        condition: (arg, { getState }) => getState().artistas.resultados.cargada !== claveDe(arg)
     }
 )
 
@@ -65,7 +72,16 @@ const artistasSlice = createSlice({
         cargado: false,
         error: null,
         loading: false,
-        resultados: { items: [], totalPaginas: 1, total: 0, error: null, loading: true, requestId: null },
+        // cargada: la búsqueda que se muestra (ver claveDe), para no volver a pedirla.
+        resultados: {
+            items: [],
+            totalPaginas: 1,
+            total: 0,
+            error: null,
+            loading: true,
+            requestId: null,
+            cargada: null
+        },
         resumen: { ids: [], cargado: false, loading: false, version: null },
         filtros: FILTROS_INICIALES
     },
@@ -135,6 +151,8 @@ const artistasSlice = createSlice({
 
             // La página visible. Si se pidió otra mientras tanto, la respuesta vieja se descarta (requestId).
             .addCase(buscarArtistas.pending, (state, action) => {
+                // Mientras llega otra búsqueda, lo que se ve ya no es una búsqueda cerrada: volver a ella la pide.
+                state.resultados.cargada = null
                 state.resultados.loading = true
                 state.resultados.error = null
                 state.resultados.requestId = action.meta.requestId
@@ -145,6 +163,7 @@ const artistasSlice = createSlice({
                 state.resultados.items = action.payload.items
                 state.resultados.totalPaginas = action.payload.totalPaginas
                 state.resultados.total = action.payload.totalElementos
+                state.resultados.cargada = claveDe(action.meta.arg)
             })
             .addCase(buscarArtistas.rejected, (state, action) => {
                 if (state.resultados.requestId !== action.meta.requestId) return
