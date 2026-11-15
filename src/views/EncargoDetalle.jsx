@@ -1,8 +1,14 @@
-import { api, lista } from "../api/cliente"
-import { getUsuario, getPerfilArtista } from "../api/sesion"
 import { permisosEncargo } from "../api/encargoSesion.js"
 import { useEffect, useRef, useState } from "react"
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
+import {
+    fetchEncargo,
+    enviarMensaje,
+    cambiarEstadoEncargo,
+    definirPrecioEncargo,
+    aceptarPrecioEncargo
+} from "../redux/encargosSlice"
 import AcuerdoPrecio from "../components/AcuerdoPrecio"
 import Boton from "../components/Boton"
 import Confirmacion from "../components/Confirmacion"
@@ -11,14 +17,9 @@ import Estado from "../components/Estado"
 import EstadoEncargo from "../components/EstadoEncargo"
 import { prepararMensaje, prepararCambioEstado } from "../api/encargoDetalleContrato.js"
 
-// El back manda los mensajes del más nuevo al más viejo (para poder cargar la conversación desde lo último), igual
-// para el cliente y para el artista. Acá se leen de arriba hacia abajo, del más viejo al más nuevo, y los que se
-// envían se agregan al final: por eso se ordenan por fecha (y por id si coinciden) al cargarlos.
-const enOrdenDeLectura = (mensajes) =>
-    [...mensajes].sort((a, b) => new Date(a.fecha_creacion_mensaje) - new Date(b.fecha_creacion_mensaje) || a.id - b.id)
-
-// Los mensajes del encargo. Si todavía no tiene ninguno el back responde 204 (sin cuerpo): lista(null) es [].
-const pedirMensajes = (id) => api.get(`/api/encargos/${id}/mensajes`)
+// El encargo y sus mensajes viven en encargosSlice (ahí se ordenan los mensajes, del más viejo al más nuevo). Cada
+// acción (enviar un mensaje, cambiar el estado, el precio) es un thunk que actualiza el encargo con la respuesta del
+// back. Lo que es solo de esta pantalla (lo escrito, "enviando…", los errores y avisos) queda en su estado.
 
 // Cada cuánto se vuelve a pedir el encargo mientras la pantalla está abierta (en milisegundos). Con 3 segundos
 // la conversación se siente casi inmediata y son dos pedidos livianos por vez; si el back tarda, no se acumulan.
@@ -34,42 +35,41 @@ export default function EncargoDetalle() {
 }
 
 function Detalle({ id, recibidos, base }) {
-    const [datos, setDatos] = useState({ encargo: null, error: "" })
-    const [cargando, setCargando] = useState(true)
+    const dispatch = useDispatch()
+    const encargoGuardado = useSelector((state) => state.encargos.porId[id])
+    const mensajesGuardados = useSelector((state) => state.encargos.mensajes[id])
+    // Si el pedido del encargo terminó (al entrar se pide siempre: lo cambia también la otra parte).
+    const [pedido, setPedido] = useState({ listo: false, error: "" })
     const [intento, setIntento] = useState(0)
     const [enviando, setEnviando] = useState(false)
     const [guardando, setGuardando] = useState(false)
-    const usuario = getUsuario()
+    const usuario = useSelector((state) => state.sesion.usuario)
     const esAdmin = usuario?.rol_usuario === "ADMIN"
-    const perfilArtista = getPerfilArtista()
+    const perfilArtista = useSelector((state) => state.sesion.perfilArtista)
 
+    // El administrador no ve los mensajes: son privados de los participantes.
     useEffect(() => {
         let activo = true
-        let pedido
-        api.get(`/api/encargos/${id}`)
-            .then((respuesta) => {
-                if (!respuesta) throw new Error("No se pudo cargar el encargo.")
-                pedido = respuesta
-                if (esAdmin) return []
-                return pedirMensajes(id)
-            })
-            .then((mensajes) => {
-                if (activo) setDatos({ encargo: { ...pedido, mensajes: enOrdenDeLectura(lista(mensajes)) }, error: "" })
-            })
-            .catch((error) => {
-                if (activo) setDatos({ encargo: null, error: error.message })
-            })
-            .finally(() => {
-                if (activo) setCargando(false)
-            })
+        dispatch(fetchEncargo({ id, conMensajes: !esAdmin })).then((resultado) => {
+            if (activo) setPedido({ listo: true, error: resultado.error ? resultado.error.message : "" })
+        })
         return () => {
             activo = false
         }
-    }, [id, intento, esAdmin])
+    }, [dispatch, id, intento, esAdmin])
 
     function reintentar() {
-        setCargando(true)
+        setPedido({ listo: false, error: "" })
         setIntento(intento + 1)
+    }
+
+    const cargando = !pedido.listo
+    const datos = {
+        encargo:
+            pedido.listo && !pedido.error && encargoGuardado
+                ? { ...encargoGuardado, mensajes: mensajesGuardados ?? [] }
+                : null,
+        error: pedido.error
     }
     const [mensaje, setMensaje] = useState("")
     const [nuevoEstado, setNuevoEstado] = useState("")
@@ -99,35 +99,19 @@ function Detalle({ id, recibidos, base }) {
     const hayEncargo = Boolean(datos.encargo)
     useEffect(() => {
         if (!hayEncargo || ocupado) return
-        let activo = true
         let enCurso = false
         const intervalo = setInterval(() => {
             if (enCurso || document.visibilityState !== "visible") return
             enCurso = true
-            let pedido
-            api.get(`/api/encargos/${id}`)
-                .then((respuesta) => {
-                    pedido = respuesta
-                    return pedido && !esAdmin ? pedirMensajes(id) : []
-                })
-                .then((mensajes) => {
-                    // Un encargo sin mensajes responde vacío: eso es una lista vacía, no una falla.
-                    if (!activo || !pedido) return
-                    setDatos((actual) => ({
-                        ...actual,
-                        encargo: { ...pedido, mensajes: enOrdenDeLectura(lista(mensajes)) }
-                    }))
-                })
-                .catch(() => {})
-                .finally(() => {
-                    enCurso = false
-                })
+            // Lo que llega actualiza el store; si falla, no cambia nada y el próximo lo reintenta.
+            dispatch(fetchEncargo({ id, conMensajes: !esAdmin })).then(() => {
+                enCurso = false
+            })
         }, CADA_CUANTO_SE_ACTUALIZA)
         return () => {
-            activo = false
             clearInterval(intervalo)
         }
-    }, [id, esAdmin, hayEncargo, ocupado])
+    }, [dispatch, id, esAdmin, hayEncargo, ocupado])
 
     function enviar(evento) {
         evento.preventDefault()
@@ -142,21 +126,16 @@ function Detalle({ id, recibidos, base }) {
         }
         setEnviando(true)
         setErrorMensaje("")
-        api.post("/api/mensajes", cuerpo)
-            .then((respuesta) => {
-                if (!respuesta) return
-                setDatos((actual) => ({
-                    ...actual,
-                    encargo: { ...actual.encargo, mensajes: [...actual.encargo.mensajes, respuesta] }
-                }))
+        dispatch(enviarMensaje(cuerpo)).then((resultado) => {
+            if (resultado.error) {
+                setErrorMensaje(resultado.error.message)
+            } else {
                 setMensaje("")
                 setAviso("Mensaje enviado.")
-            })
-            .catch((error) => setErrorMensaje(error.message))
-            .finally(() => {
-                setEnviando(false)
-                campoMensaje.current?.focus()
-            })
+            }
+            setEnviando(false)
+            campoMensaje.current?.focus()
+        })
     }
 
     function guardarEstado(evento) {
@@ -172,59 +151,44 @@ function Detalle({ id, recibidos, base }) {
         }
         setGuardando(true)
         setErrorEstado("")
-        api.patch(`/api/encargos/${encargo.id}/estado`, cuerpo)
-            .then((respuesta) => {
-                if (!respuesta) return
-                setDatos((actual) => ({ ...actual, encargo: { ...respuesta, mensajes: actual.encargo.mensajes } }))
+        dispatch(cambiarEstadoEncargo({ id: encargo.id, nuevoEstado: cuerpo.nuevoEstado })).then((resultado) => {
+            if (resultado.error) {
+                setErrorEstado(resultado.error.message)
+            } else {
                 setNuevoEstado("")
                 setAviso("Estado actualizado.")
-            })
-            .catch((error) => setErrorEstado(error.message))
-            .finally(() => setGuardando(false))
-    }
-
-    function actualizarEncargo(respuesta) {
-        setDatos((actual) => ({ ...actual, encargo: { ...respuesta, mensajes: actual.encargo.mensajes } }))
+            }
+            setGuardando(false)
+        })
     }
 
     // Los tres pasos del acuerdo (proponer precio, aceptarlo y cancelar) se piden igual: uno a la vez.
-    function pedirAcuerdo(pedido, confirmacion) {
+    function pedirAcuerdo(accion, confirmacion) {
         if (trabajando) return
         setTrabajando(true)
         setErrorPrecio("")
         setAvisoPrecio("")
-        pedido
-            .then((respuesta) => {
-                if (!respuesta) return
-                actualizarEncargo(respuesta)
-                setAvisoPrecio(confirmacion)
-            })
-            .catch((error) => setErrorPrecio(error.message))
-            .finally(() => {
-                setTrabajando(false)
-                setCancelando(false)
-            })
+        dispatch(accion).then((resultado) => {
+            if (resultado.error) setErrorPrecio(resultado.error.message)
+            else setAvisoPrecio(confirmacion)
+            setTrabajando(false)
+            setCancelando(false)
+        })
     }
 
     function definirPrecio(valor) {
-        pedirAcuerdo(
-            api.patch(`/api/encargos/${encargo.id}/precio`, { precio_acordado: valor }),
-            "Precio guardado: el cliente ya lo ve."
-        )
+        pedirAcuerdo(definirPrecioEncargo({ id: encargo.id, precio: valor }), "Precio guardado: el cliente ya lo ve.")
     }
 
     function aceptarPrecio() {
         pedirAcuerdo(
-            api.post(`/api/encargos/${encargo.id}/aceptar-precio`),
+            aceptarPrecioEncargo(encargo.id),
             "Aceptaste el precio: el encargo quedó aprobado y el precio ya no cambia."
         )
     }
 
     function cancelarEncargo() {
-        pedirAcuerdo(
-            api.patch(`/api/encargos/${encargo.id}/estado`, { nuevoEstado: "CANCELADO" }),
-            "El encargo fue cancelado."
-        )
+        pedirAcuerdo(cambiarEstadoEncargo({ id: encargo.id, nuevoEstado: "CANCELADO" }), "El encargo fue cancelado.")
     }
 
     if (cargando)

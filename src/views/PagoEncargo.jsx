@@ -2,11 +2,12 @@
 // El mismo pago que el del carrito (FormularioPago: la tarjeta simulada), con otro detalle: lo que se paga es
 // el precio que acordaron cliente y artista. Lo único real es el POST /api/encargos/{id}/pagar, que pasa el
 // encargo de terminado a pagado. Solo lo paga el cliente que lo pidió y solo cuando el artista lo terminó.
+// El encargo se pide al entrar y se lee de encargosSlice; si el pedido terminó es cosa de esta pantalla.
 
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { api } from "../api/cliente"
-import { getUsuario } from "../api/sesion"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchEncargo, pagarEncargo } from "../redux/encargosSlice"
 
 import FormularioPago from "../components/FormularioPago"
 import Estado from "../components/Estado"
@@ -15,18 +16,22 @@ import Boton from "../components/Boton"
 const PagoEncargo = () => {
     const { id } = useParams()
     const navegar = useNavigate()
-    const usuario = getUsuario()
+    const usuario = useSelector((state) => state.sesion.usuario)
 
-    const [encargo, setEncargo] = useState(null)
-    const [cargando, setCargando] = useState(true)
-    const [error, setError] = useState("")
+    const dispatch = useDispatch()
+    const encargoGuardado = useSelector((state) => state.encargos.porId[id])
+    const [pedido, setPedido] = useState({ listo: false, error: "" })
 
+    // Se pide siempre al entrar: el estado del encargo lo cambia el artista.
     useEffect(() => {
-        api.get("/api/encargos/" + id)
-            .then((respuesta) => setEncargo(respuesta))
-            .catch((e) => setError(e.message))
-            .finally(() => setCargando(false))
-    }, [id])
+        dispatch(fetchEncargo({ id, conMensajes: false })).then((resultado) => {
+            setPedido({ listo: true, error: resultado.error ? resultado.error.message : "" })
+        })
+    }, [dispatch, id])
+
+    const cargando = !pedido.listo
+    const error = pedido.error
+    const encargo = pedido.listo && !error ? (encargoGuardado ?? null) : null
 
     const volver = () => navegar("/encargos/" + id)
 
@@ -66,8 +71,12 @@ const PagoEncargo = () => {
     const precio = Number(encargo.precio_acordado)
 
     // Quién paga sale del token, igual que en el backend; de la tarjeta no viaja nada.
+    // FormularioPago espera una promesa que falle si el pago no sale (muestra el error y deja reintentar).
     const pagar = () =>
-        api.post("/api/encargos/" + id + "/pagar").then(() => navegar("/encargos/" + id, { state: { pagado: true } }))
+        dispatch(pagarEncargo(id)).then((resultado) => {
+            if (resultado.error) throw new Error(resultado.error.message)
+            navegar("/encargos/" + id, { state: { pagado: true } })
+        })
 
     return (
         <FormularioPago

@@ -9,14 +9,13 @@ import { useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { cargarCarrito, confirmarCompra } from "../redux/carritoSlice"
-import { getUsuario } from "../api/sesion"
 import { costoDeEnvio, ENVIO_DOMICILIO } from "../api/entrega"
 import { optimizada, portadaDe } from "../api/formato"
 import FormularioPago from "../components/FormularioPago"
 import Estado from "../components/Estado"
 
 const Pago = () => {
-    const usuario = getUsuario()
+    const usuario = useSelector((state) => state.sesion.usuario)
     const navegar = useNavigate()
     const ubicacion = useLocation()
 

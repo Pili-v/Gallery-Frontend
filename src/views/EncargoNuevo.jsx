@@ -1,6 +1,10 @@
-import { api, lista as convertirLista } from "../api/cliente"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchArtistas } from "../redux/artistasSlice"
+import { fetchTamanios } from "../redux/tamaniosSlice"
+import { fetchMarcos } from "../redux/marcosSlice"
+import { fetchOpcionesEncargo, crearEncargo } from "../redux/encargosSlice"
 import Boton from "../components/Boton"
 import CampoFormulario from "../components/CampoFormulario"
 import BuscadorArtista from "../components/BuscadorArtista"
@@ -16,6 +20,8 @@ const PASOS = [
 
 // Disposición: el formulario a la izquierda y, a la derecha, una tarjeta fija con el pedido como va quedando, cómo sigue
 // y el botón de enviar. Todo es un solo formulario, así el botón de la tarjeta envía los campos de la izquierda.
+// Las opciones salen del store, una sola vez para toda la app: artistas, tamaños y marcos (datos de referencia) y los
+// tipos de pintura y de lienzo (encargosSlice). Lo escrito, "enviando…" y los errores son de esta pantalla.
 
 const inicial = {
     artista_id: "",
@@ -28,65 +34,53 @@ const inicial = {
 
 export default function EncargoNuevo() {
     const [parametros] = useSearchParams()
-    const [formulario, setFormulario] = useState(() => ({
+    const dispatch = useDispatch()
+    // Lo que se escribió. El artista del enlace (?artistaId=) solo vale si acepta encargos (ver formulario, abajo).
+    const [escrito, setFormulario] = useState(() => ({
         ...inicial,
         artista_id: parametros.get("artistaId") || ""
     }))
-    const [artistas, setArtistas] = useState([])
-    const [tamanios, setTamanios] = useState([])
-    const [marcos, setMarcos] = useState([])
-    const [pinturas, setPinturas] = useState([])
-    const [lienzos, setLienzos] = useState([])
-    const [cargando, setCargando] = useState(true)
-    const [errorCarga, setErrorCarga] = useState("")
     const [enviando, setEnviando] = useState(false)
-    const [intento, setIntento] = useState(0)
 
+    const artistasEstado = useSelector((state) => state.artistas)
+    const tamaniosEstado = useSelector((state) => state.tamanios)
+    const marcosEstado = useSelector((state) => state.marcos)
+    const opciones = useSelector((state) => state.encargos.opciones)
+
+    // Las opciones: una sola vez para toda la app (si otra pantalla ya las pidió, no se vuelven a pedir).
+    const pedirOpciones = () => {
+        dispatch(fetchArtistas())
+        dispatch(fetchTamanios())
+        dispatch(fetchMarcos())
+        dispatch(fetchOpcionesEncargo())
+    }
     useEffect(() => {
-        let activo = true
-        api.get("/api/artistas")
-            .then((respuesta) => {
-                if (activo) {
-                    const disponibles = convertirLista(respuesta)
-                        .filter((item) => item.acepta_encargos)
-                        .map((item) => ({ id: item.id, nombre: item.nombre_artistico }))
-                    setArtistas(disponibles)
-                    setFormulario((actual) => ({
-                        ...actual,
-                        artista_id: disponibles.some((item) => String(item.id) === actual.artista_id)
-                            ? actual.artista_id
-                            : ""
-                    }))
-                }
-                return api.get("/api/tamanios-lienzo")
-            })
-            .then((respuesta) => {
-                if (activo)
-                    setTamanios(convertirLista(respuesta).map((item) => ({ id: item.id, nombre: item.nombre_tamanio })))
-                return api.get("/api/marcos")
-            })
-            .then((respuesta) => {
-                if (activo)
-                    setMarcos(convertirLista(respuesta).map((item) => ({ id: item.id, nombre: item.nombre_marco })))
-                return api.get("/api/encargos/opciones")
-            })
-            .then((respuesta) => {
-                // Los tipos de pintura y de lienzo los define el back (son sus enums): acá solo se muestran.
-                if (activo) {
-                    setPinturas(respuesta.tipos_pintura)
-                    setLienzos(respuesta.tipos_lienzo)
-                }
-            })
-            .catch((error) => {
-                if (activo) setErrorCarga(`No se pudieron cargar las opciones del pedido: ${error.message}`)
-            })
-            .finally(() => {
-                if (activo) setCargando(false)
-            })
-        return () => {
-            activo = false
-        }
-    }, [intento])
+        dispatch(fetchArtistas())
+        dispatch(fetchTamanios())
+        dispatch(fetchMarcos())
+        dispatch(fetchOpcionesEncargo())
+    }, [dispatch])
+
+    const artistas = artistasEstado.items
+        .filter((item) => item.acepta_encargos)
+        .map((item) => ({ id: item.id, nombre: item.nombre_artistico }))
+    const tamanios = tamaniosEstado.items.map((item) => ({ id: item.id, nombre: item.nombre_tamanio }))
+    const marcos = marcosEstado.items.map((item) => ({ id: item.id, nombre: item.nombre_marco }))
+    // Los tipos de pintura y de lienzo los define el back (son sus enums): acá solo se muestran.
+    const pinturas = opciones.tiposPintura
+    const lienzos = opciones.tiposLienzo
+
+    const fallo = artistasEstado.error || tamaniosEstado.error || marcosEstado.error || opciones.error
+    const errorCarga = fallo ? `No se pudieron cargar las opciones del pedido: ${fallo}` : ""
+    const cargando =
+        !errorCarga && !(artistasEstado.cargado && tamaniosEstado.cargado && marcosEstado.cargado && opciones.cargadas)
+
+    // El artista elegido tiene que estar entre los que aceptan encargos; si no, queda sin elegir.
+    const formulario = {
+        ...escrito,
+        artista_id: artistas.some((item) => String(item.id) === escrito.artista_id) ? escrito.artista_id : ""
+    }
+
     const [errores, setErrores] = useState({})
     const [errorGuardado, setErrorGuardado] = useState("")
     const navigate = useNavigate()
@@ -110,12 +104,14 @@ export default function EncargoNuevo() {
         }
         setEnviando(true)
         setErrorGuardado("")
-        api.post("/api/encargos", resultado.datos)
-            .then((encargo) => {
-                if (encargo) navigate(lista, { state: { encargoCreado: encargo.id } })
-            })
-            .catch((error) => setErrorGuardado(error.message || "No se pudo enviar el pedido. Podés reintentar."))
-            .finally(() => setEnviando(false))
+        dispatch(crearEncargo(resultado.datos)).then((respuesta) => {
+            setEnviando(false)
+            if (respuesta.error) {
+                setErrorGuardado(respuesta.error.message || "No se pudo enviar el pedido. Podés reintentar.")
+            } else {
+                navigate(lista, { state: { encargoCreado: respuesta.payload.id } })
+            }
+        })
     }
 
     // El pedido como va quedando, con los nombres de lo elegido (vacío si todavía no se eligió).
@@ -163,15 +159,7 @@ export default function EncargoNuevo() {
                 {errorCarga && (
                     <div className="apilado">
                         <Estado tipo="error" mensaje={errorCarga} />
-                        <Boton
-                            onClick={() => {
-                                setErrorCarga("")
-                                setCargando(true)
-                                setIntento(intento + 1)
-                            }}
-                        >
-                            Reintentar
-                        </Boton>
+                        <Boton onClick={pedirOpciones}>Reintentar</Boton>
                     </div>
                 )}
                 {!cargando && !errorCarga && faltanOpciones && (

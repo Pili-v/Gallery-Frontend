@@ -41,6 +41,8 @@ export const fetchDetalleDeVenta = createAsyncThunk(
     }
 )
 
+const FILTROS_INICIALES = { pagina: 0, entrega: "todas", periodo: "0" }
+
 const misVentasSlice = createSlice({
     name: "misVentas",
     initialState: {
@@ -52,9 +54,27 @@ const misVentasSlice = createSlice({
         error: null,
         requestId: null,
         // Por id de factura: { loading, detalle, error }. Sin entrada es que nunca se abrió.
-        detalles: {}
+        detalles: {},
+        // La página y los filtros (cómo se entregó y de cuándo es la venta): viven acá, así se conservan al ir a otra
+        // pantalla y volver. Con otro filtro se vuelve a la primera página.
+        filtros: FILTROS_INICIALES
     },
-    reducers: {},
+    reducers: {
+        setPagina: (state, action) => {
+            state.filtros.pagina = action.payload
+        },
+        setEntrega: (state, action) => {
+            state.filtros.entrega = action.payload
+            state.filtros.pagina = 0
+        },
+        setPeriodo: (state, action) => {
+            state.filtros.periodo = action.payload
+            state.filtros.pagina = 0
+        },
+        quitarFiltros: (state) => {
+            state.filtros = FILTROS_INICIALES
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(fetchMisVentas.pending, (state, action) => {
@@ -93,5 +113,7 @@ const misVentasSlice = createSlice({
             .addMatcher(cambioDeUsuario, () => misVentasSlice.getInitialState())
     }
 })
+
+export const { setPagina, setEntrega, setPeriodo, quitarFiltros } = misVentasSlice.actions
 
 export default misVentasSlice.reducer

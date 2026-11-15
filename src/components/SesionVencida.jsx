@@ -2,12 +2,12 @@ import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useDispatch } from "react-redux"
 
-import { SESION_VENCIDA } from "../api/cliente"
+import { SESION_VENCIDA } from "../redux/http"
 import { cerrarSesion } from "../redux/sesionSlice"
 
 import Confirmacion from "./Confirmacion"
 
-// Cartel que avisa que la sesión venció. cliente.js emite SESION_VENCIDA cuando el back
+// Cartel que avisa que la sesión venció. redux/http.js emite SESION_VENCIDA cuando el back
 // responde 401 a un pedido con token. La pantalla de fondo no se toca; al apretar el botón
 // se cierra la sesión (se borran también los datos propios del usuario guardados en Redux) y se va al login
 // recordando la ruta, para volver ahí al ingresar.

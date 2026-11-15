@@ -21,7 +21,8 @@ export const fetchMisCompras = createAsyncThunk("compras/fetchMisCompras", async
         entrega: entrega === "todas" ? "" : entrega,
         desde: desdeDelPeriodo(periodo)
     }
-    const compras = await obtenerLista("/api/compras/me?" + parametrosDeFiltros(filtros).substring(1))
+    const parametros = parametrosDeFiltros(filtros)
+    const compras = await obtenerLista("/api/compras/me" + (parametros ? "?" + parametros.substring(1) : ""))
     return compras
 })
 

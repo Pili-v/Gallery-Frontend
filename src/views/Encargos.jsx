@@ -1,7 +1,8 @@
-import { api, lista } from "../api/cliente"
-import { getUsuario, getPerfilArtista } from "../api/sesion"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchEncargos, setFiltroEstado, setBusquedaArtista, setArtistaElegido } from "../redux/encargosSlice"
+import { fetchArtistas } from "../redux/artistasSlice"
 import Estado from "../components/Estado"
 import EstadoEncargo from "../components/EstadoEncargo"
 import Boton from "../components/Boton"
@@ -15,12 +16,14 @@ const ORDEN_ESTADOS = ["PENDIENTE", "APROBADO", "EN_PROCESO", "TERMINADO", "PAGA
 
 // Disposición (como Mis obras, Mis ventas y Mis compras): a la izquierda una columna fija con el botón para pedir, la
 // vista (los que pedí o los que me pidieron), el total y el filtro por estado; a la derecha la tabla.
+// Los encargos viven en encargosSlice (cada uno una sola vez; la lista guarda sus ids) y se piden cada vez que se entra
+// o se cambia de vista: los cambia también la otra parte. Los filtros también viven ahí y se aplican sobre lo que llegó.
 
 export default function Encargos() {
     const [parametros, setParametros] = useSearchParams()
     const navigate = useNavigate()
-    const usuario = getUsuario()
-    const perfilArtista = getPerfilArtista()
+    const usuario = useSelector((state) => state.sesion.usuario)
+    const perfilArtista = useSelector((state) => state.sesion.perfilArtista)
     const { state } = useLocation()
     const base = "/encargos"
     const esAdmin = usuario?.rol_usuario === "ADMIN"
@@ -56,44 +59,25 @@ function ListaEncargos({
     verRecibidos,
     esAdmin
 }) {
-    const [datos, setDatos] = useState({ items: [], error: "" })
-    const [cargando, setCargando] = useState(true)
-    const [intento, setIntento] = useState(0)
-    const [artistas, setArtistas] = useState([])
-    const [busquedaArtista, setBusquedaArtista] = useState("")
-    const [artistaElegido, setArtistaElegido] = useState("")
-    const [filtroEstado, setFiltroEstado] = useState("")
+    const dispatch = useDispatch()
+    const { porId, lista, filtros } = useSelector((state) => state.encargos)
+    const todosLosArtistas = useSelector((state) => state.artistas.items)
+    const { estado: filtroEstado, busquedaArtista, artistaElegido } = filtros
+    const cargando = lista.loading
+    const datos = { items: lista.ids.map((id) => porId[id]).filter(Boolean), error: lista.error }
+    // Solo ADMIN usa la lista de artistas (para filtrar): los nombres de cada encargo ya vienen en la respuesta.
+    const artistas = todosLosArtistas.map((item) => ({ ...item, nombre: item.nombre_artistico }))
+    const vista = esAdmin ? "todos" : verRecibidos ? "recibidos" : "pedidos"
 
+    // El backend obtiene el usuario o el artista desde el token de la sesión. Los artistas son datos de referencia:
+    // una sola vez para toda la app.
     useEffect(() => {
-        let activo = true
-        // El backend obtiene el usuario o el artista desde el token de la sesión.
-        const ruta = esAdmin
-            ? "/api/encargos"
-            : verRecibidos
-              ? "/api/artistas/me/encargos"
-              : "/api/usuarios/me/encargos"
-        // Solo ADMIN necesita la lista de artistas (para filtrar): los nombres de cada encargo ya vienen en la respuesta.
-        const pedidoArtistas = esAdmin ? api.get("/api/artistas") : Promise.resolve([])
-        Promise.all([api.get(ruta), pedidoArtistas])
-            .then(([respuesta, perfiles]) => {
-                if (!activo) return
-                setDatos({ items: lista(respuesta), error: "" })
-                setArtistas(lista(perfiles).map((item) => ({ ...item, nombre: item.nombre_artistico })))
-            })
-            .catch((error) => {
-                if (activo) setDatos({ items: [], error: error.message })
-            })
-            .finally(() => {
-                if (activo) setCargando(false)
-            })
-        return () => {
-            activo = false
-        }
-    }, [esAdmin, verRecibidos, intento])
+        dispatch(fetchEncargos(vista))
+        if (vista === "todos") dispatch(fetchArtistas())
+    }, [dispatch, vista])
 
     function reintentar() {
-        setCargando(true)
-        setIntento(intento + 1)
+        dispatch(fetchEncargos(vista))
     }
     const idsArtistas = new Set(
         artistas
@@ -204,7 +188,7 @@ function ListaEncargos({
                 tipo="vacio"
                 mensaje="No hay encargos en ese estado."
                 accion="Quitar filtro"
-                onAccion={() => setFiltroEstado("")}
+                onAccion={() => dispatch(setFiltroEstado(""))}
             />
         )
     } else if (encargos.length === 0) {
@@ -270,8 +254,8 @@ function ListaEncargos({
                                 <BuscadorArtista
                                     artistas={artistas}
                                     value={artistaElegido}
-                                    onChange={setArtistaElegido}
-                                    onSearch={setBusquedaArtista}
+                                    onChange={(id) => dispatch(setArtistaElegido(id))}
+                                    onSearch={(texto) => dispatch(setBusquedaArtista(texto))}
                                     required={false}
                                     disabled={cargando || Boolean(datos.error)}
                                 />
@@ -282,7 +266,7 @@ function ListaEncargos({
                                 etiqueta="Estado"
                                 value={filtroEstado}
                                 disabled={cargando || Boolean(datos.error)}
-                                onChange={(evento) => setFiltroEstado(evento.target.value)}
+                                onChange={(evento) => dispatch(setFiltroEstado(evento.target.value))}
                             >
                                 <option value="">Todos</option>
                                 {estados.map((estado) => (
@@ -293,7 +277,11 @@ function ListaEncargos({
                             </CampoFormulario>
 
                             {filtroEstado && (
-                                <button type="button" className="boton-texto" onClick={() => setFiltroEstado("")}>
+                                <button
+                                    type="button"
+                                    className="boton-texto"
+                                    onClick={() => dispatch(setFiltroEstado(""))}
+                                >
                                     Quitar filtro
                                 </button>
                             )}

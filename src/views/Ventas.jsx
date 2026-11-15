@@ -1,14 +1,21 @@
 // Mis ventas — Área 5 · Artista
 // Las facturas emitidas a nombre del artista logueado. Esta pantalla solo lee.
-// Los datos del back viven en Redux (misVentasSlice); acá quedan los filtros, la página y qué ventas están abiertas,
-// que son cosas de esta pantalla.
+// Los datos del back, la página y los filtros viven en Redux (misVentasSlice): al ir a otra pantalla y volver, siguen
+// iguales. Acá queda solo qué ventas están abiertas, que es cosa de esta pantalla.
 // Disposición: los totales y los filtros en una columna fija a la izquierda; la tabla a la derecha.
 
 import { useEffect, useState } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { pesos, fecha } from "../api/formato"
 import { PERIODOS, desdeDelPeriodo } from "../api/filtros"
-import { fetchMisVentas, fetchDetalleDeVenta } from "../redux/misVentasSlice"
+import {
+    fetchMisVentas,
+    fetchDetalleDeVenta,
+    setPagina,
+    setEntrega,
+    setPeriodo,
+    quitarFiltros as quitarFiltrosDelStore
+} from "../redux/misVentasSlice"
 
 import CampoFormulario from "../components/CampoFormulario"
 import Indicador from "../components/Indicador"
@@ -32,18 +39,15 @@ const Ventas = () => {
         totalVendido,
         loading: cargando,
         error,
-        detalles
+        detalles,
+        filtros
     } = useSelector((state) => state.misVentas)
 
     // Qué facturas están abiertas, por id de factura. Puede haber varias a la vez.
     const [abiertas, setAbiertas] = useState({})
 
-    // La página que se está viendo (empieza en 0, como en el back).
-    const [pagina, setPagina] = useState(0)
-
-    // Los filtros (cómo se entregó y de cuándo es la venta): los aplica el back y valen para la lista y para el total.
-    const [filtroDeEntrega, setFiltroDeEntrega] = useState("todas")
-    const [filtroDePeriodo, setFiltroDePeriodo] = useState("0")
+    // La página (empieza en 0, como en el back) y los filtros: los aplica el back y valen para la lista y para el total.
+    const { pagina, entrega: filtroDeEntrega, periodo: filtroDePeriodo } = filtros
     const hayFiltros = filtroDeEntrega !== "todas" || filtroDePeriodo !== "0"
 
     // Las ventas: se vuelven a pedir cuando cambia un filtro o la página. Si llega una respuesta vieja (de un filtro o
@@ -57,19 +61,12 @@ const Ventas = () => {
     }, [dispatch, pagina, filtroDeEntrega, filtroDePeriodo])
 
     const cambiarPagina = (nueva) => {
-        setPagina(nueva)
+        dispatch(setPagina(nueva))
     }
 
-    // Con otro filtro vuelve a la primera página: la que se estaba viendo puede no existir con menos resultados.
-    const cambiarFiltro = (poner, valor) => {
-        poner(valor)
-        setPagina(0)
-    }
-
+    // Con otro filtro vuelve a la primera página (lo hace el slice): la que se veía puede no existir con menos resultados.
     const quitarFiltros = () => {
-        setFiltroDeEntrega("todas")
-        setFiltroDePeriodo("0")
-        setPagina(0)
+        dispatch(quitarFiltrosDelStore())
     }
 
     // Sin ventas y sin filtros no hay nada que filtrar: solo se avisa. Con filtros se mantienen a la vista.
@@ -180,7 +177,7 @@ const Ventas = () => {
                                     tipo="select"
                                     etiqueta="Entrega"
                                     value={filtroDeEntrega}
-                                    onChange={(evento) => cambiarFiltro(setFiltroDeEntrega, evento.target.value)}
+                                    onChange={(evento) => dispatch(setEntrega(evento.target.value))}
                                 >
                                     <option value="todas">Todas</option>
                                     <option value="envio">Envío a domicilio</option>
@@ -192,7 +189,7 @@ const Ventas = () => {
                                     tipo="select"
                                     etiqueta="Período"
                                     value={filtroDePeriodo}
-                                    onChange={(evento) => cambiarFiltro(setFiltroDePeriodo, evento.target.value)}
+                                    onChange={(evento) => dispatch(setPeriodo(evento.target.value))}
                                 >
                                     {PERIODOS.map((periodoPosible) => (
                                         <option key={periodoPosible.valor} value={periodoPosible.valor}>

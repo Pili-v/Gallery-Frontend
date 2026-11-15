@@ -89,6 +89,32 @@ export const fetchSesionActual = createAsyncThunk(
 
 
 // -------------------------
+// CREAR MI PERFIL DE ARTISTA (Quiero publicar)
+// -------------------------
+
+// Un cliente crea su perfil de artista: el back le pasa el rol a ARTISTA_CLIENTE. Después se vuelven a pedir los datos
+// de la cuenta, porque la barra de arriba y las pantallas de artista leen el rol y el perfil de la sesión.
+export const crearPerfilArtista = createAsyncThunk(
+    "sesion/crearPerfilArtista",
+    async ({ nombreArtistico, aceptaEncargos }) => {
+        await http.post("/api/usuarios/me/perfil-artista", {
+            nombre_artistico: nombreArtistico,
+            acepta_encargos: aceptaEncargos
+        })
+        const respuesta = await http.get("/api/usuarios/me")
+        const perfil = respuesta.data
+
+        guardarSesion(getToken(), perfil)
+
+        return {
+            usuario: perfil.usuario,
+            perfilArtista: perfil.perfil_artista ?? null
+        }
+    }
+)
+
+
+// -------------------------
 // MODIFICAR MI CUENTA
 // -------------------------
 
@@ -243,6 +269,11 @@ const sesionSlice = createSlice({
                 state.loading = true
                 state.operacion = "cargarSesion"
                 state.error = null
+            })
+
+            .addCase(crearPerfilArtista.fulfilled, (state, action) => {
+                state.usuario = action.payload.usuario
+                state.perfilArtista = action.payload.perfilArtista
             })
 
             .addCase(fetchSesionActual.fulfilled, (state, action) => {
