@@ -14,7 +14,7 @@
 // Cuando el back responde, el slice actualiza la obra con lo que devolvió: no se vuelve a pedir.
 // Las reglas de negocio las valida el back; acá solo los límites obvios, y se muestra el mensaje que devuelva.
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchEstilos } from "../redux/estilosSlice"
@@ -283,6 +283,13 @@ const VariantesDeLaObra = ({ obraId, variantes, tamanios }) => {
     )
 }
 
+// Las vistas previas de las fotos elegidas son URLs de objeto: mantienen el archivo en memoria hasta que se liberan.
+const liberar = (fotos) => {
+    fotos.forEach((foto) => {
+        if (foto.vista) URL.revokeObjectURL(foto.vista)
+    })
+}
+
 // 3 · Fotos. Los cambios se arman en un borrador (agregar, reemplazar, ordenar, quitar) y se mandan juntos con
 // "Guardar fotos": el back aplica la galería completa en un solo pedido, todo o nada. "Descartar cambios" vuelve a
 // las guardadas. Cuando el guardado sale bien, el borrador se descarta y se ven las guardadas (las que devolvió el
@@ -304,6 +311,13 @@ const FotosDeLaObra = ({ obraId, imagenes }) => {
         archivo: null
     }))
     const fotos = borrador ?? guardadas
+
+    // Al salir de la pantalla se liberan las vistas previas que quedaban (guardo el borrador más reciente en una ref).
+    const borradorActual = useRef(null)
+    useEffect(() => {
+        borradorActual.current = borrador
+    }, [borrador])
+    useEffect(() => () => liberar(borradorActual.current ?? []), [])
 
     // Hay algo para guardar si cambió el orden, la cantidad o algún archivo.
     const cambiado =
@@ -355,6 +369,8 @@ const FotosDeLaObra = ({ obraId, imagenes }) => {
             if (resultado.error) {
                 setMotivos(archivo.name + ": " + resultado.error)
             } else {
+                // La vista previa anterior de esa foto (si ya se había reemplazado) se libera.
+                liberar(fotos.filter((foto) => foto.clave === clave))
                 editar(
                     fotos.map((foto) =>
                         foto.clave === clave
@@ -389,7 +405,10 @@ const FotosDeLaObra = ({ obraId, imagenes }) => {
         editar(nuevas)
     }
 
-    const quitar = (clave) => editar(fotos.filter((foto) => foto.clave !== clave))
+    const quitar = (clave) => {
+        liberar(fotos.filter((foto) => foto.clave === clave))
+        editar(fotos.filter((foto) => foto.clave !== clave))
+    }
 
     const guardar = () => {
         if (guardando || preparando || !cambiado) return
@@ -398,12 +417,17 @@ const FotosDeLaObra = ({ obraId, imagenes }) => {
         const galeria = fotos.map((foto) => ({ id: foto.id, archivo: foto.archivo }))
         dispatch(guardarGaleria({ obraId, fotos: galeria })).then((resultado) => {
             setGuardando(false)
-            if (resultado.error) setError(resultado.error.message)
-            else setBorrador(null)
+            if (resultado.error) {
+                setError(resultado.error.message)
+            } else {
+                liberar(fotos)
+                setBorrador(null)
+            }
         })
     }
 
     const descartar = () => {
+        liberar(fotos)
         setBorrador(null)
         setMotivos("")
         setError(null)

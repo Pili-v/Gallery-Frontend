@@ -140,6 +140,9 @@ const catalogoSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(fetchCatalogo.pending, (state, action) => {
+                // Mientras llega otra búsqueda, lo que se ve ya no es una búsqueda cerrada: si se vuelve a la anterior
+                // antes de que llegue, hay que pedirla (si no, la respuesta de la otra pisaría esta pantalla).
+                state.cargada = null
                 state.loading = true
                 state.error = null
                 state.codigo = null

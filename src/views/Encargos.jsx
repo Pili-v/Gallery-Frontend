@@ -1,7 +1,7 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
-import { fetchEncargos, setFiltroEstado, setBusquedaArtista, setArtistaElegido } from "../redux/encargosSlice"
+import { fetchEncargos, setFiltroEstado, entrarEnVista } from "../redux/encargosSlice"
 import { fetchArtistas } from "../redux/artistasSlice"
 import Estado from "../components/Estado"
 import EstadoEncargo from "../components/EstadoEncargo"
@@ -17,7 +17,8 @@ const ORDEN_ESTADOS = ["PENDIENTE", "APROBADO", "EN_PROCESO", "TERMINADO", "PAGA
 // Disposición (como Mis obras, Mis ventas y Mis compras): a la izquierda una columna fija con el botón para pedir, la
 // vista (los que pedí o los que me pidieron), el total y el filtro por estado; a la derecha la tabla.
 // Los encargos viven en encargosSlice (cada uno una sola vez; la lista guarda sus ids) y se piden cada vez que se entra
-// o se cambia de vista: los cambia también la otra parte. Los filtros también viven ahí y se aplican sobre lo que llegó.
+// o se cambia de vista: los cambia también la otra parte. El filtro de estado también vive ahí (y se reinicia al cambiar
+// de vista); la búsqueda de artista del administrador es de esta pantalla, igual que su campo.
 
 export default function Encargos() {
     const [parametros, setParametros] = useSearchParams()
@@ -62,16 +63,20 @@ function ListaEncargos({
     const dispatch = useDispatch()
     const { porId, lista, filtros } = useSelector((state) => state.encargos)
     const todosLosArtistas = useSelector((state) => state.artistas.items)
-    const { estado: filtroEstado, busquedaArtista, artistaElegido } = filtros
+    const [busquedaArtista, setBusquedaArtista] = useState("")
+    const [artistaElegido, setArtistaElegido] = useState("")
+    const vista = esAdmin ? "todos" : verRecibidos ? "recibidos" : "pedidos"
+    // El filtro de estado vale solo para la vista a la que pertenece (el slice lo reinicia al cambiar de vista).
+    const filtroEstado = filtros.vista === vista ? filtros.estado : ""
     const cargando = lista.loading
     const datos = { items: lista.ids.map((id) => porId[id]).filter(Boolean), error: lista.error }
     // Solo ADMIN usa la lista de artistas (para filtrar): los nombres de cada encargo ya vienen en la respuesta.
     const artistas = todosLosArtistas.map((item) => ({ ...item, nombre: item.nombre_artistico }))
-    const vista = esAdmin ? "todos" : verRecibidos ? "recibidos" : "pedidos"
 
     // El backend obtiene el usuario o el artista desde el token de la sesión. Los artistas son datos de referencia:
     // una sola vez para toda la app.
     useEffect(() => {
+        dispatch(entrarEnVista(vista))
         dispatch(fetchEncargos(vista))
         if (vista === "todos") dispatch(fetchArtistas())
     }, [dispatch, vista])
@@ -254,8 +259,8 @@ function ListaEncargos({
                                 <BuscadorArtista
                                     artistas={artistas}
                                     value={artistaElegido}
-                                    onChange={(id) => dispatch(setArtistaElegido(id))}
-                                    onSearch={(texto) => dispatch(setBusquedaArtista(texto))}
+                                    onChange={setArtistaElegido}
+                                    onSearch={setBusquedaArtista}
                                     required={false}
                                     disabled={cargando || Boolean(datos.error)}
                                 />
