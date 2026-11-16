@@ -8,7 +8,7 @@
 import { useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
-import { cargarCarrito, confirmarCompra } from "../redux/carritoSlice"
+import { cargarCarrito, confirmarCompra, fetchPortadasCarrito, obrasSinPortada } from "../redux/carritoSlice"
 import { costoDeEnvio, ENVIO_DOMICILIO } from "../api/entrega"
 import { optimizada, portadaDe } from "../api/formato"
 import FormularioPago from "../components/FormularioPago"
@@ -21,6 +21,12 @@ const Pago = () => {
 
     const dispatch = useDispatch()
     const { carrito, items, imagenes, loading: cargando, error } = useSelector((state) => state.carrito)
+
+    // Las miniaturas: se piden solo las portadas que faltan (el Header carga el carrito sin ellas).
+    const faltanPortadas = obrasSinPortada(items, imagenes).join(",")
+    useEffect(() => {
+        if (faltanPortadas) dispatch(fetchPortadasCarrito(faltanPortadas.split(",").map(Number)))
+    }, [dispatch, faltanPortadas])
 
     // El tipo de entrega lo eligió la pantalla anterior y viajó hasta acá por el router: es una decisión de
     // esa pantalla, no un dato del back. Si alguien entra directo por la URL, se asume envío a domicilio.

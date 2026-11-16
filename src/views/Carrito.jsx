@@ -11,6 +11,8 @@ import { useLocation, useNavigate } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import {
     cargarCarrito,
+    fetchPortadasCarrito,
+    obrasSinPortada,
     recargarItems,
     cambiarCantidad,
     quitarItem,
@@ -38,6 +40,12 @@ const Carrito = () => {
 
     const dispatch = useDispatch()
     const { carrito, items, imagenes, loading: cargando, error } = useSelector((state) => state.carrito)
+
+    // Las miniaturas: se piden solo las portadas que faltan (el Header carga el carrito sin ellas).
+    const faltanPortadas = obrasSinPortada(items, imagenes).join(",")
+    useEffect(() => {
+        if (faltanPortadas) dispatch(fetchPortadasCarrito(faltanPortadas.split(",").map(Number)))
+    }, [dispatch, faltanPortadas])
     const direccion = direccionEscrita ?? ((carrito && carrito.direccion_cliente) || "")
 
     // Si el pago volvió acá porque algo ya no estaba disponible, trae el aviso del back (los ítems afectados se

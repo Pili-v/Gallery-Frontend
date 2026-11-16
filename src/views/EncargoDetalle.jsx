@@ -178,7 +178,7 @@ function Detalle({ id, recibidos, base }) {
 
     function aceptarPrecio() {
         pedirAcuerdo(
-            aceptarPrecioEncargo(encargo.id),
+            aceptarPrecioEncargo({ id: encargo.id, precio: encargo.precio_acordado }),
             "Aceptaste el precio: el encargo quedó aprobado y el precio ya no cambia."
         )
     }

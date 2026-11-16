@@ -6,6 +6,7 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { obtenerLista, obtenerPagina } from "./pedidos"
+import { normalizarNombre } from "../api/formato"
 import { crearPerfilArtista, actualizarPerfilArtista } from "./sesionSlice"
 
 // Con { forzar: true } se vuelve a pedir aunque ya hayan llegado (por ejemplo, un botón Reintentar).
@@ -80,7 +81,15 @@ const reemplazarPorId = (lista, artista) => {
 const guardarArtista = (state, artista) => {
     if (!artista) return
     if (!reemplazarPorId(state.items, artista) && state.cargado) state.items.push(artista)
-    reemplazarPorId(state.resultados.items, artista)
+    // En la página de resultados: si con el nombre nuevo ya no cumple la búsqueda aplicada, sale de ella.
+    const { busqueda } = state.filtros
+    if (busqueda !== "" && !normalizarNombre(artista.nombre_artistico).includes(normalizarNombre(busqueda))) {
+        const antes = state.resultados.items.length
+        state.resultados.items = state.resultados.items.filter((guardado) => guardado.id !== artista.id)
+        state.resultados.total = state.resultados.total - (antes - state.resultados.items.length)
+    } else {
+        reemplazarPorId(state.resultados.items, artista)
+    }
 }
 
 const artistasSlice = createSlice({

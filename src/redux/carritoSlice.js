@@ -9,27 +9,35 @@ import { http } from "./http"
 import { cambioDeUsuario } from "./sesionSlice"
 import { obtenerLista } from "./pedidos"
 
-// Los ítems del carrito y las portadas de sus obras, en un solo pedido cada uno.
-const itemsConPortadas = async (carritoId) => {
-    const items = await obtenerLista("/api/carritos/" + carritoId + "/items")
-    if (items.length === 0) return { items, imagenes: [] }
+const pedirItems = (carritoId) => obtenerLista("/api/carritos/" + carritoId + "/items")
 
-    // Cada obra una sola vez, aunque esté en más de un ítem (otro tamaño o marco).
-    const obraIds = [...new Set(items.map((item) => item.obra_id))]
+// Las obras del carrito que todavía no tienen su portada guardada (cada obra una vez, aunque esté en más de un ítem).
+// Las pantallas que muestran las miniaturas (Carrito y Pago) piden solo esas; el Header, que muestra el contador, no.
+export const obrasSinPortada = (items, imagenes) =>
+    [...new Set(items.map((item) => item.obra_id))].filter((obraId) => !imagenes.some((img) => img.obra_id === obraId))
+
+// arg: ids de obra. Las portadas, en un solo pedido.
+export const fetchPortadasCarrito = createAsyncThunk("carrito/fetchPortadasCarrito", async (obraIds) => {
     const imagenes = await obtenerLista("/api/imagenes?portada=true&" + obraIds.map((id) => "obraId=" + id).join("&"))
-    return { items, imagenes }
-}
+    return imagenes
+})
 
 // Carga inicial: el carrito del usuario y después sus ítems. El id del usuario sale de la sesión, no de la
 // URL: así nadie puede mirar el carrito de otro cambiando un número a mano.
 // Lo piden el Header (para el contador) y la pantalla del carrito: si ya hay una carga en camino (por ejemplo, al
-// recargar la página estando en el carrito), no se lanza otra, porque la que viaja trae lo mismo.
+// recargar la página estando en el carrito), no se lanza otra, porque la que viaja trae lo mismo. El carrito de un
+// usuario es siempre el mismo: si ya está guardado se reutiliza y se piden solo sus ítems (al cerrar sesión el slice
+// se vacía, así que es siempre el del usuario actual).
 export const cargarCarrito = createAsyncThunk(
     "carrito/cargarCarrito",
-    async (usuarioId) => {
-        const { data: carrito } = await http.get("/api/usuarios/" + usuarioId + "/carrito")
-        const { items, imagenes } = await itemsConPortadas(carrito.id)
-        return { carrito, items, imagenes }
+    async (usuarioId, { getState }) => {
+        let carrito = getState().carrito.carrito
+        if (!carrito) {
+            const respuesta = await http.get("/api/usuarios/" + usuarioId + "/carrito")
+            carrito = respuesta.data
+        }
+        const items = await pedirItems(carrito.id)
+        return { carrito, items }
     },
     {
         condition: (_, { getState }) => !getState().carrito.cargando
@@ -39,7 +47,8 @@ export const cargarCarrito = createAsyncThunk(
 // Al volver a la pantalla: se piden de nuevo los ítems para ver si algo dejó de estar disponible.
 // No toca el loading: es una actualización silenciosa, la pantalla ya está dibujada.
 export const recargarItems = createAsyncThunk("carrito/recargarItems", async (carritoId) => {
-    return await itemsConPortadas(carritoId)
+    const items = await pedirItems(carritoId)
+    return { items }
 })
 
 // El back responde con el ítem ya actualizado (cantidad y subtotal): ese reemplaza al de la lista.
@@ -121,7 +130,6 @@ const carritoSlice = createSlice({
                 state.cargando = false
                 state.carrito = action.payload.carrito
                 state.items = action.payload.items
-                state.imagenes = action.payload.imagenes
             })
             .addCase(cargarCarrito.rejected, (state, action) => {
                 if (state.requestId !== action.meta.requestId) return
@@ -133,9 +141,13 @@ const carritoSlice = createSlice({
 
             // --- Recarga silenciosa (al volver a la pantalla) ---
             // Si falla se deja lo que ya había en pantalla: por eso no hay addCase para su rejected.
+            // Las portadas que llegaron se suman a las guardadas.
+            .addCase(fetchPortadasCarrito.fulfilled, (state, action) => {
+                const llegaron = action.meta.arg
+                state.imagenes = [...state.imagenes.filter((img) => !llegaron.includes(img.obra_id)), ...action.payload]
+            })
             .addCase(recargarItems.fulfilled, (state, action) => {
                 state.items = action.payload.items
-                state.imagenes = action.payload.imagenes
             })
 
             // --- Cambiar la cantidad ---

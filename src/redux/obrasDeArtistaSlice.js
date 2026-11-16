@@ -45,6 +45,8 @@ const obrasDeArtistaSlice = createSlice({
     extraReducers: (builder) => {
         builder
             .addCase(fetchObrasDeArtista.pending, (state, action) => {
+                // Igual que en el Catálogo: mientras llega otra página, la guardada ya no es la que se ve.
+                state.cargada = null
                 state.loading = true
                 state.error = null
                 state.requestId = action.meta.requestId

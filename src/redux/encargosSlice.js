@@ -2,7 +2,9 @@
 //   porId    : id -> el encargo, como lo manda el back (con los nombres, el estado y los cambios de estado posibles).
 //   mensajes : id de encargo -> sus mensajes, del más viejo al más nuevo. Solo de los encargos que se abrieron.
 //   lista    : la pantalla Encargos: los ids de la vista que se ve y el estado del pedido.
-//   filtros  : los de la pantalla Encargos (estado y, para el administrador, artista). Se aplican sobre lo que llegó.
+//   filtros  : el de estado de la pantalla Encargos, con la vista a la que pertenece ("todos", "recibidos" o "pedidos"):
+//              al cambiar de vista se reinicia, porque cada lista tiene sus propios estados. Se aplica sobre lo que llegó.
+//              La búsqueda de artista (solo del administrador) es de la pantalla, junto con su campo.
 //   opciones : los tipos de pintura y de lienzo que se pueden pedir (los define el back): una sola vez.
 // Son datos propios del usuario y cambian por lo que hace la otra parte (el artista o el cliente): se piden siempre al
 // entrar. Al cerrar sesión (o entrar con otro usuario) el slice vuelve a su estado inicial.
@@ -83,9 +85,11 @@ export const definirPrecioEncargo = createAsyncThunk("encargos/definirPrecioEnca
     return respuesta.data
 })
 
-// El cliente acepta el precio: el encargo queda aprobado y el precio ya no cambia.
-export const aceptarPrecioEncargo = createAsyncThunk("encargos/aceptarPrecioEncargo", async (id) => {
-    const respuesta = await http.post("/api/encargos/" + id + "/aceptar-precio")
+// El cliente acepta el precio: el encargo queda aprobado y el precio ya no cambia. Manda el monto que tiene a la
+// vista: si el artista lo cambió mientras tanto, el back responde 409 y no aprueba otro precio.
+// arg: { id, precio }.
+export const aceptarPrecioEncargo = createAsyncThunk("encargos/aceptarPrecioEncargo", async ({ id, precio }) => {
+    const respuesta = await http.post("/api/encargos/" + id + "/aceptar-precio", { precio_acordado: precio })
     return respuesta.data
 })
 
@@ -95,7 +99,7 @@ export const pagarEncargo = createAsyncThunk("encargos/pagarEncargo", async (id)
     return id
 })
 
-const FILTROS_INICIALES = { estado: "", busquedaArtista: "", artistaElegido: "" }
+const FILTROS_INICIALES = { vista: null, estado: "" }
 
 const ESTADO_INICIAL = {
     porId: {},
@@ -116,11 +120,9 @@ const encargosSlice = createSlice({
         setFiltroEstado: (state, action) => {
             state.filtros.estado = action.payload
         },
-        setBusquedaArtista: (state, action) => {
-            state.filtros.busquedaArtista = action.payload
-        },
-        setArtistaElegido: (state, action) => {
-            state.filtros.artistaElegido = action.payload
+        // Al entrar a una vista distinta de la anterior, el filtro de estado vuelve a "Todos".
+        entrarEnVista: (state, action) => {
+            if (state.filtros.vista !== action.payload) state.filtros = { vista: action.payload, estado: "" }
         }
     },
     extraReducers: (builder) => {
@@ -183,6 +185,6 @@ const encargosSlice = createSlice({
     }
 })
 
-export const { setFiltroEstado, setBusquedaArtista, setArtistaElegido } = encargosSlice.actions
+export const { setFiltroEstado, entrarEnVista } = encargosSlice.actions
 
 export default encargosSlice.reducer
