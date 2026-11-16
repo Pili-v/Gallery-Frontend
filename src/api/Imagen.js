@@ -13,17 +13,21 @@
 // - Respeta la rotación de las fotos sacadas con el celular.
 
 // Siempre resuelve: { archivo } con la imagen lista, o { error } con el motivo (muy chica, no es una imagen, no se
-// pudo leer). Adentro se usa .catch solo para atrapar los fallos del navegador (createImageBitmap, convertToBlob):
+// pudo leer). Los fallos del navegador (createImageBitmap, convertToBlob) se tratan con .then(ok, fallo):
 // no es un pedido al back, que pasa siempre por Redux.
 export function prepararImagen(archivo, { maxLado = 1600, minLado = 600, calidad = 0.85 } = {}) {
     if (!archivo || !archivo.type.startsWith("image/")) {
         return Promise.resolve({ error: "El archivo elegido no es una imagen." })
     }
 
+    const noSePudoLeer = () => {
+        throw new Error("No se pudo leer la imagen. Probá con un JPG o PNG.")
+    }
+    const noSePudoProcesar = () => {
+        throw new Error("No se pudo procesar la imagen.")
+    }
+
     return createImageBitmap(archivo, { imageOrientation: "from-image" })
-        .catch(() => {
-            throw new Error("No se pudo leer la imagen. Probá con un JPG o PNG.")
-        })
         .then((imagen) => {
             const ladoMayor = Math.max(imagen.width, imagen.height)
             if (ladoMayor < minLado) {
@@ -55,13 +59,13 @@ export function prepararImagen(archivo, { maxLado = 1600, minLado = 600, calidad
             contexto.drawImage(imagen, 0, 0, ancho, alto)
             imagen.close()
 
-            return lienzo.convertToBlob({ type: "image/jpeg", quality: calidad }).catch(() => {
-                throw new Error("No se pudo procesar la imagen.")
-            })
-        })
-        .then((blob) => {
-            const nombre = archivo.name.replace(/\.[^.]+$/, "") + ".jpg"
-            return { archivo: new File([blob], nombre, { type: "image/jpeg" }) }
-        })
-        .catch((e) => ({ error: e.message }))
+            return lienzo.convertToBlob({ type: "image/jpeg", quality: calidad }).then((blob) => blob, noSePudoProcesar)
+        }, noSePudoLeer)
+        .then(
+            (blob) => {
+                const nombre = archivo.name.replace(/\.[^.]+$/, "") + ".jpg"
+                return { archivo: new File([blob], nombre, { type: "image/jpeg" }) }
+            },
+            (e) => ({ error: e.message })
+        )
 }
