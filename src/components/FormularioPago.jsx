@@ -153,13 +153,20 @@ const FormularioPago = ({
         setError("")
 
         // Acá no va nada de la tarjeta: la simulación termina en la validación.
-        // onPagar resuelve con null si el pago salió, o con el mensaje de lo que falló (no lanza).
-        onPagar().then((motivo) => {
-            if (motivo) {
-                setError(motivo)
+        // onPagar resuelve con null si el pago salió, o con el mensaje de lo que falló. Si igual se rechaza (un error
+        // inesperado), el segundo argumento de then lo muestra y deja reintentar.
+        onPagar().then(
+            (motivo) => {
+                if (motivo) {
+                    setError(motivo)
+                    setPagando(false)
+                }
+            },
+            (fallo) => {
+                setError(fallo.message || "No se pudo completar el pago.")
                 setPagando(false)
             }
-        })
+        )
     }
 
     return (
