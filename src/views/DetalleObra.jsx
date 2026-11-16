@@ -15,7 +15,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { fetchMarcos } from "../redux/marcosSlice"
 import { fetchArtistas } from "../redux/artistasSlice"
 import { fetchObra } from "../redux/obrasSlice"
-import { agregarAlCarrito } from "../redux/carritoSlice"
+import { agregarAlCarrito, cambiarCantidad, quitarItem } from "../redux/carritoSlice"
 import { pesos } from "../api/formato"
 import { descuentoVigente, varianteParaMostrar } from "../api/precio"
 import { colorDeMarco } from "../api/Coloresmarco"
@@ -43,6 +43,7 @@ function DetalleDeObra({ id }) {
     const obraGuardada = useSelector((state) => state.obras.porId[id])
     const marcosEstado = useSelector((state) => state.marcos)
     const artistasEstado = useSelector((state) => state.artistas)
+    const { carrito, items: itemsCarrito } = useSelector((state) => state.carrito)
 
     // Lo que el usuario eligió (estado de la pantalla, no del backend). Sin elegir, vale el tamaño con el que abre.
     const [varianteElegida, setVarianteElegida] = useState(null)
@@ -84,6 +85,34 @@ function DetalleDeObra({ id }) {
     const error = errorObra || marcosEstado.error || artistasEstado.error
     const cargando = !error && (!obra || !marcosEstado.cargado || !artistasEstado.cargado)
 
+    // Si esta obra (con este tamaño y marco) ya está en el carrito, se muestra su cantidad en vez de "Agregar".
+    const enCarrito = varianteSeleccionada
+        ? itemsCarrito.find(
+              (item) =>
+                  item.variante_id === varianteSeleccionada.id &&
+                  (item.marco_id ?? null) === (marcoSeleccionado ? marcoSeleccionado.id : null)
+          )
+        : null
+
+    // Sumar o restar una unidad del ítem que ya está en el carrito. Al llegar a 0 el ítem se quita.
+    const alCambiarCantidad = async (nuevaCantidad) => {
+        setAgregando(true)
+        setErrorCarrito(null)
+        const accion =
+            nuevaCantidad < 1
+                ? quitarItem(enCarrito.id)
+                : cambiarCantidad({
+                      carritoId: carrito.id,
+                      itemId: enCarrito.id,
+                      varianteId: enCarrito.variante_id,
+                      marcoId: enCarrito.marco_id,
+                      cantidad: nuevaCantidad
+                  })
+        const resultado = await dispatch(accion)
+        setAgregando(false)
+        if (resultado.error) setErrorCarrito(resultado.error.message)
+    }
+
     // Agregar al carrito es lo único que escribe. Sin sesión, al login.
     const alAgregar = async () => {
         if (!usuario) {
@@ -102,7 +131,6 @@ function DetalleDeObra({ id }) {
         )
         setAgregando(false)
         if (resultado.error) setErrorCarrito(resultado.error.message)
-        else navegar("/carrito")
     }
 
     if (cargando)
@@ -256,13 +284,44 @@ function DetalleDeObra({ id }) {
                     {errorCarrito && <div className="campo-error body-sm mt-md">{errorCarrito}</div>}
 
                     <div className="mt-lg">
-                        <Boton
-                            tipo={noDisponible ? "deshabilitado" : "primario"}
-                            bloque
-                            onClick={noDisponible || agregando ? undefined : alAgregar}
-                        >
-                            {textoBoton}
-                        </Boton>
+                        {enCarrito && !noDisponible ? (
+                            <div className="apilado gap-sm">
+                                <div className="detalle-cantidad">
+                                    <button
+                                        disabled={agregando}
+                                        aria-label={
+                                            enCarrito.cantidad === 1 ? "Quitar del carrito" : "Restar una unidad"
+                                        }
+                                        onClick={() => alCambiarCantidad(enCarrito.cantidad - 1)}
+                                    >
+                                        −
+                                    </button>
+                                    <span>
+                                        <b>{enCarrito.cantidad}</b> en tu carrito
+                                    </span>
+                                    <button
+                                        disabled={
+                                            agregando || enCarrito.cantidad >= varianteSeleccionada.stock_variante
+                                        }
+                                        aria-label="Sumar una unidad"
+                                        onClick={() => alCambiarCantidad(enCarrito.cantidad + 1)}
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                <Link to="/carrito" className="boton boton-secundario boton-bloque">
+                                    Ver carrito
+                                </Link>
+                            </div>
+                        ) : (
+                            <Boton
+                                tipo={noDisponible ? "deshabilitado" : "primario"}
+                                bloque
+                                onClick={noDisponible || agregando ? undefined : alAgregar}
+                            >
+                                {textoBoton}
+                            </Boton>
+                        )}
                     </div>
                     <p className="cartela-meta mt-sm centro">Envío a domicilio o retiro en el local</p>
                 </aside>
