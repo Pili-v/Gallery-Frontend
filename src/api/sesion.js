@@ -24,11 +24,7 @@ export const getUsuario = () => {
     // no existia. En los dos casos es como no tener sesion, no un error.
     if (!guardado || guardado === "undefined") return null
 
-    try {
-        return JSON.parse(guardado)
-    } catch {
-        return null
-    }
+    return JSON.parse(guardado)
 }
 
 // El perfil de artista es otra cosa que el usuario: tiene su propio id, y es el
