@@ -79,18 +79,23 @@ export const guardarDireccion = createAsyncThunk("carrito/guardarDireccion", asy
     return direccion
 })
 
-// Agregar una obra desde su detalle: primero se pide el carrito propio y después se agrega el ítem. La pantalla
-// lleva después al carrito, que se pide de nuevo al entrar (con la portada y la disponibilidad de cada ítem).
-export const agregarAlCarrito = createAsyncThunk("carrito/agregarAlCarrito", async ({ varianteId, marcoId }) => {
-    const miCarrito = await http.get("/api/carritos/me")
-    const respuesta = await http.post("/api/items-carrito", {
-        carrito_id: miCarrito.data.id,
-        variante_id: varianteId,
-        marco_id: marcoId,
-        cantidad: 1
-    })
-    return respuesta.data
-})
+// Agregar una obra desde su detalle. Si el carrito ya está guardado se usa su id (es siempre el mismo); si no, se pide.
+// El back responde con el ítem (si ya había uno igual, con la cantidad sumada): se guarda en la lista, así el detalle
+// de la obra y el contador del Header lo reflejan sin pedir el carrito de nuevo.
+export const agregarAlCarrito = createAsyncThunk(
+    "carrito/agregarAlCarrito",
+    async ({ varianteId, marcoId }, { getState }) => {
+        let carritoId = getState().carrito.carrito?.id
+        if (!carritoId) carritoId = (await http.get("/api/carritos/me")).data.id
+        const respuesta = await http.post("/api/items-carrito", {
+            carrito_id: carritoId,
+            variante_id: varianteId,
+            marco_id: marcoId,
+            cantidad: 1
+        })
+        return respuesta.data
+    }
+)
 
 // Convierte el carrito en una compra. El back saca el usuario del token y, en una sola transacción, crea la
 // compra, agrupa por artista, emite una factura por cada uno, descuenta el stock y vacía el carrito.
@@ -98,7 +103,6 @@ export const confirmarCompra = createAsyncThunk("carrito/confirmarCompra", async
     const { data: compra } = await http.post("/api/checkout", { tipo_entrega: tipoEntrega })
     return compra
 })
-
 
 const carritoSlice = createSlice({
     name: "carrito",
@@ -165,6 +169,15 @@ const carritoSlice = createSlice({
                 state.error = action.error.message
             })
 
+            // --- Agregar desde el detalle de la obra ---
+            .addCase(agregarAlCarrito.fulfilled, (state, action) => {
+                const item = action.payload
+                const esta = state.items.some((otro) => otro.id === item.id)
+                state.items = esta
+                    ? state.items.map((otro) => (otro.id === item.id ? item : otro))
+                    : [...state.items, item]
+            })
+
             // --- Quitar un ítem ---
             .addCase(quitarItem.pending, (state) => {
                 state.error = null
@@ -199,7 +212,7 @@ const carritoSlice = createSlice({
                 state.error = action.error.message
             })
 
-                        // --- Confirmar la compra (checkout) ---
+            // --- Confirmar la compra (checkout) ---
             .addCase(confirmarCompra.pending, (state) => {
                 state.error = null
             })

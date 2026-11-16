@@ -375,6 +375,18 @@ body {
 .contador button:disabled { color: var(--ink-muted); opacity: .4; cursor: not-allowed; }
 .contador span { width: 34px; display: grid; place-items: center; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
 
+/* Detalle de obra, cuando ya está en el carrito: reemplaza al botón "Agregar" con la misma altura y ancho. */
+.detalle-cantidad {
+  display: flex; align-items: stretch; justify-content: space-between;
+  min-height: var(--alto-control); border: 1px solid rgba(133,14,53,.35); border-radius: var(--radio); background: var(--bordo-suave); overflow: hidden;
+}
+.detalle-cantidad span { display: flex; align-items: center; justify-content: center; flex: 1; font-size: 14px; color: var(--ink); }
+.detalle-cantidad b { color: var(--bordo); font-weight: 600; margin-right: 4px; }
+.detalle-cantidad button { width: 48px; border: 0; background: none; cursor: pointer; color: var(--bordo); font-size: 20px; line-height: 1; }
+.detalle-cantidad button:hover:not(:disabled) { background: rgba(133,14,53,.12); }
+.detalle-cantidad button:focus-visible { outline: none; box-shadow: inset var(--anillo-foco); }
+.detalle-cantidad button:disabled { opacity: .35; cursor: not-allowed; }
+
 /* ---------- Componente: ResumenTotales ---------- */
 .resumen { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radio); padding: var(--lg); }
 .resumen-fila { display: flex; justify-content: space-between; padding: var(--sm) 0; }
