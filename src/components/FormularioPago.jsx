@@ -71,7 +71,7 @@ const numeroValido = (numero, marca) => {
 //   titulo: el título de la pantalla (no se ve en escritorio).
 //   lineas (opcional): lo que se paga, cada uno { id, nombre, detalle, imagen, importe }, con su miniatura.
 //   subtotal, etiquetaSubtotal, marcos, envio, total, nota: los importes del resumen y una nota debajo del botón.
-//   onPagar: se llama cuando la tarjeta es válida y tiene que devolver la promesa del pedido al back.
+//   onPagar: se llama cuando la tarjeta es válida y tiene que devolver una promesa que resuelva con null si el pago salió o con el mensaje del error.
 //            Si falla, se muestra el mensaje acá; si sale bien, quien la usa navega a otra pantalla.
 //   textoVolver, onVolver: el link para volver (arriba a la izquierda).
 //   entrega (opcional): cómo se recibe la compra (por ejemplo, "Envío a domicilio · Calle 123"), en el resumen.
@@ -153,9 +153,12 @@ const FormularioPago = ({
         setError("")
 
         // Acá no va nada de la tarjeta: la simulación termina en la validación.
-        onPagar().catch((e) => {
-            setError(e.message)
-            setPagando(false)
+        // onPagar resuelve con null si el pago salió, o con el mensaje de lo que falló (no lanza).
+        onPagar().then((motivo) => {
+            if (motivo) {
+                setError(motivo)
+                setPagando(false)
+            }
         })
     }
 

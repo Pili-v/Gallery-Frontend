@@ -130,15 +130,20 @@ function DetalleDeObra({ id }) {
     const sinStock = varianteSeleccionada?.stock_variante === 0
 
     const sinVariantes = !varianteSeleccionada
-    const noDisponible = sinStock || sinVariantes
+    // El back devuelve también las obras dadas de baja o sacadas de la venta (una compra vieja puede necesitarlas):
+    // se pueden ver, pero no comprar.
+    const fueraDeVenta = Boolean(obra) && (obra.eliminada || !obra.en_venta)
+    const noDisponible = fueraDeVenta || sinStock || sinVariantes
 
     let textoBoton = "Agregar al carrito"
-    if (sinStock) textoBoton = "Sin stock"
+    if (fueraDeVenta) textoBoton = "No disponible"
+    else if (sinStock) textoBoton = "Sin stock"
     else if (sinVariantes) textoBoton = "Sin tamaños"
     else if (agregando) textoBoton = "Agregando…"
 
     let disponibilidad = ""
-    if (sinStock) disponibilidad = "Sin stock"
+    if (fueraDeVenta) disponibilidad = obra.eliminada ? "Obra dada de baja" : "Fuera de venta"
+    else if (sinStock) disponibilidad = "Sin stock"
     else if (varianteSeleccionada && varianteSeleccionada.stock_variante === 1) disponibilidad = "Última unidad"
     else if (varianteSeleccionada) disponibilidad = varianteSeleccionada.stock_variante + " disponibles"
 
