@@ -1,8 +1,8 @@
 // Prepara una imagen antes de subirla, para que siempre se vea bien en la página.
 // Se usa en el formulario de obra (Área 5), justo antes de armar el FormData:
 //
-//   const lista = await prepararImagen(archivoElegido)
-//   formData.append("archivo", lista)
+//   const { archivo, error } = await prepararImagen(archivoElegido)
+//   if (!error) formData.append("archivo", archivo)
 //
 // Qué resuelve:
 // - Una foto de 8000 px y varios MB se achica a 1600 px de lado mayor. Se ve igual de bien,
@@ -12,9 +12,12 @@
 // - Todas quedan en JPEG.
 // - Respeta la rotación de las fotos sacadas con el celular.
 
+// Siempre resuelve: { archivo } con la imagen lista, o { error } con el motivo (muy chica, no es una imagen, no se
+// pudo leer). Adentro se usa .catch solo para atrapar los fallos del navegador (createImageBitmap, convertToBlob):
+// no es un pedido al back, que pasa siempre por Redux.
 export function prepararImagen(archivo, { maxLado = 1600, minLado = 600, calidad = 0.85 } = {}) {
     if (!archivo || !archivo.type.startsWith("image/")) {
-        return Promise.reject(new Error("El archivo elegido no es una imagen."))
+        return Promise.resolve({ error: "El archivo elegido no es una imagen." })
     }
 
     return createImageBitmap(archivo, { imageOrientation: "from-image" })
@@ -58,6 +61,7 @@ export function prepararImagen(archivo, { maxLado = 1600, minLado = 600, calidad
         })
         .then((blob) => {
             const nombre = archivo.name.replace(/\.[^.]+$/, "") + ".jpg"
-            return new File([blob], nombre, { type: "image/jpeg" })
+            return { archivo: new File([blob], nombre, { type: "image/jpeg" }) }
         })
+        .catch((e) => ({ error: e.message }))
 }

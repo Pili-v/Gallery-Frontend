@@ -6,6 +6,7 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { obtenerLista, obtenerPagina } from "./pedidos"
+import { crearPerfilArtista, actualizarPerfilArtista } from "./sesionSlice"
 
 // Con { forzar: true } se vuelve a pedir aunque ya hayan llegado (por ejemplo, un botón Reintentar).
 export const fetchArtistas = createAsyncThunk(
@@ -64,6 +65,11 @@ export const fetchResumenArtistas = createAsyncThunk(
 // Los filtros de la pantalla Artistas viven acá (state.artistas.filtros): al entrar a un artista y volver, se conservan.
 // texto es lo que se escribe; busqueda es lo aplicado (lo que se manda al back). reinicio cambia la key del buscador para vaciarlo.
 const FILTROS_INICIALES = { pagina: 0, texto: "", busqueda: "", artistaElegido: "", reinicio: 0, estiloIds: [] }
+
+const invalidarArtistas = (state) => {
+    state.cargado = false
+    state.resultados.cargada = null
+}
 
 const artistasSlice = createSlice({
     name: "artistas",
@@ -134,6 +140,10 @@ const artistasSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            // Un cambio propio en el perfil de artista (se crea o se edita el nombre artístico): la lista de artistas y
+            // la búsqueda que se mostraba quedaron viejas, así que se vuelven a pedir la próxima vez que se muestren.
+            .addCase(crearPerfilArtista.fulfilled, invalidarArtistas)
+            .addCase(actualizarPerfilArtista.fulfilled, invalidarArtistas)
             // Todos los artistas
             .addCase(fetchArtistas.pending, (state) => {
                 state.loading = true

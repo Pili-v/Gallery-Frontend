@@ -330,18 +330,20 @@ const FotosDeLaObra = ({ obraId, imagenes }) => {
                 if (listas.length > 0) editar([...fotos, ...listas])
                 return
             }
-            prepararImagen(elegidas[i])
-                .then((archivo) => {
+            prepararImagen(elegidas[i]).then((resultado) => {
+                if (resultado.error) {
+                    rechazos.push(elegidas[i].name + ": " + resultado.error)
+                } else {
                     listas.push({
                         clave: nuevaClave(),
                         id: null,
                         url: null,
-                        vista: URL.createObjectURL(archivo),
-                        archivo
+                        vista: URL.createObjectURL(resultado.archivo),
+                        archivo: resultado.archivo
                     })
-                })
-                .catch((e) => rechazos.push(elegidas[i].name + ": " + e.message))
-                .then(() => preparar(i + 1))
+                }
+                preparar(i + 1)
+            })
         }
         preparar(0)
     }
@@ -349,18 +351,20 @@ const FotosDeLaObra = ({ obraId, imagenes }) => {
     const reemplazar = (clave, archivo) => {
         setPreparando(true)
         setMotivos("")
-        prepararImagen(archivo)
-            .then((preparada) =>
+        prepararImagen(archivo).then((resultado) => {
+            if (resultado.error) {
+                setMotivos(archivo.name + ": " + resultado.error)
+            } else {
                 editar(
                     fotos.map((foto) =>
                         foto.clave === clave
-                            ? { ...foto, archivo: preparada, vista: URL.createObjectURL(preparada) }
+                            ? { ...foto, archivo: resultado.archivo, vista: URL.createObjectURL(resultado.archivo) }
                             : foto
                     )
                 )
-            )
-            .catch((e) => setMotivos(archivo.name + ": " + e.message))
-            .then(() => setPreparando(false))
+            }
+            setPreparando(false)
+        })
     }
 
     // Mueve una foto una posición hacia adelante (-1) o hacia atrás (+1).

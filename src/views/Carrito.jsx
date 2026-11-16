@@ -94,8 +94,7 @@ const Carrito = () => {
 
     // Guarda la dirección en el carrito y pasa al pago. El tipo de entrega y los ítems viajan a la pantalla
     // siguiente, que es la que hace el POST /api/checkout (así no vuelve a pedir lo que ya se sabe).
-    // unwrap() convierte el resultado del dispatch en una promesa común: resuelve si la acción terminó en
-    // fulfilled y corta si terminó en rejected.
+    // Si guardar la dirección falla, se queda en la pantalla y se puede reintentar.
     const irAlPago = () => {
         if (yendo || hayNoDisponibles) return
 
@@ -105,10 +104,10 @@ const Carrito = () => {
         }
 
         setYendo(true)
-        dispatch(guardarDireccion({ carritoId: carrito.id, direccion }))
-            .unwrap()
-            .then(() => navegar("/checkout/pago", { state: { tipoEntrega, items } }))
-            .catch(() => setYendo(false))
+        dispatch(guardarDireccion({ carritoId: carrito.id, direccion })).then((resultado) => {
+            if (resultado.error) setYendo(false)
+            else navegar("/checkout/pago", { state: { tipoEntrega, items } })
+        })
     }
 
     // La miniatura: el ítem trae el obra_id y la foto sale de la lista de imágenes (su portada).

@@ -37,17 +37,18 @@ const Pago = () => {
     // Quién compra sale del token, igual que en el backend.
     // Si el back rechaza la compra porque algo ya no está disponible (alguien compró lo último mientras tanto),
     // responde 409 y se vuelve al carrito con el aviso: el carrito se pide de nuevo y marca cuáles son los ítems.
-    // unwrap() convierte el resultado del dispatch en una promesa común, para poder navegar o avisar.
+    // FormularioPago espera una promesa que resuelva con el mensaje del error (lo muestra y deja reintentar) o con null.
     const pagar = () =>
-        dispatch(confirmarCompra(tipoEntrega))
-            .unwrap()
-            .then((compra) => navegar("/compra/" + compra.id))
-            .catch((fallo) => {
-                if (fallo.code === "409") {
-                    navegar("/carrito", { state: { sinDisponibilidad: fallo.message } })
+        dispatch(confirmarCompra(tipoEntrega)).then((resultado) => {
+            if (resultado.error) {
+                if (resultado.error.code === "409") {
+                    navegar("/carrito", { state: { sinDisponibilidad: resultado.error.message } })
                 }
-                throw fallo
-            })
+                return resultado.error.message
+            }
+            navegar("/compra/" + resultado.payload.id)
+            return null
+        })
 
     const subtotal = items.reduce((suma, item) => suma + item.precio_unitario * item.cantidad, 0)
     const marcos = items.reduce((suma, item) => suma + item.precio_marco * item.cantidad, 0)
