@@ -71,11 +71,13 @@ const PagoEncargo = () => {
     const precio = Number(encargo.precio_acordado)
 
     // Quién paga sale del token, igual que en el backend; de la tarjeta no viaja nada.
-    // FormularioPago espera una promesa que falle si el pago no sale (muestra el error y deja reintentar).
+    // FormularioPago espera una promesa que resuelva con el mensaje del error si el pago no sale (lo muestra y deja
+    // reintentar) o con null si salió.
     const pagar = () =>
         dispatch(pagarEncargo(id)).then((resultado) => {
-            if (resultado.error) throw new Error(resultado.error.message)
+            if (resultado.error) return resultado.error.message
             navegar("/encargos/" + id, { state: { pagado: true } })
+            return null
         })
 
     return (

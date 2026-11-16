@@ -6,6 +6,7 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { obtenerLista, obtenerPagina } from "./pedidos"
+import { crearPerfilArtista, actualizarPerfilArtista } from "./sesionSlice"
 
 // Con { forzar: true } se vuelve a pedir aunque ya hayan llegado (por ejemplo, un botón Reintentar).
 export const fetchArtistas = createAsyncThunk(
@@ -64,6 +65,23 @@ export const fetchResumenArtistas = createAsyncThunk(
 // Los filtros de la pantalla Artistas viven acá (state.artistas.filtros): al entrar a un artista y volver, se conservan.
 // texto es lo que se escribe; busqueda es lo aplicado (lo que se manda al back). reinicio cambia la key del buscador para vaciarlo.
 const FILTROS_INICIALES = { pagina: 0, texto: "", busqueda: "", artistaElegido: "", reinicio: 0, estiloIds: [] }
+
+// Un cambio propio en el perfil de artista (se crea o se edita): el artista que devolvió el back se reemplaza por id
+// donde ya estaba guardado y, si es nuevo, se suma a la lista de todos (si ya se había pedido; si no, llega con ella).
+// No se vuelve a pedir nada. La página de resultados de la búsqueda la arma el back: un artista nuevo aparece ahí la
+// próxima vez que se busque, como el resto del catálogo (docs/datos-con-redux.md).
+const reemplazarPorId = (lista, artista) => {
+    const indice = lista.findIndex((guardado) => guardado.id === artista.id)
+    if (indice === -1) return false
+    lista[indice] = artista
+    return true
+}
+
+const guardarArtista = (state, artista) => {
+    if (!artista) return
+    if (!reemplazarPorId(state.items, artista) && state.cargado) state.items.push(artista)
+    reemplazarPorId(state.resultados.items, artista)
+}
 
 const artistasSlice = createSlice({
     name: "artistas",
@@ -134,6 +152,11 @@ const artistasSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
+            // Un cambio propio en el perfil de artista: se aplica la respuesta del back (ver guardarArtista).
+            .addCase(crearPerfilArtista.fulfilled, (state, action) =>
+                guardarArtista(state, action.payload.perfilArtista)
+            )
+            .addCase(actualizarPerfilArtista.fulfilled, (state, action) => guardarArtista(state, action.payload))
             // Todos los artistas
             .addCase(fetchArtistas.pending, (state) => {
                 state.loading = true

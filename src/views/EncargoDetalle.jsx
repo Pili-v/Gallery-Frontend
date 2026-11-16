@@ -117,11 +117,9 @@ function Detalle({ id, recibidos, base }) {
         evento.preventDefault()
         if (enviando) return
         setAviso("")
-        let cuerpo
-        try {
-            cuerpo = prepararMensaje(encargo.id, mensaje)
-        } catch (error) {
-            setErrorMensaje(error.message)
+        const { cuerpo, error } = prepararMensaje(encargo.id, mensaje)
+        if (error) {
+            setErrorMensaje(error)
             return
         }
         setEnviando(true)
@@ -142,11 +140,9 @@ function Detalle({ id, recibidos, base }) {
         evento.preventDefault()
         if (guardando) return
         setAviso("")
-        let cuerpo
-        try {
-            cuerpo = prepararCambioEstado(encargo.estados_siguientes, nuevoEstado)
-        } catch (error) {
-            setErrorEstado(error.message)
+        const { cuerpo, error } = prepararCambioEstado(encargo.estados_siguientes, nuevoEstado)
+        if (error) {
+            setErrorEstado(error)
             return
         }
         setGuardando(true)
