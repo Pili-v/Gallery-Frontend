@@ -51,6 +51,8 @@ una cantidad fija de consultas, sin importar cuántas obras haya).
      se abrió, no pide nada.
    - Un cambio propio (publicar, editar o eliminar una obra, sus variantes o sus fotos, o confirmar una compra) deja
      viejo lo guardado: `obras.version` cambia y todo se vuelve a pedir la próxima vez que se muestre.
+   Crear o editar el perfil de artista no hace volver a pedir los artistas: el que devolvió el back se suma a la
+   lista guardada (o la reemplaza por id), como cualquier cambio propio (regla 5).
 
 3. **Lo que se usa para comprar y lo propio se pide siempre al entrar**: el carrito (y al volver a su pestaña), el
    editor de obra (guardar una variante manda también su stock: con uno viejo se pisarían las ventas), Mis obras,
